@@ -20,4 +20,4 @@ jobs:
           tox -e lint
       - name: Test
         run: |
-          tox -e testenv
+          tox -e py
