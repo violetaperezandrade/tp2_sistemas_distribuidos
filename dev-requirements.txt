@@ -1,0 +1,5 @@
+tox
+pytest
+pylint
+flake8
+flake8-docstrings
