@@ -21,7 +21,7 @@ Verificar antes de cada push o el mismo puede fallar.
 
 Se ofrecen los siguientes comandos, tomados del _TP 0_
 
-- **make <target>**: Los target imprescindibles para iniciar y detener el sistema son docker-compose-up y docker-compose-down.
+- **make** <**target**>: Los target imprescindibles para iniciar y detener el sistema son docker-compose-up y docker-compose-down.
 
 Los targets disponibles son:
 
