@@ -1,11 +1,13 @@
 """Sample python script."""
+# pylint: disable=import-error
+import util.queue_middleware
 
 
-def print_hi(name):
-    """Docstring so lint doesnt annoy me."""
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+def main():
+    """Create queue."""
+    rabbitmq_mw = util.queue_middleware.Middleware()
+    rabbitmq_mw.create_queue("testing_queue")
 
 
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print_hi('PyCharm')
+    main()

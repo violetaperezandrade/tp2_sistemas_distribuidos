@@ -7,7 +7,7 @@ sudo apt install python3.11 python3.11-venv
 python3.11 -m venv venv
 source venv/bin/activate
 pip install pip --upgrade
-pip install -r dev-requirements.txt
+pip install -r dev-requirements.txt -r requirements.txt
 ```
 
 ## Tests + Lint
