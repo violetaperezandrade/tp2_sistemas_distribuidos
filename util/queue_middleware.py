@@ -3,7 +3,7 @@
 import pika
 
 
-class Middleware:
+class QueueMiddleware:
     """Wrapper for RabbitMQ methods."""
 
     def __init__(self):
@@ -12,25 +12,56 @@ class Middleware:
                             (pika.ConnectionParameters(host='rabbitmq')))
         self._channel = self._connection.channel()
 
-    def create_queue(self, name):
+    def __create_queue(self, name):
         """Create a queue with specified name."""
         self._channel.queue_declare(queue=name)
 
-    def publish_message(self, queue_name, message):
+    def __setup_message_consumption(self, queue_name, user_function):
+        """Set up queue with user function and start consuming."""
+        self._channel.basic_consume(queue=queue_name,
+                                    on_message_callback=lambda channel,
+                                    method,
+                                    properties,
+                                    body:
+                                    (user_function(body),
+                                     channel.basic_ack
+                                     (delivery_tag=method.delivery_tag)))
+        self._channel.start_consuming()
+
+    def __create_fanout_exchange(self, exchange_name):
+        """Private. Create fanout exchange with specified name."""
+        self._channel.exchange_declare(exchange=exchange_name,
+                                       exchange_type='fanout')
+
+    # Work queue methods
+    def listen_on(self, queue_name, user_function):
+        """Listen on a specific work queue for messages."""
+        self.__create_queue(queue_name)
+        self._channel.basic_qos(prefetch_count=1)
+        self.__setup_message_consumption(queue_name, user_function)
+
+    def send_message_to(self, queue_name, message):
         """Send message through specified queue."""
+        self.__create_queue(queue_name)
         self._channel.basic_publish(exchange='',
                                     routing_key=queue_name,
                                     body=message)
 
-    def setup_message_consumption(self, queue_name, callback):
-        """Set up queue with specified callback function."""
-        self._channel.basic_consume(queue=queue_name,
-                                    auto_ack=True,
-                                    on_message_callback=callback)
+    # Publisher/Subscriber methods
+    def subscribe_to(self, exchange_name, user_function):
+        """Set up queue to start consuming from specified exchange."""
+        self.__create_fanout_exchange(exchange_name)
+        result = self._channel.queue_declare(queue='', exclusive=True)
+        queue_name = result.method.queue
+        self._channel.queue_bind(exchange=exchange_name, queue=queue_name)
+        self.__setup_message_consumption(queue_name, user_function)
 
-    def start_consuming(self):
-        """Start consuming messages on previously setup queue."""
-        self._channel.start_consuming()
+    def publish_on(self, exchange_name, message):
+        """Publish message on specified exchange."""
+        self.__create_fanout_exchange(exchange_name)
+        self._channel.basic_publish(exchange=exchange_name,
+                                    routing_key='',
+                                    body=message)
 
     def __del__(self):
         """Close connection properly."""
