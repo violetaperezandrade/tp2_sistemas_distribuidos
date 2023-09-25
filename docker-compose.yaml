@@ -1,20 +1,19 @@
 version: '3.9'
 name: tp1
 services:
-  rabbitmq:
-    build:
-      context: ./rabbitmq
-      dockerfile: Dockerfile
-    ports:
-      - 15672:15672
   client:
     container_name: client
     image: client:latest
     entrypoint: python3 /main.py
-    restart: on-failure
-    depends_on:
+    external_links:
       - rabbitmq
-    links:
+    environment:
+      - PYTHONUNBUFFERED=1
+  server:
+    container_name: server
+    image: server:latest
+    entrypoint: python3 /main.py
+    external_links:
       - rabbitmq
     environment:
       - PYTHONUNBUFFERED=1
