@@ -2,6 +2,8 @@ import socket
 import logging
 import time
 
+from util import protocol
+
 MSG_LEN = 1024
 
 
@@ -11,23 +13,19 @@ class Client:
         self._client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_address = address
 
-    def start_client_loop(self):
+    def run(self):
+        # Missing error handling
         self.__start_connection_with_server()
-        for i in range(0, 5):
-            time.sleep(3)
-            message = "Message {}".format(i)
-            self.__run(message)
 
-        self.__close_connection()
-
-    def __run(self, message):
+    def send_line(self, line, opcode):
+        line = protocol.encode(line, opcode)
         try:
-            self.__send_msg(message)
+            self.__send_msg(line, len(line))
             logging.info(
-                f'action: receive_message | result: success | msg: {message}')
+                f'action: sent line | result: success | msg: {line}')
         except OSError as e:
             logging.error(
-                "action: receive_message | result: fail | error: {e}")
+                "action: sent line | result: fail | error: {e}")
 
     def __start_connection_with_server(self):
         """
@@ -55,17 +53,12 @@ class Client:
         self._client_socket.close()
         logging.info(f'action: close_connection | result: success ')
 
-    def __generate_message(self, message):
-        return message.ljust(MSG_LEN, 'X')
-
-    """send response message to server"""
-
-    def __send_msg(self, message):
-        response = self.__generate_message(message).encode('utf-8')
-        remaining = MSG_LEN
+    def __send_msg(self, message, length):
+        remaining = length
+        pos = 0
         while remaining > 0:
-            pos = MSG_LEN - remaining
-            nBytesSent = self._client_socket.send(response[pos:MSG_LEN])
+            nBytesSent = self._client_socket.send(message[pos:])
             logging.debug(
                 f'action: sending_message | result: success | message: {message} | bytes_sent: {nBytesSent}')
             remaining -= nBytesSent
+            pos += nBytesSent

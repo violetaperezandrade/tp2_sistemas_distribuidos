@@ -13,20 +13,23 @@ class Server:
 
     def run(self):
         client_sock = self.__accept_new_connection()
-        for i in range(0, 5):
-            self.__handle_client_connection(client_sock)
-
+        self.__handle_client_connection(client_sock)
         client_sock.close()
 
     def __handle_client_connection(self, client_sock):
         try:
-            msg = self.__recv_msg(client_sock)
+            while True:
+                self.read_line(client_sock)
             addr = client_sock.getpeername()
             logging.info(
                 f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
         except OSError as e:
             logging.error(
                 "action: receive_message | result: fail | error: {e}")
+        except Exception:
+            logging.info(
+                f'action: done with file | result: success')
+
 
     def __accept_new_connection(self):
         """
@@ -43,15 +46,34 @@ class Server:
             f'action: accept_connections | result: success | ip: {addr[0]}')
         return c
 
-    """receive message from client socket"""
+    def read_line(self, sock):
+        opcode = self.__recv_msg(sock, 1)
+        opcode = int.from_bytes(opcode, byteorder="big")
+        if opcode == 0:
+            # raise custom exception
+            raise Exception
+        logging.info(
+            f'action: opcode_received | result: success | opcode: {opcode}')
+        msg_size = self.__recv_msg(sock, 2)
+        msg_size = int.from_bytes(msg_size, byteorder="big")
+        logging.info(
+            f'action: size_received | result: success | size: {msg_size}')
+        read = 0
+        while True:
+            column_size = self.__recv_msg(sock, 2)
+            column_size = int.from_bytes(column_size, byteorder="big")
+            column_value = self.__recv_msg(sock, column_size).decode('utf-8')
+            logging.info(
+                f'action: value received | result: success | column: {column_value}')
+            read += column_size + 2
+            if read >= msg_size:
+                break
 
-    def __recv_msg(self, sock):
+    def __recv_msg(self, sock, length):
         result = b''
-        remaining = MSG_LEN
+        remaining = length
         while remaining > 0:
             data = sock.recv(remaining)
             result += data
             remaining -= len(data)
-        return result.decode('utf-8').replace("X", "")
-
-    """creates message for client socket"""
+        return result
