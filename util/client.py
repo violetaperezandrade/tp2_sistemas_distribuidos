@@ -14,20 +14,20 @@ class Client:
     def start_client_loop(self):
         self.__start_connection_with_server()
         for i in range(0, 5):
-            time.sleep(3)    
+            time.sleep(3)
             message = "Message {}".format(i)
             self.__run(message)
-        
+
         self.__close_connection()
 
     def __run(self, message):
         try:
             self.__send_msg(message)
-            logging.info(f'action: receive_message | result: success | msg: {message}')
-            msg = self.__recv_msg()
+            logging.info(
+                f'action: receive_message | result: success | msg: {message}')
         except OSError as e:
-            logging.error("action: receive_message | result: fail | error: {e}")
-
+            logging.error(
+                "action: receive_message | result: fail | error: {e}")
 
     def __start_connection_with_server(self):
         """
@@ -37,9 +37,11 @@ class Client:
         """
 
         # Connection arrived
-        logging.info(f"action: starts_connection | host: {self._server_address[0]} | port: {self._server_address[1]} | result: in_progress")
+        logging.info(
+            f"action: starts_connection | host: {self._server_address[0]} | port: {self._server_address[1]} | result: in_progress")
         self._client_socket.connect(self._server_address)
-        logging.info(f'action: starts_connection | host: {self._server_address[0]} | port: {self._server_address[1]} | result: success ')
+        logging.info(
+            f'action: starts_connection | host: {self._server_address[0]} | port: {self._server_address[1]} | result: success ')
 
     def __close_connection(self):
         """
@@ -53,27 +55,17 @@ class Client:
         self._client_socket.close()
         logging.info(f'action: close_connection | result: success ')
 
-    """receive message from server socket"""
-    def __recv_msg(self):
-        result = b''
-        remaining = MSG_LEN
-        while remaining > 0:
-            data = self._client_socket.recv(remaining)
-            result += data
-            remaining -= len(data)
-        
-        return result.decode('utf-8').replace("X", "")
-
-    """creates message for server socket"""
     def __generate_message(self, message):
         return message.ljust(MSG_LEN, 'X')
 
     """send response message to server"""
+
     def __send_msg(self, message):
         response = self.__generate_message(message).encode('utf-8')
         remaining = MSG_LEN
         while remaining > 0:
             pos = MSG_LEN - remaining
             nBytesSent = self._client_socket.send(response[pos:MSG_LEN])
-            logging.debug(f'action: sending_message | result: success | message: {message} | bytes_sent: {nBytesSent}')
+            logging.debug(
+                f'action: sending_message | result: success | message: {message} | bytes_sent: {nBytesSent}')
             remaining -= nBytesSent
