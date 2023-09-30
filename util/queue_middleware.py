@@ -19,16 +19,10 @@ class QueueMiddleware:
     def __setup_message_consumption(self, queue_name, user_function):
         """Set up queue with user function and start consuming."""
         self._channel.basic_consume(queue=queue_name,
-                                    on_message_callback=lambda channel,
-                                    method,
-                                    properties,
-                                    body:
-                                    (user_function(body),
-                                     channel.basic_ack
-                                     (delivery_tag=method.delivery_tag)))
+                                    on_message_callback=user_function)
         self._channel.start_consuming()
 
-    def __create_fanout_exchange(self, exchange_name):
+    def _create_fanout_exchange(self, exchange_name):
         """Private. Create fanout exchange with specified name."""
         self._channel.exchange_declare(exchange=exchange_name,
                                        exchange_type='fanout')

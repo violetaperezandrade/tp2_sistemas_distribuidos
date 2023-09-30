@@ -1,7 +1,6 @@
 """Basic RabbitMQ client."""
 from util import protocol
 # pylint: disable=import-error
-# import util.queue_middleware
 from util.client import Client
 import util.csv_reader
 import logging
@@ -9,13 +8,10 @@ import logging
 
 def main():
     # """Send message through queue."""
-    # rabbitmq_mw = util.queue_middleware.QueueMiddleware()
-    # rabbitmq_mw.send_message_to('testing_queue', 'Hello world!')
-    # print('Sent Hello world!')
 
     logging_level = "INFO"
     port = 12345
-    host = "localhost"
+    host = "server"
 
     server_address = (host, port)
     initialize_log(logging_level)
@@ -24,7 +20,7 @@ def main():
 
     try:
         flights_reader = (util.csv_reader.CSVReader
-                          ("./client/itineraries_random_demo.csv"))
+                          ("itineraries_random_demo.csv"))
         while True:
             client.send_line(flights_reader.next_line(), 1)
     except OSError:
@@ -32,7 +28,6 @@ def main():
     except StopIteration:
         print("Reached EOF")
         client.send_line([], 0)
-
 
 
 def initialize_log(logging_level):

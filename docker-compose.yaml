@@ -5,15 +5,24 @@ services:
     container_name: client
     image: client:latest
     entrypoint: python3 /main.py
-    external_links:
-      - rabbitmq
     environment:
       - PYTHONUNBUFFERED=1
+    depends_on:
+      - server
   server:
     container_name: server
     image: server:latest
     entrypoint: python3 /main.py
+    restart: on-failure
     external_links:
       - rabbitmq
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - initial_column_cleaner
+  initial_column_cleaner:
+    container_name: initial_column_cleaner
+    image: initial_column_cleaner:latest
+    entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1

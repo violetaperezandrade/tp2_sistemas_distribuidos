@@ -1,6 +1,8 @@
 import socket
 import logging
 
+from util.queue_middleware import QueueMiddleware
+
 MSG_LEN = 1024
 
 
@@ -10,6 +12,7 @@ class Server:
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
+        self.rabbitmq_mw = QueueMiddleware()
 
     def run(self):
         client_sock = self.__accept_new_connection()
@@ -30,7 +33,6 @@ class Server:
             logging.info(
                 f'action: done with file | result: success')
 
-
     def __accept_new_connection(self):
         """
         Accept new connections
@@ -47,7 +49,9 @@ class Server:
         return c
 
     def read_line(self, sock):
+        byte_array = bytearray()
         opcode = self.__recv_msg(sock, 1)
+        byte_array += opcode
         opcode = int.from_bytes(opcode, byteorder="big")
         if opcode == 0:
             # raise custom exception
@@ -55,18 +59,23 @@ class Server:
         logging.info(
             f'action: opcode_received | result: success | opcode: {opcode}')
         msg_size = self.__recv_msg(sock, 2)
+        byte_array += msg_size
         msg_size = int.from_bytes(msg_size, byteorder="big")
         logging.info(
             f'action: size_received | result: success | size: {msg_size}')
         read = 0
         while True:
             column_size = self.__recv_msg(sock, 2)
+            byte_array += column_size
             column_size = int.from_bytes(column_size, byteorder="big")
-            column_value = self.__recv_msg(sock, column_size).decode('utf-8')
+            column_value = self.__recv_msg(sock, column_size)
             logging.info(
                 f'action: value received | result: success | column: {column_value}')
             read += column_size + 2
+            byte_array += column_value
             if read >= msg_size:
+                self.rabbitmq_mw.send_message_to(
+                    "full_flight_register", byte_array)
                 break
 
     def __recv_msg(self, sock, length):

@@ -1,23 +1,14 @@
 """Basic RabbitMQ server."""
 # pylint: disable=import-error,unused-argument
-# import util.queue_middleware
 from util.server import Server
 import logging
 
 
-# def callback_print(body):
-#     """Print received message."""
-#     message = body.decode("utf-8")
-#     print('Received ' + message)
-
-
 def main():
     # """Receive message through queue."""
-    # rabbitmq_mw = util.queue_middleware.QueueMiddleware()
-    # rabbitmq_mw.listen_on('testing_queue', callback_print)
     logging_level = "INFO"
     port = 12345
-    host = "localhost"
+    host = "server"
 
     server_address = (host, port)
 
