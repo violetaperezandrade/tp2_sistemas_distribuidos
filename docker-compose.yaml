@@ -20,9 +20,19 @@ services:
       - PYTHONUNBUFFERED=1
     depends_on:
       - initial_column_cleaner
+  
   initial_column_cleaner:
     container_name: initial_column_cleaner
     image: initial_column_cleaner:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - filter_by_three_stopovers
+  
+  filter_by_three_stopovers:
+    container_name: filter_by_three_stopovers
+    image: filter_by_three_stopovers:latest
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1

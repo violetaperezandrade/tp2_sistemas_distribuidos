@@ -44,7 +44,7 @@ class QueueMiddleware:
     # Publisher/Subscriber methods
     def subscribe_to(self, exchange_name, user_function):
         """Set up queue to start consuming from specified exchange."""
-        self.__create_fanout_exchange(exchange_name)
+        self._create_fanout_exchange(exchange_name)
         result = self._channel.queue_declare(queue='', exclusive=True)
         queue_name = result.method.queue
         self._channel.queue_bind(exchange=exchange_name, queue=queue_name)
