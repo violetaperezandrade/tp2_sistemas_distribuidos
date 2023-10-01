@@ -12,24 +12,22 @@ def callback(channel, method, properties, body):
         pass
         # EOF
     flight = json.loads(body)
-    # body --> (1 bytes de opcode, 2 bytes de longitud total, 2 bytes long columna 1, columna 1, 2 bytes long columna n, columna n)
-    
     stopovers = flight[COLUMN_NAME].split("||")[:-1]
-    print(stopovers)
     if len(stopovers) >= MAX_STOPOVERS :
-        message=create_message(flight, stopovers)
-        print(message)
+        # Publish on query 3's queue here
+        message=create_message(flight, stopovers, 1)
         channel.basic_publish(exchange='',
-                           routing_key='output', body=message)
+                           routing_key='output', body=json.dumps(message))
         channel.basic_ack(delivery_tag=method.delivery_tag)
 
 
-def create_message( flight, stopovers ):
+def create_message( flight, stopovers, query_number ):
     message = dict()
     for i in range(len(COLUMNS_TO_FILTER)):
         message[COLUMNS_TO_FILTER[i]] = flight[COLUMNS_TO_FILTER[i]]
     
     message["stopovers"] = stopovers
+    message["queryNumber"] = query_number
 
     return message
     

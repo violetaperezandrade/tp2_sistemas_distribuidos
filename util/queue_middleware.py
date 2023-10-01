@@ -52,7 +52,7 @@ class QueueMiddleware:
 
     def publish_on(self, exchange_name, message):
         """Publish message on specified exchange."""
-        self.__create_fanout_exchange(exchange_name)
+        self._create_fanout_exchange(exchange_name)
         self._channel.basic_publish(exchange=exchange_name,
                                     routing_key='',
                                     body=message)
