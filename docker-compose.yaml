@@ -36,3 +36,12 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+    depends_on:
+      - query_handler
+
+  query_handler:
+    container_name: query_handler
+    image: query_handler:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1

@@ -7,6 +7,7 @@ docker-image:
 	docker build -f ./client/Dockerfile -t "client:latest" .
 	docker build -f ./initial_column_cleaner/Dockerfile -t "initial_column_cleaner:latest" .
 	docker build -f ./filter_by_three_stopovers/Dockerfile -t "filter_by_three_stopovers:latest" .
+	docker build -f ./query_handler/Dockerfile -t "query_handler:latest" .
 .PHONY: docker-image
 
 docker-compose-up: docker-image

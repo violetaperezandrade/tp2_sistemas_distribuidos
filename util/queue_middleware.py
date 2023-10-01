@@ -12,7 +12,7 @@ class QueueMiddleware:
                             (pika.ConnectionParameters(host='rabbitmq')))
         self._channel = self._connection.channel()
 
-    def __create_queue(self, name):
+    def create_queue(self, name):
         """Create a queue with specified name."""
         self._channel.queue_declare(queue=name)
 
@@ -30,13 +30,13 @@ class QueueMiddleware:
     # Work queue methods
     def listen_on(self, queue_name, user_function):
         """Listen on a specific work queue for messages."""
-        self.__create_queue(queue_name)
+        self.create_queue(queue_name)
         self._channel.basic_qos(prefetch_count=1)
         self.__setup_message_consumption(queue_name, user_function)
 
     def send_message_to(self, queue_name, message):
         """Send message through specified queue."""
-        self.__create_queue(queue_name)
+        self.create_queue(queue_name)
         self._channel.basic_publish(exchange='',
                                     routing_key=queue_name,
                                     body=message)
