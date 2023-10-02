@@ -1,9 +1,7 @@
 import socket
 import logging
 
-from util.queue_middleware import QueueMiddleware
-
-MSG_LEN = 1024
+from util.queue_methods import connect_mom, send_message_to
 
 
 class Server:
@@ -12,7 +10,7 @@ class Server:
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
-        self.rabbitmq_mw = QueueMiddleware()
+        self.mom_connection = connect_mom()
 
     def run(self):
         client_sock = self.__accept_new_connection()
@@ -74,8 +72,8 @@ class Server:
             read += column_size + 2
             byte_array += column_value
             if read >= msg_size:
-                self.rabbitmq_mw.send_message_to(
-                    "full_flight_register", byte_array)
+                send_message_to(self.mom_connection.channel(),
+                                "full_flight_register", byte_array)
                 break
 
     def __recv_msg(self, sock, length):
