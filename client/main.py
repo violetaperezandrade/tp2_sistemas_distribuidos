@@ -1,8 +1,6 @@
 """Basic RabbitMQ client."""
-from util import protocol
 # pylint: disable=import-error
-from util.client import Client
-import util.csv_reader
+from client import Client
 import logging
 
 
@@ -15,19 +13,8 @@ def main():
 
     server_address = (host, port)
     initialize_log(logging_level)
-    client = Client(server_address)
+    client = Client(server_address, "itineraries_random_demo.csv")
     client.run()
-
-    try:
-        flights_reader = (util.csv_reader.CSVReader
-                          ("itineraries_random_demo.csv"))
-        while True:
-            client.send_line(flights_reader.next_line(), 1)
-    except OSError:
-        print("No such file")
-    except StopIteration:
-        print("Reached EOF")
-        client.send_line([], 0)
 
 
 def initialize_log(logging_level):

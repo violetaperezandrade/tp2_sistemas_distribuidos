@@ -8,9 +8,6 @@ def main():
     # """Receive message through queue."""
     logging_level = "INFO"
     port = 12345
-    host = "server"
-
-    server_address = (host, port)
 
     initialize_log(logging_level)
     server = Server(port, 1)

@@ -3,7 +3,8 @@ import json
 
 COLUMNS = 27
 FIELD_LEN = 2
-COLUMNS_NAME = ["legId", "startingAirport", "destinationAirport", "travelDuration",
+COLUMNS_NAME = ["legId", "startingAirport", "destinationAirport",
+                "travelDuration",
                 "totalFare", "totalTravelDistance",
                 "segmentsArrivalAirportCode", "segmentsDepartureAirportCode"]
 
@@ -13,21 +14,12 @@ def callback(channel, method, properties, body):
         pass
         # EOF
     filtered_byte_array = bytearray()
-    indexes_needed = [1, 4, 5, 7, 13, 15, 20, 21]
     filtered_byte_array += body[:1]
-    body = body[3:]
-    bytes_readed = 0
+    body = body[3:].decode('utf-8')
+    body_dict = json.loads(body)
     filtered_columns = dict()
-    j = 0
-    for i in range(1, COLUMNS + 1):
-        column_len = int.from_bytes(
-            body[bytes_readed:bytes_readed + FIELD_LEN], byteorder="big")
-        bytes_readed += FIELD_LEN
-        column_data = body[bytes_readed:bytes_readed + column_len]
-        if i in indexes_needed:
-            filtered_columns[COLUMNS_NAME[j]] = column_data.decode("utf-8")
-            j += 1
-        bytes_readed += column_len
+    for column in COLUMNS_NAME:
+        filtered_columns[column] = body_dict[column]
     message = json.dumps(filtered_columns)
     channel.basic_publish(exchange='cleaned_flight_registers',
                           routing_key='', body=message)
