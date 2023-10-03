@@ -47,17 +47,21 @@ class Client:
 
         # Connection arrived
         logging.info(
-            f"action: start_connection | host: {self._server_address[0]} | port: {self._server_address[1]} | result: in_progress")
+            f"action: start_connection | host: {self._server_address[0]}"
+            "| port: {self._server_address[1]} | result: in_progress")
         self._client_socket.connect(self._server_address)
         logging.info(
-            f'action: start_connection | host: {self._server_address[0]} | port: {self._server_address[1]} | result: success ')
+            f'action: start_connection | host: {self._server_address[0]} | '
+            f'port: {self._server_address[1]} | result: success'
+        )
 
     def __send_msg(self, message):
         bytes_sent = 0
         while bytes_sent < len(message):
             chunk_size = self._client_socket.send(message[bytes_sent:])
             logging.debug(
-                f'action: sending_message | result: success | message: {message} | bytes_sent: {chunk_size}')
+                f'action: sending_message | result: success |'
+                f' message: {message} | bytes_sent: {chunk_size}')
             bytes_sent += chunk_size
 
     def __close_connection(self):
