@@ -5,11 +5,14 @@ all:
 docker-image:
 	docker build -f ./server/Dockerfile -t "server:latest" .
 	docker build -f ./client/Dockerfile -t "client:latest" .
+	docker build -f ./initial_column_cleaner/Dockerfile -t "initial_column_cleaner:latest" .
+	docker build -f ./filter_by_three_stopovers/Dockerfile -t "filter_by_three_stopovers:latest" .
+	docker build -f ./query_handler/Dockerfile -t "query_handler:latest" .
 .PHONY: docker-image
 
 docker-compose-up: docker-image
 	docker compose -f rabbitmq-compose.yaml up -d --build
-	sleep 5
+	sleep 15
 	docker compose -f docker-compose.yaml up -d --build
 .PHONY: docker-compose-up
 
@@ -19,3 +22,7 @@ docker-compose-down:
 	docker compose -f rabbitmq-compose.yaml down --remove-orphans
 	docker compose -f docker-compose.yaml down --remove-orphans
 .PHONY: docker-compose-down
+
+docker-compose-logs:
+	docker compose -f docker-compose.yaml logs -f
+.PHONY: docker-compose-logs
