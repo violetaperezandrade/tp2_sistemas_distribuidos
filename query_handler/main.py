@@ -1,4 +1,4 @@
-from util.queue_middleware import QueueMiddleware
+from util.queue_methods import connect_mom, listen_on, acknowledge
 import json
 
 
@@ -10,8 +10,8 @@ def callback(channel, method, properties, body):
     print("Got result for query " + str(result["queryNumber"]))
     result.pop('queryNumber', None)
     print(result)
-    channel.basic_ack(delivery_tag=method.delivery_tag)
+    acknowledge(channel, method)
 
 
-rabbitmq_mw = QueueMiddleware()
-rabbitmq_mw.listen_on("output", callback)
+connection = connect_mom()
+listen_on(connection.channel(), "output", callback)
