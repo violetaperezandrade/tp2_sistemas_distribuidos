@@ -1,39 +1,45 @@
 from util.queue_middleware import QueueMiddleware
-import json
+from initial_column_cleaner import ColumnCleaner
+from configparser import ConfigParser
+import os
 
-COLUMNS = 27
-FIELD_LEN = 2
-COLUMNS_NAME = ["legId", "startingAirport", "destinationAirport", "travelDuration",
-                "totalFare", "totalTravelDistance",
-                "segmentsArrivalAirportCode", "segmentsDepartureAirportCode"]
+def initialize_config():
 
+    config = ConfigParser(os.environ)
+    # If config.ini does not exists original config object is not modified
+    config.read("config.ini")
+    config_params = {}
+    try:
+        config_params["input_queue"] = os.getenv('INPUT_QUEUE', config["DEFAULT"]["INPUT_QUEUE"])
+        config_params["logging_level"] = os.getenv('LOGGING_LEVEL', config["DEFAULT"]["LOGGING_LEVEL"])
+        config_params["columns"] = int(os.getenv('COLUMNS', config["DEFAULT"]["COLUMNS"]))
+        config_params["field_len"] = int(os.getenv('FIELD_LEN', config["DEFAULT"]["FIELD_LEN"]))
+        config_params["columns_name"] = os.getenv('COLUMNS_NAME', config["DEFAULT"]["COLUMNS_NAME"]).split(",")
+        config_params["indexes_needed"] = os.getenv('INDEXES_NEEDED', config["DEFAULT"]["INDEXES_NEEDED"]).split(",")
+        config_params["output_queues"] = os.getenv('OUTPUT_QUEUES', config["DEFAULT"]["OUTPUT_QUEUES"]).split(",")
+    except KeyError as e:
+        raise KeyError("Key was not found. Error: {} .Aborting client".format(e))
+    except ValueError as e:
+        raise ValueError("Key could not be parsed. Error: {}. Aborting client".format(e))
 
-def callback(channel, method, properties, body):
-    if body.startswith(b'00'):
-        pass
-        # EOF
-    filtered_byte_array = bytearray()
-    indexes_needed = [1, 4, 5, 7, 13, 15, 20, 21]
-    filtered_byte_array += body[:1]
-    body = body[3:]
-    bytes_readed = 0
-    filtered_columns = dict()
-    j = 0
-    for i in range(1, COLUMNS + 1):
-        column_len = int.from_bytes(
-            body[bytes_readed:bytes_readed + FIELD_LEN], byteorder="big")
-        bytes_readed += FIELD_LEN
-        column_data = body[bytes_readed:bytes_readed + column_len]
-        if i in indexes_needed:
-            filtered_columns[COLUMNS_NAME[j]] = column_data.decode("utf-8")
-            j += 1
-        bytes_readed += column_len
-    message = json.dumps(filtered_columns)
-    channel.basic_publish(exchange='cleaned_flight_registers',
-                          routing_key='', body=message)
-    channel.basic_ack(delivery_tag=method.delivery_tag)
+    return config_params
 
+def main():
 
-rabbitmq_mw = QueueMiddleware()
-rabbitmq_mw._create_fanout_exchange("cleaned_flight_registers")
-rabbitmq_mw.listen_on("full_flight_register", callback)
+    config_params = initialize_config()
+    input_queue = config_params["input_queue"]
+    output_queues = config_params["output_queues"]
+    logging_level = config_params["logging_level"]
+    columns = config_params["columns"]
+    field_len = config_params["field_len"]
+    columns_name = config_params["columns_name"]
+    indexes_needed = config_params["indexes_needed"]
+    cleaner = ColumnCleaner(columns, field_len, columns_name, indexes_needed, output_queues)
+
+    rabbitmq_mw = QueueMiddleware()
+    for q in output_queues:
+        rabbitmq_mw._create_fanout_exchange(q)
+    rabbitmq_mw.listen_on(input_queue, cleaner.callback)
+
+if __name__ == '__main__':
+    main()

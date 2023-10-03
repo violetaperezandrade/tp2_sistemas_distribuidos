@@ -1,38 +1,45 @@
 from util.queue_middleware import QueueMiddleware
-import json
+from filter_by_three_stopovers import FilterByThreeStopovers
+from configparser import ConfigParser
+import os
 
-COLUMNS = 8
-FIELD_LEN = 2
-MAX_STOPOVERS = 3
-COLUMN_NAME = "segmentsArrivalAirportCode"
-COLUMNS_TO_FILTER = ["legId", "startingAirport", "destinationAirport", "totalFare"]
+def initialize_config():
 
-def callback(channel, method, properties, body):
-    if body.startswith(b'00'):
-        pass
-        # EOF
-    flight = json.loads(body)
-    stopovers = flight[COLUMN_NAME].split("||")[:-1]
-    if len(stopovers) >= MAX_STOPOVERS :
-        # Publish on query 3's queue here
-        message=create_message(flight, stopovers, 1)
-        channel.basic_publish(exchange='',
-                           routing_key='output', body=json.dumps(message))
-        channel.basic_ack(delivery_tag=method.delivery_tag)
+    config = ConfigParser(os.environ)
+    # If config.ini does not exists original config object is not modified
+    config.read("config.ini")
+    config_params = {}
+    try:
+        config_params["query_number"] = os.getenv('QUERY_NUMBER', config["DEFAULT"]["QUERY_NUMBER"])
+        config_params["output_queue"] = os.getenv('OUTPUT_QUEUE', config["DEFAULT"]["OUTPUT_QUEUE"])
+        config_params["input_queue"] = os.getenv('INPUT_QUEUE', config["DEFAULT"]["INPUT_QUEUE"])
+        config_params["logging_level"] = os.getenv('LOGGING_LEVEL', config["DEFAULT"]["LOGGING_LEVEL"])
+        config_params["max_stopovers"] = int(os.getenv('MAX_STOPOVERS', config["DEFAULT"]["MAX_STOPOVERS"]))
+        config_params["column_name"] = os.getenv('COLUMN_NAME', config["DEFAULT"]["COLUMN_NAME"])
+        config_params["columns_to_filter"] = os.getenv('COLUMNS_TO_FILTER', config["DEFAULT"]["COLUMNS_TO_FILTER"]).split(",")
+    except KeyError as e:
+        raise KeyError("Key was not found. Error: {} .Aborting client".format(e))
+    except ValueError as e:
+        raise ValueError("Key could not be parsed. Error: {}. Aborting client".format(e))
 
+    return config_params
 
-def create_message( flight, stopovers, query_number ):
-    message = dict()
-    for i in range(len(COLUMNS_TO_FILTER)):
-        message[COLUMNS_TO_FILTER[i]] = flight[COLUMNS_TO_FILTER[i]]
+def main():
+
+    config_params = initialize_config()
+    query_number = config_params["query_number"]
+    input_queue = config_params["input_queue"]
+    output_queue = config_params["output_queue"]
+    logging_level = config_params["logging_level"]
+    columns_to_filter = config_params["columns_to_filter"]
+    max_stopovers = config_params["max_stopovers"]
+    column_name = config_params["column_name"]
     
-    message["stopovers"] = stopovers
-    message["queryNumber"] = query_number
+    filterByStopOvers = FilterByThreeStopovers(column_name, columns_to_filter, max_stopovers, output_queue, query_number)
 
-    return message
-    
+    rabbitmq_mw = QueueMiddleware()
+    rabbitmq_mw.create_queue(output_queue)
+    rabbitmq_mw.subscribe_to(input_queue, filterByStopOvers.callback)
 
-rabbitmq_mw = QueueMiddleware()
-rabbitmq_mw.create_queue("output")
-rabbitmq_mw.subscribe_to("cleaned_flight_registers", callback)
-
+if __name__ == '__main__':
+    main()
