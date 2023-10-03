@@ -39,6 +39,7 @@ def main():
     rabbitmq_mw = QueueMiddleware()
     for q in output_queues:
         rabbitmq_mw._create_fanout_exchange(q)
+    
     rabbitmq_mw.listen_on(input_queue, cleaner.callback)
 
 if __name__ == '__main__':
