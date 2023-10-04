@@ -6,7 +6,6 @@ def callback(channel, method, properties, body):
     result = json.loads(body)
     if result.get("op_code") == 0:
         # EOF
-        print("Received EOF")
         acknowledge(channel, method)
         return
     print("Got result for query " + str(result["queryNumber"]))

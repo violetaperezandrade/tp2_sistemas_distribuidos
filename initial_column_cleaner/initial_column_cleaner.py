@@ -12,7 +12,6 @@ class ColumnCleaner:
         op_code = flight.get("op_code")
         if op_code == 0:
             # EOF
-            print("EOF !!!")
             for queue in self.__output_queues:
                 publish_on(channel, queue, body)
                 acknowledge(channel, method)

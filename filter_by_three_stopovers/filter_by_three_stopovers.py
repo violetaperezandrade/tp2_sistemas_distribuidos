@@ -16,7 +16,6 @@ class FilterByThreeStopovers:
         op_code = flight.get("op_code")
         if op_code == 0:
             # EOF
-            print("EOF !!!")
             send_message_to(channel, self.__output_queue, body)
             acknowledge(channel, method)
             return
