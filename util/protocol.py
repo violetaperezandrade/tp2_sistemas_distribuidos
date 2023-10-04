@@ -1,29 +1,40 @@
-import struct
+import json
 
 OP_CODE_FLIGHT_REGISTER = 1
 OP_CODE_EOF = 0
 
 
 def encode_flight_register(flight):
-    opcode_bytes = OP_CODE_FLIGHT_REGISTER.to_bytes(1, byteorder="big")
+    flight["op_code"] = OP_CODE_FLIGHT_REGISTER
+    flight = json.dumps(flight)
     flight_bytes = flight.encode('utf-8')
     flight_length_bytes = len(flight_bytes).to_bytes(2, byteorder="big")
 
-    message = opcode_bytes + flight_length_bytes + flight_bytes
+    message = flight_length_bytes + flight_bytes
     return message
 
 
-def encode_flight_register_q(flight):
-    opcode_bytes = OP_CODE_FLIGHT_REGISTER.to_bytes(1, byteorder="big")
-    flight_length_bytes = len(flight).to_bytes(2, byteorder="big")
+def get_opcode(payload):
+    flight_str = payload.decode('utf-8')
+    flight = json.loads(flight_str)
+    return flight.get("op_code")
 
-    message = opcode_bytes + flight_length_bytes + flight
-    return message
+
+def decode_to_str(payload):
+    flight_str = payload.decode('utf-8')
+    return flight_str
 
 
 def encode_eof():
-    opcode_bytes = OP_CODE_EOF.to_bytes(1, byteorder="big")
-    payload_length = struct.pack('!H', 0)
+    eof = {"op_code": 0}
+    return json.dumps(eof)
 
-    eof_message = opcode_bytes + payload_length
-    return eof_message
+
+def encode_eof_b():
+    eof = {"op_code": 0}
+    eof = json.dumps(eof)
+    eof_bytes = eof.encode('utf-8')
+    eof_length_bytes = len(eof_bytes).to_bytes(2, byteorder="big")
+
+    message = eof_length_bytes + eof_bytes
+    return message
