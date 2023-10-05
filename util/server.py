@@ -13,6 +13,7 @@ class Server:
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
         self.mom_connection = connect_mom()
+        self.channel = self.mom_connection.channel()
         self._running = True
         self._reading_file = True
         self._operations_map = {
@@ -26,9 +27,6 @@ class Server:
         try:
             while self._running and self._reading_file:
                 self.__handle_client_connection(client_sock)
-            addr = client_sock.getpeername()
-            logging.info(
-                f'action: receive_message | result: success | ip: {addr[0]}')
         except OSError:
             if not self._running:
                 logging.info('action: sigterm received')
@@ -104,11 +102,9 @@ class Server:
 
     def __read_line(self, payload):
         msg = protocol.decode_to_str(payload)
-        send_message_to(self.mom_connection.channel(),
-                        "full_flight_registers", msg)
+        send_message_to(self.channel, "full_flight_registers", msg)
 
     def __handle_eof(self, payload):
         msg = protocol.encode_eof()
-        send_message_to(self.mom_connection.channel(),
-                        "full_flight_registers", msg)
+        send_message_to(self.channel, "full_flight_registers", msg)
         self._reading_file = False

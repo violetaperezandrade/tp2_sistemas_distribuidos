@@ -13,7 +13,7 @@ docker-image:
 
 docker-compose-up: docker-image
 	docker compose -f rabbitmq-compose.yaml up -d --build
-	sleep 15
+	sleep 30
 	docker compose -f docker-compose.yaml up -d --build
 .PHONY: docker-compose-up
 
