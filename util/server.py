@@ -105,10 +105,10 @@ class Server:
     def __read_line(self, payload):
         msg = protocol.decode_to_str(payload)
         send_message_to(self.mom_connection.channel(),
-                        "full_flight_register", msg)
+                        "full_flight_registers", msg)
 
     def __handle_eof(self, payload):
         msg = protocol.encode_eof()
         send_message_to(self.mom_connection.channel(),
-                        "full_flight_register", msg)
+                        "full_flight_registers", msg)
         self._reading_file = False

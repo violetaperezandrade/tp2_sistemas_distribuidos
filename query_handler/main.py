@@ -10,6 +10,7 @@ def callback(channel, method, properties, body):
         return
     print("Got result for query " + str(result["queryNumber"]))
     result.pop('queryNumber', None)
+    result.pop('op_code', None)
     print(result)
     acknowledge(channel, method)
 

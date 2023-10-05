@@ -45,3 +45,10 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+
+  query_2_column_filter:
+    container_name: query_2_column_filter
+    image: query_2_column_filter:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
