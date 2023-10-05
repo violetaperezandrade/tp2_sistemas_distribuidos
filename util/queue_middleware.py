@@ -1,5 +1,6 @@
 import pika
 
+
 class QueueMiddleware:
 
     def __init__(self):
