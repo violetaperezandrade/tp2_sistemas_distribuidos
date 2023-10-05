@@ -1,7 +1,6 @@
 import socket
 import logging
 import csv
-import json
 
 from util import protocol
 
@@ -24,8 +23,7 @@ class Client:
         with open(flights_file, mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
             for row in csv_reader:
-                flight_register = json.dumps(row)
-                msg = protocol.encode_flight_register(flight_register)
+                msg = protocol.encode_flight_register(row)
                 try:
                     self.__send_msg(msg)
                     logging.debug(
@@ -35,7 +33,7 @@ class Client:
                         f'action: sent line | result: fail | error: {e}')
 
     def __send_eof(self):
-        msg = protocol.encode_eof()
+        msg = protocol.encode_eof_b()
         self.__send_msg(msg)
 
     def __start_connection_with_server(self):

@@ -1,7 +1,6 @@
 import socket
 import logging
 import signal
-import struct
 
 from util.queue_methods import connect_mom, send_message_to
 from util import protocol
@@ -15,6 +14,7 @@ class Server:
         self._server_socket.listen(listen_backlog)
         self.mom_connection = connect_mom()
         self._running = True
+        self._reading_file = True
         self._operations_map = {
             0: self.__handle_eof,
             1: self.__read_line
@@ -24,7 +24,7 @@ class Server:
         signal.signal(signal.SIGTERM, self.handle_sigterm)
         client_sock = self.__accept_new_connection()
         try:
-            while self._running:
+            while self._running and self._reading_file:
                 self.__handle_client_connection(client_sock)
             addr = client_sock.getpeername()
             logging.info(
@@ -35,10 +35,9 @@ class Server:
             else:
                 raise
             return
-        except Exception:
+        finally:
             logging.info(
                 'action: done with file | result: success')
-        finally:
             client_sock.close()
 
     def __handle_client_connection(self, client_sock):
@@ -49,11 +48,10 @@ class Server:
         client socket will also be closed
         """
         try:
-            op_code_bytes = self.__read_exact(1, client_sock)
-            op_code = struct.unpack('B', op_code_bytes)[0]
-            payload_length = self.__read_exact(2, client_sock)
+            header = self.__read_exact(2, client_sock)
             payload = self.__read_exact(int.from_bytes(
-                payload_length, byteorder='big'), client_sock)
+                header, byteorder='big'), client_sock)
+            op_code = protocol.get_opcode(payload)
             data = self._operations_map.get(op_code, lambda _: 0)(payload)
             # TODO: error handling
             if data == 0:
@@ -105,12 +103,12 @@ class Server:
         return
 
     def __read_line(self, payload):
-        line = protocol.encode_flight_register_q(payload)
-        send_message_to(self.mom_connection.channel(),
-                        "full_flight_register", line)
-
-    def __handle_eof(self):
-        msg = protocol.encode_eof
+        msg = protocol.decode_to_str(payload)
         send_message_to(self.mom_connection.channel(),
                         "full_flight_register", msg)
-        raise Exception
+
+    def __handle_eof(self, payload):
+        msg = protocol.encode_eof()
+        send_message_to(self.mom_connection.channel(),
+                        "full_flight_register", msg)
+        self._reading_file = False

@@ -32,7 +32,6 @@ def main():
     config_params = initialize_config()
     input_queue = config_params["input_queue"]
     output_queues = config_params["output_queues"]
-    logging_level = config_params["logging_level"]
     columns_names = config_params["columns_names"]
     cleaner = ColumnCleaner(columns_names, output_queues)
     connection = connect_mom()
