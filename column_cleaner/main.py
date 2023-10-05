@@ -1,7 +1,5 @@
-from util.queue_methods import connect_mom, listen_on, subscribe_to
 from column_cleaner import ColumnCleaner
 from configparser import ConfigParser
-import os
 
 
 def initialize_config():
@@ -35,14 +33,10 @@ def main():
     output_queue = config_params["output_queue"]
     required_columns_flights = config_params["required_columns_flights"]
     required_columns_airports = config_params["required_columns_airports"]
-    ack_necessary = (input_queue is not None)
-    cleaner = ColumnCleaner(output_queue, output_exchange, required_columns_flights,
-                            required_columns_airports, ack_necessary)
-    connection = connect_mom()
-    if input_exchange is not None:
-        subscribe_to(connection.channel(), input_exchange, cleaner.callback)
-    else:
-        listen_on(connection.channel(), input_queue, cleaner.callback)
+    cleaner = ColumnCleaner(output_queue, output_exchange,
+                            required_columns_flights,
+                            required_columns_airports)
+    cleaner.run(input_exchange, input_queue)
 
 
 if __name__ == '__main__':

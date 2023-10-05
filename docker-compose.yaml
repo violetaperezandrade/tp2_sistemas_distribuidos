@@ -31,7 +31,6 @@ services:
       - filter_by_three_stopovers
       - filter_by_three_stopovers_2
       - filter_by_three_stopovers_3
-      - filter_by_three_stopovers_4
 
   filter_by_three_stopovers:
     container_name: filter_by_three_stopovers
@@ -53,15 +52,6 @@ services:
 
   filter_by_three_stopovers_3:
     container_name: filter_by_three_stopovers_3
-    image: filter_by_three_stopovers:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - query_handler
-
-  filter_by_three_stopovers_4:
-    container_name: filter_by_three_stopovers_4
     image: filter_by_three_stopovers:latest
     entrypoint: python3 /main.py
     environment:

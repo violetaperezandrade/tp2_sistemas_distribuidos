@@ -1,18 +1,9 @@
-from util.queue_methods import connect_mom, listen_on, acknowledge
-import json
+from query_handler import QueryHandler
+
+def main():
+    query_handler = QueryHandler()
+    query_handler.run("output")
 
 
-def callback(channel, method, properties, body):
-    result = json.loads(body)
-    if result.get("op_code") == 0:
-        # EOF
-        acknowledge(channel, method)
-        return
-    result.pop('queryNumber', None)
-    result.pop('op_code', None)
-    print(result)
-    acknowledge(channel, method)
-
-
-connection = connect_mom()
-listen_on(connection.channel(), "output", callback)
+if __name__ == '__main__':
+    main()

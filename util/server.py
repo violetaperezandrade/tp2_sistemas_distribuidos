@@ -2,8 +2,8 @@ import socket
 import logging
 import signal
 
-from util.queue_methods import connect_mom, send_message_to
 from util import protocol
+from util.queue_middleware import QueueMiddleware
 
 
 class Server:
@@ -12,8 +12,7 @@ class Server:
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
-        self.mom_connection = connect_mom()
-        self.channel = self.mom_connection.channel()
+        self.__queue_middleware = QueueMiddleware()
         self._running = True
         self._reading_file = True
         self._operations_map = {
@@ -102,9 +101,9 @@ class Server:
 
     def __read_line(self, payload):
         msg = protocol.decode_to_str(payload)
-        send_message_to(self.channel, "full_flight_registers", msg)
+        self.__queue_middleware.send_message_to("full_flight_registers", msg)
 
     def __handle_eof(self, payload):
         msg = protocol.encode_eof()
-        send_message_to(self.channel, "full_flight_registers", msg)
+        self.__queue_middleware.send_message_to("full_flight_registers", msg)
         self._reading_file = False
