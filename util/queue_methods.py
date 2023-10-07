@@ -48,6 +48,15 @@ def publish_on(channel, exchange_name, message):
                           routing_key='',
                           body=message)
 
+def persistence_publish_on(channel, exchange_name, message):
+    """Publish message on specified exchange."""
+    create_fanout_exchange(channel, exchange_name)
+    channel.basic_publish(exchange=exchange_name,
+                          routing_key='',
+                          body=message,
+                          properties=pika.BasicProperties(
+                                delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE,))
+
 
 def subscribe_to(channel, exchange_name, user_function, queue_name=''):
     create_fanout_exchange(channel, exchange_name)

@@ -28,46 +28,49 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
-      - filter_by_three_stopovers
-      - filter_by_three_stopovers_2
-      - filter_by_three_stopovers_3
-      - filter_by_three_stopovers_4
+      # - filter_by_three_stopovers
+      # - filter_by_three_stopovers_2
+      # - filter_by_three_stopovers_3
+      # - filter_by_three_stopovers_4
+      - avg_calculator_1
+      - avg_calculator_2
+      # - avg_calculator_3
 
-  filter_by_three_stopovers:
-    container_name: filter_by_three_stopovers
-    image: filter_by_three_stopovers:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - query_handler
+  # filter_by_three_stopovers:
+  #   container_name: filter_by_three_stopovers
+  #   image: filter_by_three_stopovers:latest
+  #   entrypoint: python3 /main.py
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #   depends_on:
+  #     - query_handler
 
-  filter_by_three_stopovers_2:
-    container_name: filter_by_three_stopovers_2
-    image: filter_by_three_stopovers:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - query_handler
+  # filter_by_three_stopovers_2:
+  #   container_name: filter_by_three_stopovers_2
+  #   image: filter_by_three_stopovers:latest
+  #   entrypoint: python3 /main.py
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #   depends_on:
+  #     - query_handler
 
-  filter_by_three_stopovers_3:
-    container_name: filter_by_three_stopovers_3
-    image: filter_by_three_stopovers:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - query_handler
+  # filter_by_three_stopovers_3:
+  #   container_name: filter_by_three_stopovers_3
+  #   image: filter_by_three_stopovers:latest
+  #   entrypoint: python3 /main.py
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #   depends_on:
+  #     - query_handler
 
-  filter_by_three_stopovers_4:
-    container_name: filter_by_three_stopovers_4
-    image: filter_by_three_stopovers:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - query_handler
+  # filter_by_three_stopovers_4:
+  #   container_name: filter_by_three_stopovers_4
+  #   image: filter_by_three_stopovers:latest
+  #   entrypoint: python3 /main.py
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #   depends_on:
+  #     - query_handler
 
   query_handler:
     container_name: query_handler
@@ -76,9 +79,43 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
 
-  query_2_column_filter:
-    container_name: query_2_column_filter
-    image: query_2_column_filter:latest
+  # query_2_column_filter:
+  #   container_name: query_2_column_filter
+  #   image: query_2_column_filter:latest
+  #   entrypoint: python3 /main.py
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+
+
+  avg_calculator_1:
+    container_name: avg_calculator_1
+    image: avg_calculator:latest
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+    depends_on:
+      - filter_by_average
+
+  avg_calculator_2:
+    container_name: avg_calculator_2
+    image: avg_calculator:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - filter_by_average
+
+  # avg_calculator_3:
+  #   container_name: avg_calculator_3
+  #   image: avg_calculator:latest
+  #   entrypoint: python3 /main.py
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+
+  filter_by_average:
+    container_name: filter_by_average
+    image: filter_by_average:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    
