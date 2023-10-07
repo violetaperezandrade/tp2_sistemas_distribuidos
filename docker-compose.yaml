@@ -1,6 +1,19 @@
 version: '3.9'
 name: tp1
 services:
+  rabbitmq:
+    build:
+      context: ./rabbitmq
+      dockerfile: Dockerfile
+    ports:
+      - 15672:15672
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 50s
+
   client:
     container_name: client
     image: client:latest
@@ -13,62 +26,10 @@ services:
     container_name: server
     image: server:latest
     entrypoint: python3 /main.py
-    restart: on-failure
-    external_links:
+    links:
       - rabbitmq
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
-      - initial_column_cleaner
-
-  initial_column_cleaner:
-    container_name: initial_column_cleaner
-    image: initial_column_cleaner:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - filter_by_three_stopovers
-      - filter_by_three_stopovers_2
-      - filter_by_three_stopovers_3
-
-  filter_by_three_stopovers:
-    container_name: filter_by_three_stopovers
-    image: filter_by_three_stopovers:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - query_handler
-
-  filter_by_three_stopovers_2:
-    container_name: filter_by_three_stopovers_2
-    image: filter_by_three_stopovers:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - query_handler
-
-  filter_by_three_stopovers_3:
-    container_name: filter_by_three_stopovers_3
-    image: filter_by_three_stopovers:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - query_handler
-
-  query_handler:
-    container_name: query_handler
-    image: query_handler:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-
-  query_2_column_filter:
-    container_name: query_2_column_filter
-    image: query_2_column_filter:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
+      rabbitmq:
+        condition: service_healthy

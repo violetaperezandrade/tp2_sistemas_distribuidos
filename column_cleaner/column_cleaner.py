@@ -1,4 +1,4 @@
-from util.constants import EOF_FLIGHTS_FILE, AIRPORT_REGISTER
+from util.constants import EOF_FLIGHTS_FILE, AIRPORT_REGISTER, EOF_AIRPORTS_FILE, FLIGHT_REGISTER
 import json
 
 from util.queue_middleware import QueueMiddleware
@@ -15,29 +15,40 @@ class ColumnCleaner:
 
     def run(self, input_exchange, input_queue):
         if input_exchange is not None:
-            self.middleware.subscribe_to(input_exchange, self.callback)
+            self.middleware.subscribe_to(input_exchange,
+                                         self.callback,
+                                         "#",
+                                         "query_2_filter_queue")
         else:
             self.middleware.listen_on(input_queue, self.callback)
 
     def callback(self, body):
-        flight = json.loads(body)
-        op_code = flight.get("op_code")
-        if op_code == EOF_FLIGHTS_FILE:
-            if self.__output_exchange is not None:
-                self.middleware.publish_on(self.__output_exchange, body)
-            else:
-                self.middleware.send_message_to(self.__output_queue, body)
+        register = json.loads(body)
+        op_code = register.get("op_code")
+        if op_code == EOF_FLIGHTS_FILE or op_code == EOF_AIRPORTS_FILE:
+            self.__output_message(body, op_code)
             return
         filtered_columns = dict()
         column_names = self.__required_columns_flights
-        if (flight["op_code"] == AIRPORT_REGISTER and
-                self.__required_columns_airports is not None):
-            column_names = self.__required_columns_airports
+        if register["op_code"] == AIRPORT_REGISTER:
+            if self.__required_columns_airports != ['']:
+                column_names = self.__required_columns_airports
+            else:
+                self.middleware.publish_on(self.__output_exchange,
+                                           body,
+                                           "airports")
+                return
         column_names.append("op_code")
         for column in column_names:
-            filtered_columns[column] = flight[column]
+            filtered_columns[column] = register[column]
         message = json.dumps(filtered_columns)
+        self.__output_message(message, op_code)
+
+    def __output_message(self, message, op_code):
         if self.__output_exchange is not None:
-            self.middleware.publish_on(self.__output_exchange, message)
+            routing_key = 'airports'
+            if op_code == FLIGHT_REGISTER:
+                routing_key = 'flights'
+            self.middleware.publish_on(self.__output_exchange, message, routing_key)
         else:
             self.middleware.send_message_to(self.__output_queue, message)

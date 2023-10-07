@@ -1,8 +1,11 @@
+import json
 import socket
 import logging
 import signal
 
 from util import protocol
+from util.constants import (EOF_FLIGHTS_FILE, FLIGHT_REGISTER,
+                            AIRPORT_REGISTER, EOF_AIRPORTS_FILE)
 from util.queue_middleware import QueueMiddleware
 
 
@@ -15,9 +18,12 @@ class Server:
         self.__queue_middleware = QueueMiddleware()
         self._running = True
         self._reading_file = True
+        self._sent = 0
         self._operations_map = {
-            0: self.__handle_eof,
-            1: self.__read_line
+            EOF_FLIGHTS_FILE: self.__handle_eof,
+            FLIGHT_REGISTER: self.__read_line,
+            AIRPORT_REGISTER: self.__read_line,
+            EOF_AIRPORTS_FILE: self.__handle_eof
         }
 
     def run(self):
@@ -62,11 +68,13 @@ class Server:
 
     def __read_exact(self, bytes_to_read, client_sock):
         bytes_read = client_sock.recv(bytes_to_read)
-
-        while len(bytes_read) != bytes_to_read:
+        print(f"debo leer {bytes_to_read}")
+        print(f"lei {len(bytes_read)}")
+        while len(bytes_read) < bytes_to_read:
+            print(f"diferencia {bytes_to_read - len(bytes_read)}")
             new_bytes_read = client_sock.recv(bytes_to_read - len(bytes_read))
+            print("sali")
             bytes_read += new_bytes_read
-
         return bytes_read
 
     def __send_exact(self, answer, client_sock):
@@ -101,9 +109,12 @@ class Server:
 
     def __read_line(self, payload):
         msg = protocol.decode_to_str(payload)
+        print(json.loads(msg))
         self.__queue_middleware.send_message_to("full_flight_registers", msg)
 
     def __handle_eof(self, payload):
-        msg = protocol.encode_eof()
+        opcode = protocol.get_opcode(payload)
+        msg = protocol.encode_eof(opcode)
         self.__queue_middleware.send_message_to("full_flight_registers", msg)
-        self._reading_file = False
+        if opcode == EOF_FLIGHTS_FILE:
+            self._reading_file = False

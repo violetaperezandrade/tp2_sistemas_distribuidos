@@ -7,6 +7,4 @@ services:
       dockerfile: Dockerfile
     ports:
       - 15672:15672
-    environment:
-      - RABBITMQ_LOGS=rabbit.log
   
