@@ -9,6 +9,7 @@ services:
       - PYTHONUNBUFFERED=1
     depends_on:
       - server
+
   server:
     container_name: server
     image: server:latest
@@ -82,3 +83,14 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+  group_by_route:
+    container_name: group_by_route
+    image: group_by:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=startingAirport,destinationAirport
+      - LISTENING_QUEUE=3_or_more_stop_overs
+      - REDUCERS_AMOUNT=2
+      - QUEUE_GROUP_BY=group_by_route_queue
+      - INPUT_QUEUE=group_by_route
