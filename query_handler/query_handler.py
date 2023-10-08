@@ -20,4 +20,4 @@ class QueryHandler:
         result.pop('op_code', None)
         queryNumber = result["queryNumber"]
         result.pop('queryNumber', None)
-        print(f"CONSULTA {queryNumber}: {result}")
+        print(f"QUERY {queryNumber}: {result}")

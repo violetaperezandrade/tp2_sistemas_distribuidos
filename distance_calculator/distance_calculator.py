@@ -19,7 +19,6 @@ class DistanceCalculator:
 
     def __callback(self, body):
         register = json.loads(body)
-        print(register)
         if register["op_code"] == EOF_AIRPORTS_FILE:
             self.__airports_parsed = True
             return

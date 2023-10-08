@@ -45,6 +45,7 @@ services:
       - filter_by_three_stopovers_2
       - filter_by_three_stopovers_3
       - query_2_column_filter
+      - query_5_column_filter
 
   filter_by_three_stopovers_1:
     container_name: filter_by_three_stopovers_1
@@ -95,6 +96,16 @@ services:
   distance_calculator:
     container_name: distance_calculator
     image: distance_calculator:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  query_5_column_filter:
+    container_name: query_5_column_filter
+    image: query_5_column_filter:latest
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1

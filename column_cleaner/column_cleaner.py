@@ -6,19 +6,21 @@ from util.queue_middleware import QueueMiddleware
 
 class ColumnCleaner:
     def __init__(self, output_queue, output_exchange,
-                 required_columns_flights, required_columns_airports):
+                 required_columns_flights, required_columns_airports,
+                 routing_key):
         self.__output_queue = output_queue
         self.__output_exchange = output_exchange
         self.__required_columns_flights = required_columns_flights
         self.__required_columns_airports = required_columns_airports
+        self.__routing_key = routing_key
         self.middleware = QueueMiddleware()
 
     def run(self, input_exchange, input_queue):
         if input_exchange is not None:
             self.middleware.subscribe_to(input_exchange,
                                          self.callback,
-                                         "#",
-                                         "query_2_filter_queue")
+                                         self.__routing_key,
+                                         input_queue)
         else:
             self.middleware.listen_on(input_queue, self.callback)
 
