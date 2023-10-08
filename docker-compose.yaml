@@ -1,6 +1,19 @@
 version: '3.9'
 name: tp1
 services:
+  rabbitmq:
+    build:
+      context: ./rabbitmq
+      dockerfile: Dockerfile
+    ports:
+      - 15672:15672
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 50s
+
   client:
     container_name: client
     image: client:latest
@@ -13,13 +26,13 @@ services:
     container_name: server
     image: server:latest
     entrypoint: python3 /main.py
-    restart: on-failure
-    external_links:
+    links:
       - rabbitmq
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
-      - initial_column_cleaner
+      rabbitmq:
+        condition: service_healthy
 
   initial_column_cleaner:
     container_name: initial_column_cleaner
@@ -28,12 +41,13 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
-      - filter_by_three_stopovers
+      - filter_by_three_stopovers_1
       - filter_by_three_stopovers_2
       - filter_by_three_stopovers_3
+      - query_2_column_filter
 
-  filter_by_three_stopovers:
-    container_name: filter_by_three_stopovers
+  filter_by_three_stopovers_1:
+    container_name: filter_by_three_stopovers_1
     image: filter_by_three_stopovers:latest
     entrypoint: python3 /main.py
     environment:
@@ -65,6 +79,9 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
   query_2_column_filter:
     container_name: query_2_column_filter
@@ -72,3 +89,15 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+    depends_on:
+      - distance_calculator
+
+  distance_calculator:
+    container_name: distance_calculator
+    image: distance_calculator:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy

@@ -22,6 +22,8 @@ def initialize_config():
             'LOGGING_LEVEL', config["DEFAULT"]["LOGGING_LEVEL"])
         config_params["flights_name"] = os.getenv(
             'FLIGHTS_FILE', config["DEFAULT"]["FLIGHTS_FILE"])
+        config_params["airports_name"] = os.getenv(
+            'AIRPORTS_FILE', config["DEFAULT"]["AIRPORTS_FILE"])
     except KeyError as e:
         raise KeyError(
             "Key was not found. Error: {} .Aborting client".format(e))
@@ -40,11 +42,12 @@ def main():
     port = config_params["port"]
     host = config_params["host"]
     flights_name = config_params["flights_name"]
+    airports_name = config_params["airports_name"]
 
     server_address = (host, port)
 
     initialize_log(logging_level)
-    client = Client(server_address, flights_name)
+    client = Client(server_address, flights_name, airports_name)
     client.run()
 
 

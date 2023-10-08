@@ -18,6 +18,7 @@ class FilterByThreeStopovers:
     def run(self, input_exchange):
         self.middleware.subscribe_to(input_exchange,
                                      self.callback,
+                                     "flights",
                                      self.__work_queue)
 
     def callback(self, body):
