@@ -7,6 +7,7 @@ class FilterByThreeStopovers:
                  output_queue, query_number, input_queue, output_exchange):
         self.__max_stopovers = max_stopovers
         self.__stopovers_column_name = stopovers_column_name
+        # TODO: this node should only filter by stopovers
         self.__columns_to_filter = columns_to_filter
         self.__output_queue = output_queue
         self.__query_number = query_number
@@ -35,6 +36,7 @@ class FilterByThreeStopovers:
         stopovers = flight[self.__stopovers_column_name].split("||")[:-1]
         if len(stopovers) >= self.__max_stopovers:
             # Publish on query 3's queue here
+            # TODO: refactor
             message = self.__create_message(
                 flight, stopovers, self.__query_number)
             publish_on(channel, self.__output_exchange, json.dumps(message))
