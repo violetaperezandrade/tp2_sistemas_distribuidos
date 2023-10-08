@@ -115,3 +115,15 @@ services:
       - FIELD_GROUP_BY=route
       - INPUT_QUEUE=group_by_route_queue_2
       - OUTPUT_QUEUE=flights_grouped_by_route
+
+  fastests_calculator:
+    container_name: fastests_calculator
+    image: fastests_calculator:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - GROUPED_BY_QUEUE=flights_grouped_by_route
+      - OUTPUT_QUEUE=output_3
+      - REDUCERS_AMOUNT=2
+      - RESULT_FIELDS=legId,route,stopovers
+      - DURATION_FIELD=travelDuration

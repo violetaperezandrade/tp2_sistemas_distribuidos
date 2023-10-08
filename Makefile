@@ -11,6 +11,7 @@ docker-image:
 	docker build -f ./query_handler/Dockerfile -t "query_handler:latest" .
 	docker build -f ./group_by/Dockerfile -t "group_by:latest" .
 	docker build -f ./reducer_group_by/Dockerfile -t "reducer_group_by:latest" .
+	docker build -f ./fastests_calculator/Dockerfile -t "fastests_calculator:latest" .
 .PHONY: docker-image
 
 docker-compose-up: docker-image
