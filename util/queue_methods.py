@@ -65,3 +65,10 @@ def subscribe_to(channel, exchange_name, user_function, queue_name=''):
     queue_name = result.method.queue
     channel.queue_bind(exchange=exchange_name, queue=queue_name)
     setup_message_consumption(channel, queue_name, user_function)
+
+def subscribe_without_consumption(channel, exchange_name, queue_name=''):
+    create_fanout_exchange(channel, exchange_name)
+    exclusive = (queue_name == '')
+    result = channel.queue_declare(queue=queue_name, exclusive=exclusive)
+    queue_name = result.method.queue
+    channel.queue_bind(exchange=exchange_name, queue=queue_name)

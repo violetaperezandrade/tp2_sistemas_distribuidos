@@ -35,7 +35,8 @@ services:
       - avg_calculator_1
       - avg_calculator_2
       # - avg_calculator_3
-      - filter_by_average
+      - filter_by_average_1
+      - filter_by_average_2
 
   # filter_by_three_stopovers:
   #   container_name: filter_by_three_stopovers
@@ -95,7 +96,8 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
-      - filter_by_average
+      - filter_by_average_1
+      - filter_by_average_2
 
   avg_calculator_2:
     container_name: avg_calculator_2
@@ -104,19 +106,19 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
-      - filter_by_average
+      - filter_by_average_1
+      - filter_by_average_2
 
-  # avg_calculator_3:
-  #   container_name: avg_calculator_3
-  #   image: avg_calculator:latest
-  #   entrypoint: python3 /main.py
-  #   environment:
-  #     - PYTHONUNBUFFERED=1
-
-  filter_by_average:
-    container_name: filter_by_average
+  filter_by_average_1:
+    container_name: filter_by_average_1
     image: filter_by_average:latest
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
-    
+
+  filter_by_average_2:
+    container_name: filter_by_average_2
+    image: filter_by_average:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1    
