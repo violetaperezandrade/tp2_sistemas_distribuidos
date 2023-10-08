@@ -3,11 +3,11 @@ import json
 
 
 class ColumnCleaner:
-    def __init__(self, output_queue, output_exchange,
+    def __init__(self, output_queue, output_exchanges,
                  required_columns_flights, required_columns_airports,
                  ack_necessary):
         self.__output_queue = output_queue
-        self.__output_exchange = output_exchange
+        self.__output_exchanges = output_exchanges
         self.__required_columns_flights = required_columns_flights
         self.__required_columns_airports = required_columns_airports
         self.__ack_necessary = ack_necessary
@@ -16,12 +16,9 @@ class ColumnCleaner:
         flight = json.loads(body)
         op_code = flight.get("op_code")
         if op_code == 0:
-            if self.__output_exchange is not None:
-                publish_on(channel, self.__output_exchange, body)
-                acknowledge(channel, method)
-            else:
-                send_message_to(channel, self.__output_queue, body)
+            self.__handle_eof(channel, method, body)
             return
+        
         filtered_columns = dict()
         column_names = self.__required_columns_flights
         if flight["op_code"] == 2 and self.__required_columns_airports is not None:
@@ -29,10 +26,22 @@ class ColumnCleaner:
         column_names.append("op_code")
         for column in column_names:
             filtered_columns[column] = flight[column]
+        
         message = json.dumps(filtered_columns)
-        if self.__output_exchange is not None:
-            publish_on(channel,  self.__output_exchange, message)
+        if self.__output_exchanges is not None:
+            for exchange in self.__output_exchanges:
+                publish_on(channel, exchange, message)
         else:
             send_message_to(channel, self.__output_queue, message)
         if self.__ack_necessary:
             acknowledge(channel, method)
+
+    def __handle_eof(self, channel, method, body):
+        if self.__output_exchanges is not None:
+            for exchange in self.__output_exchanges:
+                print(exchange)
+                publish_on(channel, exchange, body)
+                acknowledge(channel, method)
+        
+        else:
+            send_message_to(channel, self.__output_queue, body)

@@ -35,6 +35,7 @@ services:
       - avg_calculator_1
       - avg_calculator_2
       # - avg_calculator_3
+      - filter_by_average
 
   # filter_by_three_stopovers:
   #   container_name: filter_by_three_stopovers
