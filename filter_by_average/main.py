@@ -38,12 +38,14 @@ def main():
     filter_by_average = FilterByAverage(output_queue, "cleaned_column_queue", cleaner_column_exchange)
     
     connection = connect_mom()
+    filter_cannel = connection.channel()
     
-    subscribe_without_consumption(connection.channel(), cleaner_column_exchange, "cleaned_column_queue")
+    subscribe_without_consumption(filter_cannel, cleaner_column_exchange, "cleaned_column_queue")
 
     subscribe_to(connection.channel(), avg_exchange, filter_by_average.callback_avg)    
 
-    setup_message_consumption(connection.channel(), "cleaned_column_queue", filter_by_average.callback_filter)
+    listen_on(filter_cannel, "cleaned_column_queue", filter_by_average.callback_filter)
+    
     connection.close()
     print("exit program")
 

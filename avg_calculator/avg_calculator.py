@@ -74,6 +74,6 @@ class AvgCalculator:
 
     def __generate_mesage(self, avg):
         message = dict()
-        message["op_code"] = 1
+        message["op_code"] = 7
         message["avg"] = avg
         return message

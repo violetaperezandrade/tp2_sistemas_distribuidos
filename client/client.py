@@ -1,6 +1,7 @@
 import socket
 import logging
 import csv
+import time
 
 from util import protocol
 
@@ -46,7 +47,7 @@ class Client:
         # Connection arrived
         logging.info(
             f"action: start_connection | host: {self._server_address[0]}"
-            "| port: {self._server_address[1]} | result: in_progress")
+            f"| port: {self._server_address[1]} | result: in_progress")
         self._client_socket.connect(self._server_address)
         logging.info(
             f'action: start_connection | host: {self._server_address[0]} | '
@@ -56,6 +57,7 @@ class Client:
     def __send_msg(self, message):
         bytes_sent = 0
         while bytes_sent < len(message):
+            time.sleep(0.005)
             chunk_size = self._client_socket.send(message[bytes_sent:])
             logging.debug(
                 f'action: sending_message | result: success |'
