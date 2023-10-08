@@ -83,6 +83,7 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+
   group_by_route:
     container_name: group_by_route
     image: group_by:latest
@@ -94,3 +95,23 @@ services:
       - REDUCERS_AMOUNT=2
       - QUEUE_GROUP_BY=group_by_route_queue
       - INPUT_QUEUE=group_by_route
+
+  reducer_group_by_route_1:
+    container_name: reducer_group_by_route_1
+    image: reducer_group_by:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=route
+      - INPUT_QUEUE=group_by_route_queue_1
+      - OUTPUT_QUEUE=flights_grouped_by_route
+
+  reducer_group_by_route_2:
+    container_name: reducer_group_by_route_2
+    image: reducer_group_by:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=route
+      - INPUT_QUEUE=group_by_route_queue_2
+      - OUTPUT_QUEUE=flights_grouped_by_route
