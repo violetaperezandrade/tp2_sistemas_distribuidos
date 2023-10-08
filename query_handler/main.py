@@ -1,4 +1,4 @@
-from util.queue_methods import connect_mom, listen_on, acknowledge
+from util.queue_methods import connect_mom, subscribe_to, acknowledge
 import json
 
 
@@ -15,4 +15,10 @@ def callback(channel, method, properties, body):
 
 
 connection = connect_mom()
-listen_on(connection.channel(), "output", callback)
+channel = connection.channel()
+
+subscribe_to(channel, "3_or_more_stop_overs", callback)
+
+channel.start_consuming()
+channel.close()
+connection.close()
