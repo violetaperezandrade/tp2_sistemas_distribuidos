@@ -17,6 +17,7 @@ class QueryHandler:
         if result.get("op_code") == EOF_FLIGHTS_FILE:
             self.__middleware.finish()
             return
-        result.pop('queryNumber', None)
         result.pop('op_code', None)
-        print(result)
+        queryNumber = result["queryNumber"]
+        result.pop('queryNumber', None)
+        print(f"CONSULTA {queryNumber}: {result}")

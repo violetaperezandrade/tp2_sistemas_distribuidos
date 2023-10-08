@@ -56,7 +56,7 @@ class QueueMiddleware:
                                      body=message)
 
     def subscribe_to(self, exchange_name, user_function, routing_key, queue_name=''):
-        self.__create_exchange(exchange_name,'topic')
+        self.__create_exchange(exchange_name, 'topic')
         exclusive = (queue_name == '')
         result = self.__channel.queue_declare(queue=queue_name,
                                               exclusive=exclusive)

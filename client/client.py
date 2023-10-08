@@ -1,7 +1,7 @@
-import json
 import socket
 import logging
 import csv
+import time
 
 from util import protocol
 from util.constants import (AIRPORT_REGISTER,
@@ -74,6 +74,7 @@ class Client:
     def __send_msg(self, message):
         bytes_sent = 0
         while bytes_sent < len(message):
+            time.sleep(0.005)
             chunk_size = self._client_socket.send(message[bytes_sent:])
             logging.debug(
                 f'action: sending_message | result: success |'

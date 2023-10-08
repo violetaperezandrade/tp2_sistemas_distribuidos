@@ -18,7 +18,6 @@ class Server:
         self.__queue_middleware = QueueMiddleware()
         self._running = True
         self._reading_file = True
-        self._sent = 0
         self._operations_map = {
             EOF_FLIGHTS_FILE: self.__handle_eof,
             FLIGHT_REGISTER: self.__read_line,
@@ -68,12 +67,8 @@ class Server:
 
     def __read_exact(self, bytes_to_read, client_sock):
         bytes_read = client_sock.recv(bytes_to_read)
-        print(f"debo leer {bytes_to_read}")
-        print(f"lei {len(bytes_read)}")
         while len(bytes_read) < bytes_to_read:
-            print(f"diferencia {bytes_to_read - len(bytes_read)}")
             new_bytes_read = client_sock.recv(bytes_to_read - len(bytes_read))
-            print("sali")
             bytes_read += new_bytes_read
         return bytes_read
 
@@ -109,7 +104,6 @@ class Server:
 
     def __read_line(self, payload):
         msg = protocol.decode_to_str(payload)
-        print(json.loads(msg))
         self.__queue_middleware.send_message_to("full_flight_registers", msg)
 
     def __handle_eof(self, payload):

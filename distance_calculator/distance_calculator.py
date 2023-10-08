@@ -32,23 +32,28 @@ class DistanceCalculator:
             self.__middleware.send_message_to(self.__input_queue, body)
             return
         self.__calculate_total_distance(register)
-        self.__middleware.send_message_to(self.__output_queue, json.dumps(register))
+        if register["totalTravelDistance"] > 4 * register["directDistance"]:
+            register.pop('segmentsArrivalAirportCode', None)
+            register.pop('directDistance', None)
+            register["queryNumber"] = 2
+            self.__middleware.send_message_to("output", json.dumps(register))
 
     def __store_value(self, register):
         coordinates = (register["Latitude"], register["Longitude"])
         self.__airports_distances[register["Airport Code"]] = coordinates
 
     def __calculate_total_distance(self, register):
-        if register["totalTravelDistance"] != '':
-            return
-        print("necesario calcular")
         stops = register["segmentsArrivalAirportCode"].split("||")
         stops.insert(0, register["startingAirport"])
+        register["directDistance"] = self.__calculate_distance(stops[0],
+                                                               stops[-1])
+        if register["totalTravelDistance"] != '':
+            register["totalTravelDistance"] = float(register["totalTravelDistance"])
+            return
         distance = 0
-        for i in range (len(stops)-1):
+        for i in range(len(stops)-1):
             distance += self.__calculate_distance(stops[i],stops[i+1])
         register["totalTravelDistance"] = distance
-        print(distance)
 
     def __calculate_distance(self, start, end):
         coordinates_start = self.__airports_distances[start]
