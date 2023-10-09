@@ -48,9 +48,13 @@ class ColumnCleaner:
 
     def __output_message(self, message, op_code):
         if self.__output_exchange is not None:
-            routing_key = 'airports'
-            if op_code == FLIGHT_REGISTER:
-                routing_key = 'flights'
+            routing_key = 'flights'
+            if op_code == AIRPORT_REGISTER or op_code == EOF_AIRPORTS_FILE:
+                routing_key = 'airports'
+            else:
+                if self.__routing_key == "#":
+                    self.middleware.send_message_to(self.__output_queue, message)
+                    return
             self.middleware.publish_on(self.__output_exchange, message, routing_key)
         else:
             self.middleware.send_message_to(self.__output_queue, message)

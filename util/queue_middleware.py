@@ -8,6 +8,7 @@ class QueueMiddleware:
                              (pika.ConnectionParameters(host='rabbitmq')))
         self.__channel = self.__connection.channel()
         self.__exit = False
+        self.__remake = False
 
     def create_queue(self, queue_name):
         self.__channel.queue_declare(queue=queue_name)
@@ -19,9 +20,9 @@ class QueueMiddleware:
     def __setup_message_consumption(self, queue_name, user_function):
         self.__channel.basic_consume(queue=queue_name,
                                      on_message_callback=lambda channel,
-                                     method,
-                                     properties,
-                                     body:
+                                                                method,
+                                                                properties,
+                                                                body:
                                      (user_function(body),
                                       channel.basic_ack
                                       (delivery_tag=method.delivery_tag),
@@ -31,9 +32,13 @@ class QueueMiddleware:
     def __verify_connection_end(self):
         if self.__exit:
             self.__channel.close()
+        if self.__remake:
+            self.__exit = False
+            self.__channel = self.__connection.channel()
 
-    def finish(self):
+    def finish(self, open_new_channel=False):
         self.__exit = True
+        self.__remake = open_new_channel
 
     # Work queue methods
     def listen_on(self, queue_name, user_function):
@@ -55,7 +60,7 @@ class QueueMiddleware:
                                      routing_key=routing_key,
                                      body=message)
 
-    def subscribe_to(self, exchange_name, user_function, routing_key, queue_name=''):
+    def subscribe_to(self, exchange_name, user_function, routing_key="#", queue_name=''):
         self.__create_exchange(exchange_name, 'topic')
         exclusive = (queue_name == '')
         result = self.__channel.queue_declare(queue=queue_name,

@@ -30,7 +30,6 @@ class Client:
             reader1 = csv.DictReader(file1, delimiter=";")
             for row in reader1:
                 msg = protocol.encode_register(row, AIRPORT_REGISTER)
-                print(msg)
                 try:
                     self.__send_msg(msg)
                     logging.debug(
