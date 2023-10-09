@@ -31,7 +31,6 @@ class GroupBy():
     def __callback(self, body):
         flight = json.loads(body)
         op_code = flight.get("op_code")
-        print(f"op_code: {op_code}, condition: {EOF_FLIGHTS_FILE}")
         if op_code == EOF_FLIGHTS_FILE:
             print("Received eof")
             # EOF
