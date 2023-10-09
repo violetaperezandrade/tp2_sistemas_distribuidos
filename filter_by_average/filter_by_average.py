@@ -15,14 +15,13 @@ class FilterByAverage:
 
     def callback_filter(self, channel, method, properties, body):
         flight = json.loads(body)
-        print(flight)
         op_code = flight.get("op_code")
         if op_code == 0:
             self.__handle_eof( channel, method, flight)
             return
 
-        # if float(flight["totalFare"]) > self.__avg:
-        #     # print(f"{flight} selected")
+        if float(flight["totalFare"]) > self.__avg:
+            publish_on(channel, self.__output_queue, json.dumps(flight))
         
         acknowledge(channel, method)
 
@@ -30,6 +29,7 @@ class FilterByAverage:
         remaining_nodes = flight.get("remaining_nodes")
         if remaining_nodes == 1:
             print(f"eof received")
+            publish_on(channel, self.__output_queue, json.dumps(flight))
             channel.close()
             return
         

@@ -39,6 +39,30 @@ services:
       - filter_by_average_1
       - filter_by_average_2
 
+  # initial_column_cleaner_2:
+  #   container_name: initial_column_cleaner_2
+  #   image: initial_column_cleaner:latest
+  #   entrypoint: python3 /main.py
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #   depends_on:
+  #     - filter_by_three_stopovers
+  #     - filter_by_three_stopovers_2
+  #     - filter_by_three_stopovers_3
+  #     - filter_by_three_stopovers_4
+
+  # initial_column_cleaner_3:
+  #   container_name: initial_column_cleaner_3
+  #   image: initial_column_cleaner:latest
+  #   entrypoint: python3 /main.py
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #   depends_on:
+  #     - filter_by_three_stopovers
+  #     - filter_by_three_stopovers_2
+  #     - filter_by_three_stopovers_3
+  #     - filter_by_three_stopovers_4
+
   # filter_by_three_stopovers:
   #   container_name: filter_by_three_stopovers
   #   image: filter_by_three_stopovers:latest
@@ -81,6 +105,8 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+    
+    
 
   # query_2_column_filter:
   #   container_name: query_2_column_filter
@@ -137,7 +163,7 @@ services:
       - FIELD_GROUP_BY=startingAirport,destinationAirport
       - LISTENING_QUEUE=filtered_by_average
       - REDUCERS_AMOUNT=2
-      - QUEUE_GROUP_BY=group_by_route_queue
+      - QUEUE_GROUP_BY=group_by_route_queue_q4
       - INPUT_QUEUE=group_by_route
 
   reducer_group_by_route_q4_1:
@@ -147,8 +173,11 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - FIELD_GROUP_BY=route
-      - INPUT_QUEUE=group_by_route_queue_1
-      - OUTPUT_QUEUE=filtered_grouped_by_route
+      - INPUT_QUEUE=group_by_route_queue_q4_1
+      - OUTPUT_QUEUE=output
+      - QUERY_NUMBER=4
+    depends_on:
+      - query_handler
 
   reducer_group_by_route_q4_2:
     container_name: reducer_group_by_route_q4_2
@@ -157,8 +186,20 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - FIELD_GROUP_BY=route
-      - INPUT_QUEUE=group_by_route_queue_2
-      - OUTPUT_QUEUE=filtered_grouped_by_route
+      - INPUT_QUEUE=group_by_route_queue_q4_2
+      - OUTPUT_QUEUE=output
+      - QUERY_NUMBER=4
+    depends_on:
+      - query_handler
+
+  # query_4_handler:
+  #   container_name: query_4_handler
+  #   image: query_4_handler:latest
+  #   entrypoint: python3 /main.py
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #   depends_on:
+  #     - query_handler
 
   # group_by_route:
   #   container_name: group_by_route
