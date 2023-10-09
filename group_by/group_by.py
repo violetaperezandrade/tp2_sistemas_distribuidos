@@ -37,7 +37,6 @@ class GroupBy():
         flight = json.loads(body)
         op_code = flight.get("op_code")
         if op_code == EOF_FLIGHTS_FILE:
-            print("Received eof")
             # EOF
             for reducer in self.reducers:
                 self.queue_middleware.send_message_to(reducer, body)

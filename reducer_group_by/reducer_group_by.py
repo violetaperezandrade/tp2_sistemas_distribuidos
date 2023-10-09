@@ -2,6 +2,7 @@ import json
 from util.queue_middleware import QueueMiddleware
 from util.constants import *
 from util.utils_query_3 import *
+from util.utils_query_5 import handle_query_5
 
 
 class ReducerGroupBy():
@@ -13,7 +14,8 @@ class ReducerGroupBy():
         self.grouped = {}
         self.input_queue = input_queue
         self.query_number = query_number
-        self.operations_map = {3: handle_query_3, }
+        self.operations_map = {3: handle_query_3,
+                               5: handle_query_5}
 
     def run(self):
 
