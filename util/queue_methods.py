@@ -49,9 +49,10 @@ def publish_on(channel, exchange_name, message):
                           body=message)
 
 
-def subscribe_to(channel, exchange_name, user_function):
+def subscribe_to(channel, exchange_name, user_function, queue_name=''):
     create_fanout_exchange(channel, exchange_name)
-    result = channel.queue_declare(queue='', exclusive=True)
+    exclusive = (queue_name == '')
+    result = channel.queue_declare(queue=queue_name, exclusive=exclusive)
     queue_name = result.method.queue
     channel.queue_bind(exchange=exchange_name, queue=queue_name)
     setup_message_consumption(channel, queue_name, user_function)

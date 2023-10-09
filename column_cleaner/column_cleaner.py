@@ -21,6 +21,7 @@ class ColumnCleaner:
                 acknowledge(channel, method)
             else:
                 send_message_to(channel, self.__output_queue, body)
+            return
         filtered_columns = dict()
         column_names = self.__required_columns_flights
         if flight["op_code"] == 2 and self.__required_columns_airports is not None:

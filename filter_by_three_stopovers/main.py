@@ -1,10 +1,8 @@
-from util.queue_methods import (connect_mom,
-                                send_message_to,
-                                subscribe_to, acknowledge)
-import json
+from util.queue_methods import (connect_mom, subscribe_to)
 from filter_by_three_stopovers import FilterByThreeStopovers
 from configparser import ConfigParser
 import os
+
 
 def initialize_config():
 
@@ -38,11 +36,17 @@ def main():
     columns_to_filter = config_params["columns_to_filter"]
     max_stopovers = config_params["max_stopovers"]
     column_name = config_params["column_name"]
-    
-    filterByStopOvers = FilterByThreeStopovers(column_name, columns_to_filter, max_stopovers, output_queue, query_number)
+
+    filterByStopOvers = FilterByThreeStopovers(column_name, columns_to_filter,
+                                               max_stopovers, output_queue,
+                                               query_number,
+                                               "filter_stopovers_queue")
 
     connection = connect_mom()
-    subscribe_to(connection.channel(), input_queue, filterByStopOvers.callback)
+    subscribe_to(connection.channel(), input_queue, filterByStopOvers.callback,
+                 "filter_stopovers_queue")
+    connection.close()
+
 
 if __name__ == '__main__':
     main()

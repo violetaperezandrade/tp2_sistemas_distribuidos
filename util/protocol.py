@@ -26,7 +26,7 @@ def decode_to_str(payload):
 
 
 def encode_eof():
-    eof = {"op_code": 0}
+    eof = {"op_code": 0, "remaining_nodes": 4}
     return json.dumps(eof)
 
 
