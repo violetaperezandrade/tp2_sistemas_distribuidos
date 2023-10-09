@@ -8,6 +8,7 @@ def initialize_config():
         config_params["field_group_by"] = os.environ['FIELD_GROUP_BY']
         config_params["output_queue"] = os.environ['OUTPUT_QUEUE']
         config_params["input_queue"] = os.environ['INPUT_QUEUE']
+        config_params["query_number"] = int(os.environ['QUERY_NUMBER'])
     except KeyError as e:
         raise KeyError(
             "Key was not found. Error: {} .Aborting client".format(e))
@@ -24,9 +25,10 @@ def main():
     field_group_by = config_params["field_group_by"]
     output_queue = config_params["output_queue"]
     input_queue = config_params["input_queue"]
+    query_number = config_params["query_number"]
 
     reducer_group_by = ReducerGroupBy(field_group_by, input_queue,
-                                      output_queue)
+                                      output_queue, query_number)
 
     reducer_group_by.run()
 
