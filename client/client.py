@@ -26,7 +26,8 @@ class Client:
 
     def __read_and_send_lines(self):
         with (open(self.__flights_file, mode='r') as file2,
-              open(self.__airports_file, mode='r', encoding='utf-8-sig') as file1):
+              open(self.__airports_file, mode='r',
+                   encoding='utf-8-sig') as file1):
             reader1 = csv.DictReader(file1, delimiter=";")
             for row in reader1:
                 msg = protocol.encode_register(row, AIRPORT_REGISTER)

@@ -1,4 +1,6 @@
-from util.constants import EOF_FLIGHTS_FILE, AIRPORT_REGISTER, EOF_AIRPORTS_FILE, FLIGHT_REGISTER
+from util.constants import (EOF_FLIGHTS_FILE,
+                            AIRPORT_REGISTER,
+                            EOF_AIRPORTS_FILE)
 import json
 
 from util.queue_middleware import QueueMiddleware
@@ -46,15 +48,15 @@ class ColumnCleaner:
         message = json.dumps(filtered_columns)
         self.__output_message(message, op_code)
 
-    def __output_message(self, message, op_code):
+    def __output_message(self, msg, op_code):
         if self.__output_exchange is not None:
-            routing_key = 'flights'
+            routing = 'flights'
             if op_code == AIRPORT_REGISTER or op_code == EOF_AIRPORTS_FILE:
-                routing_key = 'airports'
+                routing = 'airports'
             else:
                 if self.__routing_key == "#":
-                    self.middleware.send_message_to(self.__output_queue, message)
+                    self.middleware.send_message_to(self.__output_queue, msg)
                     return
-            self.middleware.publish_on(self.__output_exchange, message, routing_key)
+            self.middleware.publish_on(self.__output_exchange, msg, routing)
         else:
-            self.middleware.send_message_to(self.__output_queue, message)
+            self.middleware.send_message_to(self.__output_queue, msg)

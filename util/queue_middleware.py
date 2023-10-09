@@ -20,9 +20,9 @@ class QueueMiddleware:
     def __setup_message_consumption(self, queue_name, user_function):
         self.__channel.basic_consume(queue=queue_name,
                                      on_message_callback=lambda channel,
-                                                                method,
-                                                                properties,
-                                                                body:
+                                     method,
+                                     properties,
+                                     body:
                                      (user_function(body),
                                       channel.basic_ack
                                       (delivery_tag=method.delivery_tag),
@@ -60,16 +60,16 @@ class QueueMiddleware:
                                      routing_key=routing_key,
                                      body=message)
 
-    def subscribe_to(self, exchange_name, user_function, routing_key="#", queue_name=''):
-        self.__create_exchange(exchange_name, 'topic')
-        exclusive = (queue_name == '')
-        result = self.__channel.queue_declare(queue=queue_name,
+    def subscribe_to(self, exchange, function, routing_key="#", queue=''):
+        self.__create_exchange(exchange, 'topic')
+        exclusive = (queue == '')
+        result = self.__channel.queue_declare(queue=queue,
                                               exclusive=exclusive)
-        queue_name = result.method.queue
-        self.__channel.queue_bind(exchange=exchange_name,
-                                  queue=queue_name,
+        queue = result.method.queue
+        self.__channel.queue_bind(exchange=exchange,
+                                  queue=queue,
                                   routing_key=routing_key)
-        self.__setup_message_consumption(queue_name, user_function)
+        self.__setup_message_consumption(queue, function)
 
     def __del__(self):
         self.__connection.close()

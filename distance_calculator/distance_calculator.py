@@ -1,13 +1,13 @@
 import json
 
-from util.constants import AIRPORT_REGISTER, EOF_AIRPORTS_FILE, EOF_FLIGHTS_FILE
+from util.constants import EOF_AIRPORTS_FILE, EOF_FLIGHTS_FILE
 from util.queue_middleware import QueueMiddleware
 from geopy.distance import geodesic
 
 
 class DistanceCalculator:
 
-    def __init__(self, input_exchange,input_queue, output_queue):
+    def __init__(self, input_exchange, input_queue, output_queue):
         self.__middleware = QueueMiddleware()
         self.__input_exchange = input_exchange
         self.__input_queue = input_queue
@@ -15,8 +15,10 @@ class DistanceCalculator:
         self.__airports_distances = {}
 
     def run(self):
-        self.__middleware.subscribe_to(self.__input_exchange, self.__airport_callback)
-        self.__middleware.listen_on(self.__input_queue, self.__flight_callback)
+        self.__middleware.subscribe_to(self.__input_exchange,
+                                       self.__airport_callback)
+        self.__middleware.listen_on(self.__input_queue,
+                                    self.__flight_callback)
 
     def __airport_callback(self, body):
         register = json.loads(body)
@@ -27,7 +29,6 @@ class DistanceCalculator:
 
     def __flight_callback(self, body):
         register = json.loads(body)
-        print(register)
         if register["op_code"] == EOF_FLIGHTS_FILE:
             self.__middleware.finish()
             return
@@ -36,7 +37,8 @@ class DistanceCalculator:
             register.pop('segmentsArrivalAirportCode', None)
             register.pop('directDistance', None)
             register["queryNumber"] = 2
-            self.__middleware.send_message_to(self.__output_queue, json.dumps(register))
+            register = json.dumps(register)
+            self.__middleware.send_message_to(self.__output_queue, register)
 
     def __store_value(self, register):
         coordinates = (register["Latitude"], register["Longitude"])
@@ -48,7 +50,8 @@ class DistanceCalculator:
         register["directDistance"] = self.__calculate_distance(stops[0],
                                                                stops[-1])
         if register["totalTravelDistance"] != '':
-            register["totalTravelDistance"] = float(register["totalTravelDistance"])
+            distance_float = float(register["totalTravelDistance"])
+            register["totalTravelDistance"] = distance_float
             return
         distance = 0
         for i in range(len(stops)-1):
