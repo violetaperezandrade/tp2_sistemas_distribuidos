@@ -2,8 +2,10 @@ import socket
 import logging
 import signal
 
-from util.queue_methods import connect_mom, send_message_to
 from util import protocol
+from util.constants import (EOF_FLIGHTS_FILE, FLIGHT_REGISTER,
+                            AIRPORT_REGISTER, EOF_AIRPORTS_FILE)
+from util.queue_middleware import QueueMiddleware
 
 
 class Server:
@@ -12,13 +14,14 @@ class Server:
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
-        self.mom_connection = connect_mom()
-        self.channel = self.mom_connection.channel()
+        self.__queue_middleware = QueueMiddleware()
         self._running = True
         self._reading_file = True
         self._operations_map = {
-            0: self.__handle_eof,
-            1: self.__read_line
+            EOF_FLIGHTS_FILE: self.__handle_eof,
+            FLIGHT_REGISTER: self.__read_line,
+            AIRPORT_REGISTER: self.__read_line,
+            EOF_AIRPORTS_FILE: self.__handle_eof
         }
 
     def run(self):
@@ -63,11 +66,9 @@ class Server:
 
     def __read_exact(self, bytes_to_read, client_sock):
         bytes_read = client_sock.recv(bytes_to_read)
-
-        while len(bytes_read) != bytes_to_read:
+        while len(bytes_read) < bytes_to_read:
             new_bytes_read = client_sock.recv(bytes_to_read - len(bytes_read))
             bytes_read += new_bytes_read
-
         return bytes_read
 
     def __send_exact(self, answer, client_sock):
@@ -102,9 +103,11 @@ class Server:
 
     def __read_line(self, payload):
         msg = protocol.decode_to_str(payload)
-        send_message_to(self.channel, "full_flight_registers", msg)
+        self.__queue_middleware.send_message_to("full_flight_registers", msg)
 
     def __handle_eof(self, payload):
-        msg = protocol.encode_eof()
-        send_message_to(self.channel, "full_flight_registers", msg)
-        self._reading_file = False
+        opcode = protocol.get_opcode(payload)
+        msg = protocol.encode_eof(opcode)
+        self.__queue_middleware.send_message_to("full_flight_registers", msg)
+        if opcode == EOF_FLIGHTS_FILE:
+            self._reading_file = False

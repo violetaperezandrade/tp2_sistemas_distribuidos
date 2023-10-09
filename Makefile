@@ -11,18 +11,16 @@ docker-image:
 	docker build -f ./query_handler/Dockerfile -t "query_handler:latest" .
 	docker build -f ./group_by/Dockerfile -t "group_by:latest" .
 	docker build -f ./reducer_group_by/Dockerfile -t "reducer_group_by:latest" .
+	docker build -f ./distance_calculator/Dockerfile -t "distance_calculator:latest" .
+	docker build -f ./query_5_column_filter/Dockerfile -t "query_5_column_filter:latest" .
 .PHONY: docker-image
 
 docker-compose-up: docker-image
-	docker compose -f rabbitmq-compose.yaml up -d --build
-	sleep 30
 	docker compose -f docker-compose.yaml up -d --build
 .PHONY: docker-compose-up
 
 docker-compose-down:
 	docker compose -f docker-compose.yaml stop -t 1
-	docker compose -f rabbitmq-compose.yaml stop -t 1
-	docker compose -f rabbitmq-compose.yaml down --remove-orphans
 	docker compose -f docker-compose.yaml down --remove-orphans
 .PHONY: docker-compose-down
 

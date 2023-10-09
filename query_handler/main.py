@@ -1,4 +1,4 @@
-from util.queue_methods import (connect_mom, subscribe_to,
+from util.queue_methods import (connect_mom,
                                 acknowledge, listen_on)
 import json
 import multiprocessing

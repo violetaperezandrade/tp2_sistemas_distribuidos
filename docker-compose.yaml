@@ -1,6 +1,21 @@
 version: '3.9'
 name: tp1
 services:
+  rabbitmq:
+    build:
+      context: ./rabbitmq
+      dockerfile: Dockerfile
+    ports:
+      - 15672:15672
+    environment:
+      - RABBITMQ_LOGS=rabbit.log
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 50s
+
   client:
     container_name: client
     image: client:latest
@@ -14,13 +29,13 @@ services:
     container_name: server
     image: server:latest
     entrypoint: python3 /main.py
-    restart: on-failure
-    external_links:
+    links:
       - rabbitmq
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
-      - initial_column_cleaner
+      rabbitmq:
+        condition: service_healthy
 
   initial_column_cleaner:
     container_name: initial_column_cleaner
@@ -29,10 +44,12 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
-      - filter_by_three_stopovers
+      - filter_by_three_stopovers_1
       - filter_by_three_stopovers_2
       - filter_by_three_stopovers_3
-      - filter_by_three_stopovers_4
+      - query_2_column_filter_1
+      - query_2_column_filter_2
+      - query_5_column_filter
 
   initial_column_cleaner_2:
     container_name: initial_column_cleaner_2
@@ -53,13 +70,13 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
-      - filter_by_three_stopovers
+      - filter_by_three_stopovers_1
       - filter_by_three_stopovers_2
       - filter_by_three_stopovers_3
       - filter_by_three_stopovers_4
 
-  filter_by_three_stopovers:
-    container_name: filter_by_three_stopovers
+  filter_by_three_stopovers_1:
+    container_name: filter_by_three_stopovers_1
     image: filter_by_three_stopovers:latest
     entrypoint: python3 /main.py
     environment:
@@ -85,28 +102,35 @@ services:
     depends_on:
       - query_handler
 
-  filter_by_three_stopovers_4:
-    container_name: filter_by_three_stopovers_4
-    image: filter_by_three_stopovers:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - query_handler
-
   query_handler:
     container_name: query_handler
     image: query_handler:latest
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
-  query_2_column_filter:
-    container_name: query_2_column_filter
+  query_2_column_filter_1:
+    container_name: query_2_column_filter_1
     image: query_2_column_filter:latest
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+    depends_on:
+      - distance_calculator_1
+      - distance_calculator_2
+
+  query_2_column_filter_2:
+    container_name: query_2_column_filter_2
+    image: query_2_column_filter:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - distance_calculator_1
+      - distance_calculator_2
 
   group_by_route:
     container_name: group_by_route
@@ -141,3 +165,33 @@ services:
       - INPUT_QUEUE=group_by_route_queue_2
       - OUTPUT_QUEUE=output_3
       - QUERY_NUMBER=3
+
+  distance_calculator_1:
+    container_name: distance_calculator_1
+    image: distance_calculator:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  distance_calculator_2:
+    container_name: distance_calculator_2
+    image: distance_calculator:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  query_5_column_filter:
+    container_name: query_5_column_filter
+    image: query_5_column_filter:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
