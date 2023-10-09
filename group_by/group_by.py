@@ -12,9 +12,9 @@ class GroupBy():
         self.reducers = [
             f"{queue_group_by}_{i}" for i in range(1, reducers_amount+1)]
         self.input_queue = input_queue
-        self.hanlde_group_by_fields(fields_group_by)
+        self.handle_group_by_fields(fields_group_by)
 
-    def hanlde_group_by_fields(self, fields_group_by):
+    def handle_group_by_fields(self, fields_group_by):
         if len(fields_group_by) > 1:
             self.fields_list = fields_group_by
             self.field_group_by = 'route'
@@ -25,6 +25,7 @@ class GroupBy():
     def run(self):
         connection = connect_mom()
         channel = connection.channel()
+        create_queue(channel, self.input_queue)
 
         for reducer in self.reducers:
             create_queue(channel, reducer)
