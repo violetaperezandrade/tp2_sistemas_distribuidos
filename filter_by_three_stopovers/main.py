@@ -1,6 +1,7 @@
 from filter_by_three_stopovers import FilterByThreeStopovers
 from configparser import ConfigParser
 
+
 def initialize_config():
 
     config = ConfigParser()
@@ -12,6 +13,7 @@ def initialize_config():
         config_params["output_queue"] = config["DEFAULT"]["OUTPUT_QUEUE"]
         config_params["input_queue"] = config["DEFAULT"]["INPUT_QUEUE"]
         config_params["input_exchange"] = config["DEFAULT"]["INPUT_EXCHANGE"]
+        config_params["output_exchange"] = config["DEFAULT"]["OUTPUT_EXCHANGE"]
         config_params["logging_level"] = config["DEFAULT"]["LOGGING_LEVEL"]
         config_params["max_stopovers"] = int(config["DEFAULT"]["MAX_STOPOVERS"])
         config_params["column_name"] = config["DEFAULT"]["COLUMN_NAME"]
@@ -30,7 +32,7 @@ def main():
 
     config_params = initialize_config()
     input_exchange = config_params["input_exchange"]
-    input_queue = config_params["work_queue"]
+    input_queue = config_params["input_queue"]
     output_queue = config_params["output_queue"]
     columns_to_filter = config_params["columns_to_filter"]
     max_stopovers = config_params["max_stopovers"]

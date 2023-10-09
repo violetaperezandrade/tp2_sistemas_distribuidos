@@ -5,13 +5,11 @@ from util.queue_middleware import QueueMiddleware
 
 class FilterByThreeStopovers:
     def __init__(self, stopovers_column_name, columns_to_filter, max_stopovers,
-                 output_queue, query_number, input_queue, output_exchange):
+                 output_queue, input_queue, output_exchange):
         self.__max_stopovers = max_stopovers
         self.__stopovers_column_name = stopovers_column_name
-        # TODO: this node should only filter by stopovers
         self.__columns_to_filter = columns_to_filter
         self.__output_queue = output_queue
-        self.__query_number = query_number
         self.__input_queue = input_queue
         self.__output_exchange = output_exchange
         self.middleware = QueueMiddleware()
@@ -20,7 +18,7 @@ class FilterByThreeStopovers:
         self.middleware.subscribe_to(input_exchange,
                                      self.callback,
                                      "flights",
-                                     self.__work_queue)
+                                     self.__input_queue)
 
     def callback(self, body):
         flight = json.loads(body)
@@ -29,6 +27,8 @@ class FilterByThreeStopovers:
             remaining_nodes = flight.get("remaining_nodes")
             if remaining_nodes == 1:
                 self.middleware.send_message_to(self.__output_queue, body)
+                self.middleware.publish_on(self.__output_exchange,
+                                           body)
                 self.middleware.finish()
                 return
             flight["remaining_nodes"] -= 1
@@ -39,16 +39,14 @@ class FilterByThreeStopovers:
         stopovers = flight[self.__stopovers_column_name].split("||")[:-1]
         if len(stopovers) >= self.__max_stopovers:
             # Publish on query 3's queue here
-            # TODO: refactor
             flight["stopovers"] = stopovers
             self.middleware.publish_on(self.__output_exchange,
                                        json.dumps(flight))
-            message = self.__create_message(flight,
-                                            stopovers)
+            message = self.__create_message(flight)
             self.middleware.send_message_to(self.__output_queue,
                                             json.dumps(message))
 
-    def __create_message(self, flight, stopovers):
+    def __create_message(self, flight):
         message = dict()
         for i in range(len(self.__columns_to_filter)):
             message[self.__columns_to_filter[i]
