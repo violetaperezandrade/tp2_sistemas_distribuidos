@@ -16,6 +16,7 @@ def initialize_config():
         config_params["output_queue"] = config["DEFAULT"]["OUTPUT_QUEUE"]
         config_params["required_columns_flights"] = config["DEFAULT"]["REQUIRED_COLUMNS_FLIGHTS"].split(",")
         config_params["required_columns_airports"] = config["DEFAULT"]["REQUIRED_COLUMNS_AIRPORTS"].split(",")
+        config_params["routing_key"] = config["DEFAULT"]["ROUTING_KEY"]
     except KeyError as e:
         raise KeyError(
             "Key was not found. Error: {} .Aborting client".format(e))
@@ -33,9 +34,11 @@ def main():
     output_queue = config_params["output_queue"]
     required_columns_flights = config_params["required_columns_flights"]
     required_columns_airports = config_params["required_columns_airports"]
+    routing_key = config_params["routing_key"]
     cleaner = ColumnCleaner(output_queue, output_exchange,
                             required_columns_flights,
-                            required_columns_airports)
+                            required_columns_airports,
+                            routing_key)
     cleaner.run(input_exchange, input_queue)
 
 

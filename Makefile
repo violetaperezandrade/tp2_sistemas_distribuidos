@@ -10,6 +10,7 @@ docker-image:
 	docker build -f ./query_2_column_filter/Dockerfile -t "query_2_column_filter:latest" .
 	docker build -f ./query_handler/Dockerfile -t "query_handler:latest" .
 	docker build -f ./distance_calculator/Dockerfile -t "distance_calculator:latest" .
+	docker build -f ./query_5_column_filter/Dockerfile -t "query_5_column_filter:latest" .
 .PHONY: docker-image
 
 docker-compose-up: docker-image

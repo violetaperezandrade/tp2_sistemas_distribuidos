@@ -2,8 +2,8 @@ from distance_calculator import DistanceCalculator
 
 
 def main():
-    query_handler = DistanceCalculator("distance_calculation",
-                                       "registers_with_distance")
+    query_handler = DistanceCalculator("airport_registers", "distance_calculation",
+                                       "output")
     query_handler.run()
 
 
