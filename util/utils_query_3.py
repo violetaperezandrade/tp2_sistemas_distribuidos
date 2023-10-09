@@ -4,15 +4,15 @@ DURATION_FIELD = "travelDuration"
 
 
 def handle_query_3(flights):
-    fastest_flights = [{}, {}]
+    fastests = [{}, {}]
     for flight in flights:
         duration = convert_duration(flight[DURATION_FIELD])
-        if fastest_flights[0] == {} or duration < fastest_flights[0].get('duration', 0):
-            fastest_flights[1] = fastest_flights[0]
-            fastest_flights[0] = get_result(flight, duration)
-        elif fastest_flights[1] == {} or duration < fastest_flights[1].get('duration', 0):
-            fastest_flights[1] = get_result(flight, duration)
-    return fastest_flights
+        if fastests[0] == {} or duration < fastests[0].get('duration', 0):
+            fastests[1] = fastests[0]
+            fastests[0] = get_result(flight, duration)
+        elif fastests[1] == {} or duration < fastests[1].get('duration', 0):
+            fastests[1] = get_result(flight, duration)
+    return fastests
 
 
 def convert_duration(duration_str):
