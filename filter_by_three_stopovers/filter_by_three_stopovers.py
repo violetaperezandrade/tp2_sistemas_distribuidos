@@ -37,9 +37,11 @@ class FilterByThreeStopovers:
         if len(stopovers) >= self.__max_stopovers:
             # Publish on query 3's queue here
             # TODO: refactor
+            flight["stopovers"] = stopovers
             message = self.__create_message(
                 flight, stopovers, self.__query_number)
-            publish_on(channel, self.__output_exchange, json.dumps(message))
+            send_message_to(channel, self.__output_queue, json.dumps(message))
+            publish_on(channel, self.__output_exchange, json.dumps(flight))
         acknowledge(channel, method)
 
     def __create_message(self, flight, stopovers, query_number):
@@ -47,8 +49,5 @@ class FilterByThreeStopovers:
         for i in range(len(self.__columns_to_filter)):
             message[self.__columns_to_filter[i]
                     ] = flight[self.__columns_to_filter[i]]
-
-        message["stopovers"] = stopovers
-        message["queryNumber"] = query_number
 
         return message

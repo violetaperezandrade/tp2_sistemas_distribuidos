@@ -1,5 +1,8 @@
-from util.queue_methods import connect_mom, subscribe_to, acknowledge
+from util.queue_methods import (connect_mom, subscribe_to,
+                                acknowledge, listen_on)
 import json
+import multiprocessing
+QUERIES = 4
 
 
 def callback(channel, method, properties, body):
@@ -8,17 +11,28 @@ def callback(channel, method, properties, body):
         # EOF
         acknowledge(channel, method)
         return
-    result.pop('queryNumber', None)
     result.pop('op_code', None)
     print(result)
     acknowledge(channel, method)
 
 
-connection = connect_mom()
-channel = connection.channel()
+def run(query_number):
+    connection = connect_mom()
+    channel = connection.channel()
 
-subscribe_to(channel, "3_or_more_stop_overs", callback)
+    queue_name = f"output_{query_number}"
+    listen_on(channel, queue_name, callback)
 
-channel.start_consuming()
-channel.close()
-connection.close()
+    channel.start_consuming()
+    channel.close()
+    connection.close()
+
+
+processes = []
+for i in range(1, QUERIES+1):
+    process = multiprocessing.Process(target=run, args=(i, ))
+    processes.append(process)
+    process.start()
+
+for process in processes:
+    process.join()

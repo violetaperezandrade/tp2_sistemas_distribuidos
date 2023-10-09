@@ -1,5 +1,5 @@
 import re
-RESULT_FIELDS = ["legId", "route", "stopovers"]
+RESULT_FIELDS = ["legId", "route", "stopovers", "op_code"]
 DURATION_FIELD = "travelDuration"
 
 

@@ -46,7 +46,11 @@ class ReducerGroupBy():
     def __handle_eof(self, channel):
         for route, flights in self.grouped.items():
             msg = self.operations_map.get(self.query_number, lambda _: None)(flights)
-            if msg == None:
+            if msg is None:
                 # Error handling
                 pass
-            send_message_to(channel, self.output_queue, json.dumps(msg))
+            if type(msg) is list:
+                for message in msg:
+                    send_message_to(channel, self.output_queue, json.dumps(message))
+            else:
+                send_message_to(channel, self.output_queue, json.dumps(msg))
