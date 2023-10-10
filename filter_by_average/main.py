@@ -30,7 +30,7 @@ def main():
     cleaner_column_exchange = config_params["input_exchange_2"]
     output_queue = config_params["output_queue"]
     logging_level = config_params["logging_level"]
-    
+
     filter_by_average = FilterByAverage(output_queue, "cleaned_column_queue", cleaner_column_exchange)
 
     filter_by_average.run(avg_exchange)

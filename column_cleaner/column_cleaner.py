@@ -32,7 +32,6 @@ class ColumnCleaner:
         if op_code == EOF_FLIGHTS_FILE or op_code == EOF_AIRPORTS_FILE:
             self.__output_message(body, op_code)
             return
-        
         filtered_columns = dict()
         column_names = self.__required_columns_flights
         if register["op_code"] == AIRPORT_REGISTER:

@@ -44,7 +44,7 @@ class AvgCalculator:
             return
         
         flight["remaining_nodes"] -= 1
-        self.__middlewaresend_message_to(self.__input_queue, json.dumps(flight))
+        self.__middleware.send_message_to(self.__input_queue, json.dumps(flight))
         self.__middleware.finish()
         return
 

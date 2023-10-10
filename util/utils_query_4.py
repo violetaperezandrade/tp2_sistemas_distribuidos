@@ -12,6 +12,5 @@ def handle_query_4(flights):
     result["avg"] = avg_value
     result["max"] = max_value
     result["route"] = flights[0]["route"]
-    result["queryNumber"] = 4
     result["op_code"] = 1
     return result
