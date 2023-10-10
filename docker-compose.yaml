@@ -212,5 +212,48 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
+      - group_by_airport
+
+  group_by_airport:
+    container_name: group_by_airport
+    image: group_by:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=startingAirport
+      - INPUT_EXCHANGE=
+      - LISTENING_QUEUE=
+      - REDUCERS_AMOUNT=2
+      - QUEUE_GROUP_BY=group_by_airport_queue
+      - INPUT_QUEUE=mode_calculation
+    depends_on:
+      - reducer_group_by_airport_1
+      - reducer_group_by_airport_2
+
+  reducer_group_by_airport_1:
+    container_name: reducer_group_by_airport_1
+    image: reducer_group_by:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=startingAirport
+      - INPUT_QUEUE=group_by_airport_queue_1
+      - OUTPUT_QUEUE=output_5
+      - QUERY_NUMBER=5
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  reducer_group_by_airport_2:
+    container_name: reducer_group_by_airport_2
+    image: reducer_group_by:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=startingAirport
+      - INPUT_QUEUE=group_by_airport_queue_2
+      - OUTPUT_QUEUE=output_5
+      - QUERY_NUMBER=5
+    depends_on:
       rabbitmq:
         condition: service_healthy

@@ -7,6 +7,7 @@ from util.queue_middleware import QueueMiddleware
 class QueryHandler:
 
     def __init__(self, query_number):
+        self.query_number = query_number
         self.__output_queue = f"output_{query_number}"
         self.__middleware = QueueMiddleware()
 
@@ -19,4 +20,4 @@ class QueryHandler:
             self.__middleware.finish()
             return
         result.pop('op_code', None)
-        print(result)
+        print(f'QUERY {self.query_number}: {result}')

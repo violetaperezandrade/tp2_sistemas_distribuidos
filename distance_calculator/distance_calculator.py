@@ -36,7 +36,7 @@ class DistanceCalculator:
         if register["totalTravelDistance"] > 4 * register["directDistance"]:
             register.pop('segmentsArrivalAirportCode', None)
             register.pop('directDistance', None)
-            register["queryNumber"] = 2
+            register.pop('op_code', None)
             register = json.dumps(register)
             self.__middleware.send_message_to(self.__output_queue, register)
 
@@ -47,19 +47,19 @@ class DistanceCalculator:
     def __calculate_total_distance(self, register):
         stops = register["segmentsArrivalAirportCode"].split("||")
         stops.insert(0, register["startingAirport"])
-        register["directDistance"] = self.__calculate_distance(stops[0],
-                                                               stops[-1])
+        register["directDistance"] = self.__calculate_distance(register["startingAirport"],
+                                                               register["destinationAirport"])
         if register["totalTravelDistance"] != '':
             distance_float = float(register["totalTravelDistance"])
             register["totalTravelDistance"] = distance_float
             return
         distance = 0
-        for i in range(len(stops)-1):
+        for i in range(len(stops) - 1):
             distance += self.__calculate_distance(stops[i],
-                                                  stops[i+1])
+                                                  stops[i + 1])
         register["totalTravelDistance"] = distance
 
     def __calculate_distance(self, start, end):
         coordinates_start = self.__airports_distances[start]
         coordinates_end = self.__airports_distances[end]
-        return (geodesic(coordinates_start, coordinates_end)).km
+        return (geodesic(coordinates_start, coordinates_end)).miles

@@ -37,7 +37,6 @@ class GroupBy():
         flight = json.loads(body)
         op_code = flight.get("op_code")
         if op_code == EOF_FLIGHTS_FILE:
-            print("Received eof")
             # EOF
             for reducer in self.reducers:
                 self.queue_middleware.send_message_to(reducer, body)
@@ -46,8 +45,6 @@ class GroupBy():
         if self.fields_list is not None:
             flight[self.field_group_by] = self.__create_route(flight,
                                                               self.fields_list)
-        else:
-            self.field_group_by = self.field_group_by[0]
         output_queue = self.__get_output_queue(flight, self.field_group_by)
         self.queue_middleware.send_message_to(self.reducers[output_queue],
                                               json.dumps(flight))

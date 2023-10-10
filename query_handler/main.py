@@ -1,6 +1,6 @@
 import multiprocessing
 from query_handler import QueryHandler
-QUERIES = 4
+QUERIES = 5
 
 
 def run(query_number):
