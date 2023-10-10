@@ -1,5 +1,3 @@
-from util.queue_methods import (connect_mom,
-                                subscribe_to,)
 import json
 from avg_calculator import AvgCalculator
 from configparser import ConfigParser
@@ -33,10 +31,8 @@ def main():
     column_name = config_params["column_name"]
     
     avg_calculator = AvgCalculator(column_name, output_exchange, input_exchange, "avg_queue")
+    avg_calculator.run()
 
-    connection = connect_mom()
-    subscribe_to(connection.channel(), input_exchange, avg_calculator.callback, "avg_queue")
-    connection.close()
 
 if __name__ == '__main__':
     main()

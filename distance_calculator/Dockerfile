@@ -1,5 +1,5 @@
 FROM python:3.11-slim
-COPY fastests_calculator /
+COPY distance_calculator /
 COPY util /util
 COPY requirements.txt /
 RUN pip install pip --upgrade

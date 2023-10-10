@@ -1,24 +1,18 @@
-from util.queue_methods import connect_mom, subscribe_to, acknowledge, listen_on
-import json
+import multiprocessing
+from query_handler import QueryHandler
+QUERIES = 5
 
 
-def callback(channel, method, properties, body):
-    result = json.loads(body)
-    print(result)
-    if result.get("op_code") == 0:
-        # EOF
-        acknowledge(channel, method)
-        return
-    result.pop('queryNumber', None)
-    result.pop('op_code', None)
-    print(result)
-    acknowledge(channel, method)
+def run(query_number):
+    query_handler = QueryHandler(query_number)
+    query_handler.run()
 
 
-connection = connect_mom()
-channel = connection.channel()
+processes = []
+for i in range(1, QUERIES+1):
+    process = multiprocessing.Process(target=run, args=(i, ))
+    processes.append(process)
+    process.start()
 
-listen_on(channel, "output", callback)
-
-channel.close()
-connection.close()
+for process in processes:
+    process.join()

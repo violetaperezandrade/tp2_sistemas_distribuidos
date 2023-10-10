@@ -1,31 +1,23 @@
-from util.queue_methods import (connect_mom, listen_on)
 from filter_by_three_stopovers import FilterByThreeStopovers
 from configparser import ConfigParser
-import os
 
 
 def initialize_config():
 
-    config = ConfigParser(os.environ)
+    config = ConfigParser()
     # If config.ini does not exists original config object is not modified
     config.read("config.ini")
     config_params = {}
     try:
-        config_params["query_number"] = os.getenv(
-            'QUERY_NUMBER', config["DEFAULT"]["QUERY_NUMBER"])
-        config_params["output_queue"] = os.getenv(
-            'OUTPUT_QUEUE', config["DEFAULT"]["OUTPUT_QUEUE"])
-        config_params["input_queue"] = os.getenv(
-            'INPUT_QUEUE', config["DEFAULT"]["INPUT_QUEUE"])
-        config_params["logging_level"] = os.getenv(
-            'LOGGING_LEVEL', config["DEFAULT"]["LOGGING_LEVEL"])
-        config_params["max_stopovers"] = int(
-            os.getenv('MAX_STOPOVERS', config["DEFAULT"]["MAX_STOPOVERS"]))
-        config_params["column_name"] = os.getenv(
-            'COLUMN_NAME', config["DEFAULT"]["COLUMN_NAME"])
-        config_params["columns_to_filter"] = config["DEFAULT"]["COLUMNS_TO_FILTER"].split(",")
+        config_params["query_number"] = config["DEFAULT"]["QUERY_NUMBER"]
+        config_params["output_queue"] = config["DEFAULT"]["OUTPUT_QUEUE"]
+        config_params["input_queue"] = config["DEFAULT"]["INPUT_QUEUE"]
         config_params["input_exchange"] = config["DEFAULT"]["INPUT_EXCHANGE"]
         config_params["output_exchange"] = config["DEFAULT"]["OUTPUT_EXCHANGE"]
+        config_params["logging_level"] = config["DEFAULT"]["LOGGING_LEVEL"]
+        config_params["max_stopovers"] = int(config["DEFAULT"]["MAX_STOPOVERS"])
+        config_params["column_name"] = config["DEFAULT"]["COLUMN_NAME"]
+        config_params["columns_to_filter"] = config["DEFAULT"]["COLUMNS_TO_FILTER"].split(",")
     except KeyError as e:
         raise KeyError(
             "Key was not found. Error: {} .Aborting client".format(e))
@@ -39,7 +31,7 @@ def initialize_config():
 def main():
 
     config_params = initialize_config()
-    query_number = config_params["query_number"]
+    input_exchange = config_params["input_exchange"]
     input_queue = config_params["input_queue"]
     output_queue = config_params["output_queue"]
     columns_to_filter = config_params["columns_to_filter"]
@@ -50,13 +42,9 @@ def main():
 
     filterByStopOvers = FilterByThreeStopovers(column_name, columns_to_filter,
                                                max_stopovers, output_queue,
-                                               query_number,
                                                input_queue, output_exchange)
 
-    connection = connect_mom()
-    subscribe_to(connection.channel(), input_exchange,
-                 filterByStopOvers.callback, input_queue)
-    connection.close()
+    filterByStopOvers.run(input_exchange)
 
 
 if __name__ == '__main__':

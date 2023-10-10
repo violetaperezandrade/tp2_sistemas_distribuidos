@@ -8,6 +8,7 @@ class QueueMiddleware:
                              (pika.ConnectionParameters(host='rabbitmq')))
         self.__channel = self.__connection.channel()
         self.__exit = False
+        self.__remake = False
 
     def create_queue(self, queue_name):
         self.__channel.queue_declare(queue=queue_name)
@@ -31,9 +32,13 @@ class QueueMiddleware:
     def __verify_connection_end(self):
         if self.__exit:
             self.__channel.close()
+            if self.__remake:
+                self.__exit = False
+                self.__channel = self.__connection.channel()
 
-    def finish(self):
+    def finish(self, open_new_channel=False):
         self.__exit = True
+        self.__remake = open_new_channel
 
     # Work queue methods
     def listen_on(self, queue_name, user_function):
@@ -48,23 +53,34 @@ class QueueMiddleware:
                                      body=message)
 
     # Publisher/Subscriber methods
-    def publish_on(self, exchange_name, message, routing_key):
+    def publish_on(self, exchange_name, message, routing_key='#'):
         """Publish message on specified exchange."""
         self.__create_exchange(exchange_name, 'topic')
         self.__channel.basic_publish(exchange=exchange_name,
                                      routing_key=routing_key,
                                      body=message)
 
-    def subscribe_to(self, exchange_name, user_function, routing_key, queue_name=''):
-        self.__create_exchange(exchange_name,'topic')
-        exclusive = (queue_name == '')
-        result = self.__channel.queue_declare(queue=queue_name,
+    def subscribe_to(self, exchange, function, routing_key="#", queue=''):
+        self.__create_exchange(exchange, 'topic')
+        exclusive = (queue == '')
+        result = self.__channel.queue_declare(queue=queue,
                                               exclusive=exclusive)
-        queue_name = result.method.queue
-        self.__channel.queue_bind(exchange=exchange_name,
-                                  queue=queue_name,
+        queue = result.method.queue
+        self.__channel.queue_bind(exchange=exchange,
+                                  queue=queue,
                                   routing_key=routing_key)
-        self.__setup_message_consumption(queue_name, user_function)
+        self.__setup_message_consumption(queue, function)
+    
+    def subscribe_without_consumption(self, exchange, function, routing_key="#", queue=''):
+        self.__create_exchange(exchange, 'topic')
+        exclusive = (queue == '')
+        result = self.__channel.queue_declare(queue=queue,
+                                              exclusive=exclusive)
+        queue = result.method.queue
+        self.__channel.queue_bind(exchange=exchange,
+                                  queue=queue,
+                                  routing_key=routing_key)
 
     def __del__(self):
         self.__connection.close()
+

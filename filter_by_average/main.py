@@ -1,7 +1,3 @@
-from util.queue_methods import (connect_mom,
-                                listen_on, subscribe_to, 
-                                subscribe_without_consumption,
-                                setup_message_consumption)
 import json
 from filter_by_average import FilterByAverage
 from configparser import ConfigParser
@@ -36,20 +32,8 @@ def main():
     logging_level = config_params["logging_level"]
     
     filter_by_average = FilterByAverage(output_queue, "cleaned_column_queue", cleaner_column_exchange)
-    
-    connection = connect_mom()
-    filter_cannel = connection.channel()
-    
-    subscribe_without_consumption(filter_cannel, cleaner_column_exchange, "cleaned_column_queue")
 
-    subscribe_to(connection.channel(), avg_exchange, filter_by_average.callback_avg)    
-
-    listen_on(filter_cannel, "cleaned_column_queue", filter_by_average.callback_filter)
-    
-    connection.close()
-    print("exit program")
-
-
+    filter_by_average.run(avg_exchange)
 
 if __name__ == '__main__':
     main()
