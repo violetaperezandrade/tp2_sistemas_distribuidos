@@ -6,13 +6,15 @@ from util.constants import *
 
 class GroupBy():
     def __init__(self, fields_group_by, input_exchange,
-                 reducers_amount, queue_group_by, input_queue):
+                 reducers_amount, queue_group_by, listening_queue,
+                 input_queue):
         self.queue_middleware = QueueMiddleware()
         self.input_exchange = input_exchange
+        self.input_queue = input_queue
         self.reducers_amount = reducers_amount
         self.reducers = [
             f"{queue_group_by}_{i}" for i in range(1, reducers_amount+1)]
-        self.input_queue = input_queue
+        self.listening_queue = listening_queue
         self.handle_group_by_fields(fields_group_by)
 
     def handle_group_by_fields(self, fields_group_by):
@@ -24,9 +26,12 @@ class GroupBy():
             self.field_group_by = fields_group_by[0]
 
     def run(self):
-
-        self.queue_middleware.subscribe_to(self.input_exchange, self.__callback,
-                     queue=self.input_queue)
+        if self.input_queue == '':  # reading from an exchange
+            self.queue_middleware.subscribe_to(self.input_exchange,
+                                               self.__callback,
+                                               queue=self.listening_queue)
+        elif self.input_exchange == '':  # listening from a queue
+            self.queue_middleware.listen_on(self.input_queue, self.__callback)
 
     def __callback(self, body):
         flight = json.loads(body)
