@@ -212,16 +212,17 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
-      - group_by_airport_1
+      - group_by_airport
 
-  group_by_airport_1:
-    container_name: group_by_airport_1
+  group_by_airport:
+    container_name: group_by_airport
     image: group_by:latest
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
       - FIELD_GROUP_BY=startingAirport
       - INPUT_EXCHANGE=
+      - LISTENING_QUEUE=
       - REDUCERS_AMOUNT=2
       - QUEUE_GROUP_BY=group_by_airport_queue
       - INPUT_QUEUE=mode_calculation

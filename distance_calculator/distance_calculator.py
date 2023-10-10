@@ -33,7 +33,7 @@ class DistanceCalculator:
             self.__middleware.finish()
             return
         self.__calculate_total_distance(register)
-        if register["totalTravelDistance"] > float(4 * register["directDistance"]):
+        if register["totalTravelDistance"] > 4 * register["directDistance"]:
             register.pop('segmentsArrivalAirportCode', None)
             register.pop('directDistance', None)
             register.pop('op_code', None)
@@ -55,8 +55,6 @@ class DistanceCalculator:
             return
         distance = 0
         for i in range(len(stops) - 1):
-            print(stops[i])
-            print(stops[i + 1])
             distance += self.__calculate_distance(stops[i],
                                                   stops[i + 1])
         register["totalTravelDistance"] = distance

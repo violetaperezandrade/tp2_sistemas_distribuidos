@@ -33,7 +33,6 @@ def main():
     group_by = GroupBy(field_group_by, input_exchange,
                        reducers_amount, queue_group_by, listening_queue,
                        input_queue)
-
     group_by.run()
 
 
