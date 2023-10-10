@@ -1,10 +1,12 @@
 import socket
 import logging
 import signal
+import time
 
 from util import protocol
 from util.constants import (EOF_FLIGHTS_FILE, FLIGHT_REGISTER,
-                            AIRPORT_REGISTER, EOF_AIRPORTS_FILE)
+                            AIRPORT_REGISTER, EOF_AIRPORTS_FILE,
+                            SIGTERM)
 from util.queue_middleware import QueueMiddleware
 
 
@@ -97,6 +99,12 @@ class Server:
             f'action: sigterm received | signum: {signum}, frame:{frame}')
         self._server_socket.shutdown(socket.SHUT_RDWR)
         self._server_socket.close()
+        msg = protocol.encode_sigterm_msg(SIGTERM)
+        print("Sending sigterm message")
+        print(msg)
+        self.__queue_middleware.send_message_to("full_flight_registers", msg)
+        self.__queue_middleware.finish()
+        time.sleep(10)
         self._running = False
         logging.info('action: close_server | result: success')
         return

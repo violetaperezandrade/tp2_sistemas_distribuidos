@@ -35,3 +35,8 @@ def encode_eof_client(opcode):
 
     message = eof_length_bytes + eof_bytes
     return message
+
+
+def encode_sigterm_msg(opcode):
+    eof = {"op_code": opcode}
+    return json.dumps(eof)

@@ -25,6 +25,13 @@ class ReducerGroupBy():
         flight = json.loads(body)
         op_code = flight.get("op_code")
 
+        if op_code == SIGTERM:
+            print("Received sigterm")
+            print(flight)
+            self.queue_middleware.send_message_to(self.output_queue, body)
+            self.queue_middleware.finish()
+            return
+
         if op_code == 0:
             # EOF
             self.__handle_eof()

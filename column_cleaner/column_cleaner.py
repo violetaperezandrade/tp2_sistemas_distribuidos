@@ -1,6 +1,7 @@
 from util.constants import (EOF_FLIGHTS_FILE,
                             AIRPORT_REGISTER,
-                            EOF_AIRPORTS_FILE)
+                            EOF_AIRPORTS_FILE,
+                            SIGTERM)
 import json
 
 from util.queue_middleware import QueueMiddleware
@@ -29,6 +30,16 @@ class ColumnCleaner:
     def callback(self, body):
         register = json.loads(body)
         op_code = register.get("op_code")
+        if op_code == SIGTERM:
+            print("Received sigterm")
+            print(register)
+            if self.__output_exchange is not None:
+                self.middleware.publish_on(self.__output_exchange, body,
+                                           'flights')
+            else:
+                self.middleware.send_message_to(self.__output_queue, body)
+            return
+
         if op_code == EOF_FLIGHTS_FILE or op_code == EOF_AIRPORTS_FILE:
             self.__output_message(body, op_code)
             return

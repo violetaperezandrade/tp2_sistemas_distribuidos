@@ -1,5 +1,5 @@
 import json
-from util.constants import EOF_FLIGHTS_FILE
+from util.constants import EOF_FLIGHTS_FILE, SIGTERM
 from util.queue_middleware import QueueMiddleware
 
 
@@ -23,6 +23,14 @@ class FilterByThreeStopovers:
     def callback(self, body):
         flight = json.loads(body)
         op_code = flight.get("op_code")
+        if op_code == SIGTERM:
+            print("Received sigterm")
+            print(flight)
+            self.middleware.send_message_to(self.__output_queue, body)
+            self.middleware.publish_on(self.__output_exchange,
+                                       body)
+            self.middleware.finish()
+
         if op_code == EOF_FLIGHTS_FILE:
             remaining_nodes = flight.get("remaining_nodes")
             if remaining_nodes == 1:

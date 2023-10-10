@@ -1,6 +1,6 @@
 import json
 
-from util.constants import EOF_FLIGHTS_FILE
+from util.constants import EOF_FLIGHTS_FILE, SIGTERM
 from util.queue_middleware import QueueMiddleware
 
 
@@ -16,7 +16,14 @@ class QueryHandler:
 
     def __callback(self, body):
         result = json.loads(body)
-        if result.get("op_code") == EOF_FLIGHTS_FILE:
+        op_code = result.get("op_code")
+        if op_code == SIGTERM:
+            print("Received sigterm")
+            print(result)
+            self.__middleware.finish()
+            return
+
+        if op_code == EOF_FLIGHTS_FILE:
             self.__middleware.finish()
             return
         result.pop('op_code', None)
