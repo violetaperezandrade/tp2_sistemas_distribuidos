@@ -1,10 +1,18 @@
+import multiprocessing
 from query_handler import QueryHandler
+QUERIES = 4
 
 
-def main():
-    query_handler = QueryHandler()
-    query_handler.run("output")
+def run(query_number):
+    query_handler = QueryHandler(query_number)
+    query_handler.run()
 
 
-if __name__ == '__main__':
-    main()
+processes = []
+for i in range(1, QUERIES+1):
+    process = multiprocessing.Process(target=run, args=(i, ))
+    processes.append(process)
+    process.start()
+
+for process in processes:
+    process.join()

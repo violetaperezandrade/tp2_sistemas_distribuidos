@@ -24,6 +24,7 @@ services:
       - PYTHONUNBUFFERED=1
     depends_on:
       - server
+
   server:
     container_name: server
     image: server:latest
@@ -50,6 +51,30 @@ services:
       - query_2_column_filter_2
       - query_5_column_filter
 
+  initial_column_cleaner_2:
+    container_name: initial_column_cleaner_2
+    image: initial_column_cleaner:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - filter_by_three_stopovers_1
+      - filter_by_three_stopovers_2
+      - filter_by_three_stopovers_3
+      - filter_by_three_stopovers_4
+
+  initial_column_cleaner_3:
+    container_name: initial_column_cleaner_3
+    image: initial_column_cleaner:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - filter_by_three_stopovers_1
+      - filter_by_three_stopovers_2
+      - filter_by_three_stopovers_3
+      - filter_by_three_stopovers_4
+
   filter_by_three_stopovers_1:
     container_name: filter_by_three_stopovers_1
     image: filter_by_three_stopovers:latest
@@ -70,6 +95,15 @@ services:
 
   filter_by_three_stopovers_3:
     container_name: filter_by_three_stopovers_3
+    image: filter_by_three_stopovers:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - query_handler
+
+  filter_by_three_stopovers_4:
+    container_name: filter_by_three_stopovers_4
     image: filter_by_three_stopovers:latest
     entrypoint: python3 /main.py
     environment:
@@ -106,6 +140,50 @@ services:
     depends_on:
       - distance_calculator_1
       - distance_calculator_2
+
+  group_by_route:
+    container_name: group_by_route
+    image: group_by:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=startingAirport,destinationAirport
+      - INPUT_EXCHANGE=3_or_more_stop_overs
+      - REDUCERS_AMOUNT=2
+      - QUEUE_GROUP_BY=group_by_route_queue
+      - LISTENING_QUEUE=group_by_route
+      - INPUT_QUEUE=
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  reducer_group_by_route_1:
+    container_name: reducer_group_by_route_1
+    image: reducer_group_by:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=route
+      - INPUT_QUEUE=group_by_route_queue_1
+      - OUTPUT_QUEUE=output_3
+      - QUERY_NUMBER=3
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  reducer_group_by_route_2:
+    container_name: reducer_group_by_route_2
+    image: reducer_group_by:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=route
+      - INPUT_QUEUE=group_by_route_queue_2
+      - OUTPUT_QUEUE=output_3
+      - QUERY_NUMBER=3
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
   distance_calculator_1:
     container_name: distance_calculator_1

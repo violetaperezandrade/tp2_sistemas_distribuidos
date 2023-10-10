@@ -32,9 +32,9 @@ class QueueMiddleware:
     def __verify_connection_end(self):
         if self.__exit:
             self.__channel.close()
-        if self.__remake:
-            self.__exit = False
-            self.__channel = self.__connection.channel()
+            if self.__remake:
+                self.__exit = False
+                self.__channel = self.__connection.channel()
 
     def finish(self, open_new_channel=False):
         self.__exit = True
@@ -53,7 +53,7 @@ class QueueMiddleware:
                                      body=message)
 
     # Publisher/Subscriber methods
-    def publish_on(self, exchange_name, message, routing_key):
+    def publish_on(self, exchange_name, message, routing_key='#'):
         """Publish message on specified exchange."""
         self.__create_exchange(exchange_name, 'topic')
         self.__channel.basic_publish(exchange=exchange_name,

@@ -6,11 +6,12 @@ from util.queue_middleware import QueueMiddleware
 
 class QueryHandler:
 
-    def __init__(self):
+    def __init__(self, query_number):
+        self.__output_queue = f"output_{query_number}"
         self.__middleware = QueueMiddleware()
 
-    def run(self, output_queue):
-        self.__middleware.listen_on(output_queue, self.__callback)
+    def run(self):
+        self.__middleware.listen_on(self.__output_queue, self.__callback)
 
     def __callback(self, body):
         result = json.loads(body)
@@ -18,6 +19,4 @@ class QueryHandler:
             self.__middleware.finish()
             return
         result.pop('op_code', None)
-        queryNumber = result["queryNumber"]
-        result.pop('queryNumber', None)
-        print(f"QUERY {queryNumber}: {result}")
+        print(result)

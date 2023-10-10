@@ -64,7 +64,7 @@ class Client:
         # Connection arrived
         logging.info(
             f"action: start_connection | host: {self._server_address[0]}"
-            "| port: {self._server_address[1]} | result: in_progress")
+            f"| port: {self._server_address[1]} | result: in_progress")
         self._client_socket.connect(self._server_address)
         logging.info(
             f'action: start_connection | host: {self._server_address[0]} | '
