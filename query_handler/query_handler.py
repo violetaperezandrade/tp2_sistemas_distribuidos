@@ -21,10 +21,9 @@ class QueryHandler:
     def __callback(self, body):
         result = json.loads(body)
         if result.get("op_code") == EOF_FLIGHTS_FILE:
+            self.__eofs_received += 1
             if self.__eofs_received >= self.__eof_max:
                 self.__middleware.finish()
-            else:
-                self.__eofs_received += 1
             return
         result.pop('op_code', None)
         print(f'QUERY {self.query_number}: {result}')

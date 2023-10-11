@@ -10,13 +10,14 @@ from util.queue_middleware import QueueMiddleware
 class ColumnCleaner:
     def __init__(self, output_queue, output_exchange, input_queue,
                  required_columns_flights, required_columns_airports,
-                 routing_key):
+                 routing_key, connected_nodes):
         self.__output_queue = output_queue
         self.__output_exchange = output_exchange
         self.__input_queue = input_queue
         self.__required_columns_flights = required_columns_flights
         self.__required_columns_airports = required_columns_airports
         self.__routing_key = routing_key
+        self.__connected_nodes = connected_nodes
         self.middleware = QueueMiddleware()
 
     def run(self, input_exchange):
@@ -39,7 +40,8 @@ class ColumnCleaner:
             return
         if op_code == EOF_FLIGHTS_FILE:
             if register["remaining_nodes"] == 1:
-                self.__output_message(body, op_code)
+                register["remaining_nodes"] = self.__connected_nodes
+                self.__output_message(json.dumps(register), op_code)
             else:
                 register["remaining_nodes"] -= 1
                 self.middleware.send_message(self.__input_queue, json.dumps(register))
@@ -61,7 +63,7 @@ class ColumnCleaner:
 
     def __output_message(self, msg, op_code):
         if self.__output_exchange is not None:
-            if self.__routing_key == "#" and op_code == FLIGHT_REGISTER:
+            if self.__routing_key == "all" and op_code <= FLIGHT_REGISTER:
                 self.middleware.send_message(self.__output_queue, msg)
                 return
             self.middleware.publish(self.__output_exchange, msg)
