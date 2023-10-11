@@ -54,6 +54,7 @@ class AvgCalculator:
             final_result = flight["sum"] / flight["count"]
             message = self.__generate_mesage(final_result)
             self.__middleware.publish(self.__output_exchange, json.dumps(message))
+            self.__middleware.finish()
             return
 
         flight["remaining_nodes"] -= 1
