@@ -47,8 +47,9 @@ class DistanceCalculator:
     def __calculate_total_distance(self, register):
         stops = register["segmentsArrivalAirportCode"].split("||")
         stops.insert(0, register["startingAirport"])
-        register["directDistance"] = self.__calculate_distance(register["startingAirport"],
-                                                               register["destinationAirport"])
+        register["directDistance"] = self.__calculate_distance(
+            register["startingAirport"],
+            register["destinationAirport"])
         if register["totalTravelDistance"] != '':
             distance_float = float(register["totalTravelDistance"])
             register["totalTravelDistance"] = distance_float

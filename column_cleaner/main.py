@@ -20,6 +20,7 @@ def initialize_config():
     except KeyError as e:
         raise KeyError(
             "Key was not found. Error: {} .Aborting client".format(e))
+    
     except ValueError as e:
         raise ValueError(
             "Key could not be parsed. Error: {}. Aborting client".format(e))

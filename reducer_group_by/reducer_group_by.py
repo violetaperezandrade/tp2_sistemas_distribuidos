@@ -2,6 +2,7 @@ import json
 from util.queue_middleware import QueueMiddleware
 from util.constants import *
 from util.utils_query_3 import *
+from util.utils_query_4 import *
 from util.utils_query_5 import handle_query_5
 
 
@@ -15,6 +16,7 @@ class ReducerGroupBy():
         self.input_queue = input_queue
         self.query_number = query_number
         self.operations_map = {3: handle_query_3,
+                               4: handle_query_4,
                                5: handle_query_5}
 
     def run(self):
@@ -24,7 +26,6 @@ class ReducerGroupBy():
     def __callback(self, body):
         flight = json.loads(body)
         op_code = flight.get("op_code")
-
         if op_code == 0:
             # EOF
             self.__handle_eof()
