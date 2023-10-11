@@ -33,7 +33,6 @@ class FilterByAverage:
         if op_code == EOF_FLIGHTS_FILE:
             self.__handle_eof(flight)
             return
-
         if float(flight["totalFare"]) > self.__avg:
             self.__middleware.send_message(self.__output_queue, body)
 
@@ -41,9 +40,7 @@ class FilterByAverage:
         remaining_nodes = flight.get("remaining_nodes")
         if remaining_nodes == 1:
             self.__middleware.send_message(self.__output_queue, json.dumps(flight))
-            self.__middleware.finish()
-            return
-
-        flight["remaining_nodes"] -= 1
-        self.__middleware.send_message(self.__input_queue, json.dumps(flight))
+        else:
+            flight["remaining_nodes"] -= 1
+            self.__middleware.send_message(self.__input_queue, json.dumps(flight))
         self.__middleware.finish()

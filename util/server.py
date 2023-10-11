@@ -26,6 +26,7 @@ class Server:
         }
 
     def run(self):
+        self.__queue_middleware.create_queue("full_flight_registers")
         signal.signal(signal.SIGTERM, self.handle_sigterm)
         client_sock = self.__accept_new_connection()
         try:
@@ -105,13 +106,13 @@ class Server:
 
     def __read_line(self, registers):
         for register in registers:
-            self.__queue_middleware.send_message_to("full_flight_registers",
-                                                    json.dumps(register))
+            self.__queue_middleware.send_message("full_flight_registers",
+                                                 json.dumps(register))
 
     def __handle_eof(self, payload):
         opcode = protocol.get_opcode(payload)
         msg = protocol.encode_eof(opcode)
-        self.__queue_middleware.send_message_to("full_flight_registers", msg)
+        self.__queue_middleware.send_message("full_flight_registers", msg)
         if opcode == EOF_FLIGHTS_FILE:
             self._reading_file = False
 
