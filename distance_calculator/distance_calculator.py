@@ -33,6 +33,11 @@ class DistanceCalculator:
     def __flight_callback(self, body):
         register = json.loads(body)
         if register["op_code"] == EOF_FLIGHTS_FILE:
+            if register["remaining_nodes"] == 1:
+                self.__middleware.send_message(self.__output_queue,body)
+            else:
+                register["remaining_nodes"] -= 1
+                self.__middleware.send_message(self.__input_queue, json.dumps(register))
             self.__middleware.finish()
             return
         self.__calculate_total_distance(register)
