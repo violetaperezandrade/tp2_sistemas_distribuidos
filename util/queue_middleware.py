@@ -70,8 +70,9 @@ class QueueMiddleware:
                                   queue=queue,
                                   routing_key=routing_key)
         self.__setup_message_consumption(queue, function)
-    
-    def subscribe_without_consumption(self, exchange, function, routing_key="#", queue=''):
+
+    def subscribe_without_consumption(self, exchange, function,
+                                      routing_key="#", queue=''):
         self.__create_exchange(exchange, 'topic')
         exclusive = (queue == '')
         result = self.__channel.queue_declare(queue=queue,
@@ -83,4 +84,3 @@ class QueueMiddleware:
 
     def __del__(self):
         self.__connection.close()
-
