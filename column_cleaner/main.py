@@ -17,9 +17,11 @@ def initialize_config():
         config_params["required_columns_flights"] = config["DEFAULT"]["REQUIRED_COLUMNS_FLIGHTS"].split(",")
         config_params["required_columns_airports"] = config["DEFAULT"]["REQUIRED_COLUMNS_AIRPORTS"].split(",")
         config_params["routing_key"] = config["DEFAULT"]["ROUTING_KEY"]
+        config_params["connected_nodes"] = int(config["DEFAULT"]["CONNECTED_NODES"])
     except KeyError as e:
         raise KeyError(
             "Key was not found. Error: {} .Aborting client".format(e))
+    
     except ValueError as e:
         raise ValueError(
             "Key could not be parsed. Error: {}. Aborting client".format(e))
@@ -35,11 +37,12 @@ def main():
     required_columns_flights = config_params["required_columns_flights"]
     required_columns_airports = config_params["required_columns_airports"]
     routing_key = config_params["routing_key"]
-    cleaner = ColumnCleaner(output_queue, output_exchange,
+    connected_nodes = config_params["connected_nodes"]
+    cleaner = ColumnCleaner(output_queue, output_exchange, input_queue,
                             required_columns_flights,
                             required_columns_airports,
-                            routing_key)
-    cleaner.run(input_exchange, input_queue)
+                            routing_key, connected_nodes)
+    cleaner.run(input_exchange)
 
 
 if __name__ == '__main__':

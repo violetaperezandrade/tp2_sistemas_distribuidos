@@ -14,16 +14,11 @@ def initialize_config():
 
     config_params = {}
     try:
-        config_params["host"] = os.getenv(
-            'SERVER_HOST', config["DEFAULT"]["SERVER_HOST"])
-        config_params["port"] = int(
-            os.getenv('SERVER_PORT', config["DEFAULT"]["SERVER_PORT"]))
-        config_params["logging_level"] = os.getenv(
-            'LOGGING_LEVEL', config["DEFAULT"]["LOGGING_LEVEL"])
-        config_params["flights_name"] = os.getenv(
-            'FLIGHTS_FILE', config["DEFAULT"]["FLIGHTS_FILE"])
-        config_params["airports_name"] = os.getenv(
-            'AIRPORTS_FILE', config["DEFAULT"]["AIRPORTS_FILE"])
+        config_params["host"] = config["DEFAULT"]["SERVER_HOST"]
+        config_params["port"] = int(config["DEFAULT"]["SERVER_PORT"])
+        config_params["logging_level"] = config["DEFAULT"]["LOGGING_LEVEL"]
+        config_params["flights_name"] = config["DEFAULT"]["FLIGHTS_FILE"]
+        config_params["airports_name"] = config["DEFAULT"]["AIRPORTS_FILE"]
     except KeyError as e:
         raise KeyError(
             "Key was not found. Error: {} .Aborting client".format(e))
