@@ -1,6 +1,7 @@
 import json
 
 from util.constants import EOF_FLIGHTS_FILE, FLIGHT_REGISTER
+from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import (QueueMiddleware)
 
 
@@ -12,10 +13,9 @@ class FilterByAverage:
         self.__middleware = QueueMiddleware()
 
     def run(self, avg_exchange):
-        self.__middleware.create_exchange(self.__input_exchange, 'fanout')
-        self.__middleware.create_queue(self.__input_queue)
-        self.__middleware.create_queue(self.__output_queue)
-        self.__middleware.create_queue("cleaned_column_queue")
+        initialize_exchanges([self.__input_exchange, avg_exchange], self.__middleware)
+        initialize_queues([self.__output_queue, self.__input_queue,
+                           "cleaned_column_queue"], self.__middleware)
         self.__middleware.subscribe_without_consumption(self.__input_exchange,
                                                         "cleaned_column_queue")
         self.__middleware.subscribe(avg_exchange, self.__callback_avg)

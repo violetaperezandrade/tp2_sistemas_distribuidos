@@ -26,7 +26,6 @@ class Server:
             AIRPORT_REGISTER: self.__read_line,
             EOF_AIRPORTS_FILE: self.__handle_eof
         }
-        self.counter=0
 
     def run(self):
         self.__queue_middleware.create_queue("full_flight_registers")
@@ -108,12 +107,6 @@ class Server:
 
     def __read_line(self, payload):
         msg = protocol.decode_to_str(payload)
-        self.counter += 1
-        if self.counter >= 1200000:
-            msg=protocol.encode_eof(EOF_FLIGHTS_FILE)
-            self.__queue_middleware.send_message("full_flight_registers", msg)
-            self._reading_file = False
-            return
         self.__queue_middleware.send_message("full_flight_registers", msg)
 
     def __handle_eof(self, payload):

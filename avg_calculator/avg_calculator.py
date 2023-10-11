@@ -1,4 +1,5 @@
 from util.constants import EOF_FLIGHTS_FILE, FLIGHT_REGISTER, AVG_READY
+from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import (QueueMiddleware)
 import json
 
@@ -14,9 +15,8 @@ class AvgCalculator:
         self.__middleware = QueueMiddleware()
     
     def run(self):
-        self.__middleware.create_exchange(self.__input_exchange,'fanout')
-        self.__middleware.create_exchange(self.__output_exchange,'fanout')
-        self.__middleware.create_queue(self.__input_queue)
+        initialize_exchanges([self.__output_exchange, self.__input_exchange], self.__middleware)
+        initialize_queues([self.__input_queue], self.__middleware)
         self.__middleware.subscribe(self.__input_exchange,
                                     self.__callback,
                                     self.__input_queue)
@@ -24,15 +24,14 @@ class AvgCalculator:
     def __callback(self, body):
         flight = json.loads(body)
         op_code = flight.get("op_code")
+        if op_code == AVG_READY:
+            self.__handle_avg_res(flight)
+            return
         if op_code > FLIGHT_REGISTER:
             return
         if op_code == EOF_FLIGHTS_FILE:
             self.__handle_eof(flight)
             return
-        elif op_code == AVG_READY:
-            self.__handle_avg_res(flight)
-            return
-        
         self.__result["sum"] += float(flight[self.__column_name])  
         self.__result["count"] += 1
     
@@ -52,7 +51,7 @@ class AvgCalculator:
             return
         
         flight["remaining_nodes"] -= 1
-        self.__middleware.send_message_to(self.__input_queue, json.dumps(flight))
+        self.__middleware.send_message(self.__input_queue, json.dumps(flight))
         self.__middleware.finish()
         return
 

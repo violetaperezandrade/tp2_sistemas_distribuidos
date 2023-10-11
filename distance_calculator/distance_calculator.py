@@ -1,6 +1,7 @@
 import json
 
 from util.constants import EOF_AIRPORTS_FILE, EOF_FLIGHTS_FILE
+from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
 from geopy.distance import geodesic
 
@@ -15,9 +16,8 @@ class DistanceCalculator:
         self.__airports_distances = {}
 
     def run(self):
-        self.__middleware.create_queue(self.__output_queue)
-        self.__middleware.create_exchange(self.__input_exchange,"fanout")
-        self.__middleware.create_queue(self.__input_queue)
+        initialize_exchanges([self.__input_exchange], self.__middleware)
+        initialize_queues([self.__input_queue, self.__output_queue], self.__middleware)
         self.__middleware.subscribe(self.__input_exchange,
                                     self.__airport_callback)
         self.__middleware.listen_on(self.__input_queue,

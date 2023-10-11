@@ -3,41 +3,47 @@ from util.constants import (EOF_FLIGHTS_FILE,
                             EOF_AIRPORTS_FILE, FLIGHT_REGISTER)
 import json
 
+from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
 
 
 class ColumnCleaner:
-    def __init__(self, output_queue, output_exchange,
+    def __init__(self, output_queue, output_exchange, input_queue,
                  required_columns_flights, required_columns_airports,
                  routing_key):
         self.__output_queue = output_queue
         self.__output_exchange = output_exchange
+        self.__input_queue = input_queue
         self.__required_columns_flights = required_columns_flights
         self.__required_columns_airports = required_columns_airports
         self.__routing_key = routing_key
         self.middleware = QueueMiddleware()
 
-    def run(self, input_exchange, input_queue):
-        if self.__output_exchange is not None:
-            self.middleware.create_exchange(self.__output_exchange, "fanout")
-        if self.__output_queue is not None:
-            self.middleware.create_queue(self.__output_queue)
-        self.middleware.create_queue(input_queue)
+    def run(self, input_exchange):
+        initialize_exchanges([self.__output_exchange, input_exchange], self.middleware)
+        initialize_queues([self.__output_queue, self.__input_queue], self.middleware)
         if input_exchange is not None:
-            self.middleware.create_exchange(input_exchange,'fanout')
             self.middleware.subscribe(input_exchange,
                                       self.callback,
-                                      input_queue)
-        elif input_exchange is None:
-            self.middleware.listen_on(input_queue, self.callback)
+                                      self.__input_queue)
+        else:
+            self.middleware.listen_on(self.__input_queue, self.callback)
 
     def callback(self, body):
         register = json.loads(body)
         op_code = register.get("op_code")
-        if self.__routing_key == "flights" and op_code >= 2:
+        if self.__routing_key == "flights" and op_code > FLIGHT_REGISTER:
             return
-        if op_code == EOF_FLIGHTS_FILE or op_code == EOF_AIRPORTS_FILE:
+        if op_code == EOF_AIRPORTS_FILE:
             self.__output_message(body, op_code)
+            return
+        if op_code == EOF_FLIGHTS_FILE:
+            if register["remaining_nodes"] == 1:
+                self.__output_message(body, op_code)
+            else:
+                register["remaining_nodes"] -= 1
+                self.middleware.send_message(self.__input_queue, json.dumps(register))
+            self.middleware.finish()
             return
         filtered_columns = dict()
         column_names = self.__required_columns_flights
@@ -45,9 +51,8 @@ class ColumnCleaner:
             if self.__required_columns_airports != ['']:
                 column_names = self.__required_columns_airports
             else:
-                self.middleware.publish_on(self.__output_exchange,
-                                           body,
-                                           "airports")
+                self.middleware.publish(self.__output_exchange,
+                                        body)
                 return
         for column in column_names:
             filtered_columns[column] = register[column]

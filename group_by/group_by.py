@@ -1,5 +1,7 @@
 import json
 from hashlib import sha256
+
+from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
 from util.constants import *
 
@@ -26,10 +28,11 @@ class GroupBy():
             self.field_group_by = fields_group_by[0]
 
     def run(self):
-        self.queue_middleware.create_queue(self.input_queue)
+
+        initialize_exchanges([self.input_exchange], self.queue_middleware)
+        initialize_queues([self.listening_queue, self.input_queue] + self.reducers, self.queue_middleware)
+
         if self.input_queue == '':  # reading from an exchange
-            self.queue_middleware.create_queue(self.listening_queue)
-            self.queue_middleware.create_exchange(self.input_exchange, 'fanout')
             self.queue_middleware.subscribe(self.input_exchange,
                                             self.__callback,
                                             self.listening_queue)

@@ -22,6 +22,7 @@ class Client:
         self.__start_connection_with_server()
         self.__read_and_send_lines()
         self.__send_eof(EOF_FLIGHTS_FILE)
+        time.sleep(100)
         self.__close_connection()
 
     def __read_and_send_lines(self):

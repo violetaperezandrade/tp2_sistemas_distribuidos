@@ -1,6 +1,7 @@
 import json
+
+from util.initialization import initialize_queues
 from util.queue_middleware import QueueMiddleware
-from util.constants import *
 from util.utils_query_3 import *
 from util.utils_query_4 import *
 from util.utils_query_5 import handle_query_5
@@ -20,15 +21,13 @@ class ReducerGroupBy():
                                5: handle_query_5}
 
     def run(self):
-        self.queue_middleware.create_queue(self.input_queue)
-        self.queue_middleware.create_queue(self.output_queue)
+        initialize_queues([self.output_queue, self.input_queue], self.queue_middleware)
         self.queue_middleware.listen_on(self.input_queue, self.__callback)
 
     def __callback(self, body):
         flight = json.loads(body)
         op_code = flight.get("op_code")
         if op_code == 0:
-            print("llegue al eof")
             self.__handle_eof()
             self.queue_middleware.send_message(self.output_queue, body)
             self.queue_middleware.finish()

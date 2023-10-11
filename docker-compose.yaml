@@ -49,8 +49,10 @@ services:
       - filter_by_three_stopovers_3
       - query_2_column_filter_1
       - query_2_column_filter_2
+      - query_2_column_filter_3
       - query_5_column_filter_1
       - query_5_column_filter_2
+      - query_5_column_filter_3
       - avg_calculator_1
       - avg_calculator_2
       - avg_calculator_3
@@ -70,8 +72,10 @@ services:
       - filter_by_three_stopovers_3
       - query_2_column_filter_1
       - query_2_column_filter_2
+      - query_2_column_filter_3
       - query_5_column_filter_1
       - query_5_column_filter_2
+      - query_5_column_filter_3
       - avg_calculator_1
       - avg_calculator_2
       - avg_calculator_3
@@ -91,8 +95,10 @@ services:
       - filter_by_three_stopovers_3
       - query_2_column_filter_1
       - query_2_column_filter_2
+      - query_2_column_filter_3
       - query_5_column_filter_1
       - query_5_column_filter_2
+      - query_5_column_filter_3
       - avg_calculator_1
       - avg_calculator_2
       - avg_calculator_3
@@ -139,6 +145,16 @@ services:
 
   query_2_column_filter_2:
     container_name: query_2_column_filter_2
+    image: query_2_column_filter:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - distance_calculator_1
+      - distance_calculator_2
+
+  query_2_column_filter_3:
+    container_name: query_2_column_filter_3
     image: query_2_column_filter:latest
     entrypoint: python3 /main.py
     environment:
@@ -218,6 +234,15 @@ services:
 
   query_5_column_filter_2:
     container_name: query_5_column_filter_2
+    image: query_5_column_filter:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - group_by_airport
+
+  query_5_column_filter_3:
+    container_name: query_5_column_filter_3
     image: query_5_column_filter:latest
     entrypoint: python3 /main.py
     environment:
