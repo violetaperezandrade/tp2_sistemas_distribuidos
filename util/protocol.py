@@ -1,4 +1,5 @@
 import json
+import struct
 
 
 def encode_register(flight, opcode):
@@ -12,9 +13,7 @@ def encode_register(flight, opcode):
 
 
 def get_opcode(payload):
-    flight_str = payload.decode('utf-8')
-    flight = json.loads(flight_str)
-    return flight.get("op_code")
+    return payload[0].get("op_code")
 
 
 def decode_to_str(payload):
@@ -28,10 +27,33 @@ def encode_eof(opcode):
 
 
 def encode_eof_client(opcode):
-    eof = {"op_code": opcode}
+    eof = [{"op_code": opcode}]
     eof = json.dumps(eof)
     eof_bytes = eof.encode('utf-8')
-    eof_length_bytes = len(eof_bytes).to_bytes(2, byteorder="big")
+    eof_length_bytes = len(eof_bytes).to_bytes(3, byteorder="big")
 
     message = eof_length_bytes + eof_bytes
     return message
+
+
+def encode_registers_batch(batch, op_code):
+    batch = list(map(lambda d: {**d, "op_code": op_code}, batch))
+    data_json = json.dumps(batch)
+    payload_length = len(data_json)
+    header = struct.pack('!I', payload_length & 0xFFFFFF)
+    message = header[1:] + data_json.encode('utf-8')
+    return message
+
+
+def get_opcode_batch(payload):
+    registers = json.loads(payload.decode('utf-8'))
+    op_code = registers[0].get("op_code")
+    return registers, op_code
+
+
+def decode_server_ack(msg):
+    return int.from_bytes(msg, byteorder='big')
+
+
+def encode_server_ack(ack):
+    return ack.to_bytes(1, byteorder='big')
