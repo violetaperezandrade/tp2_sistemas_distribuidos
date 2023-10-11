@@ -13,7 +13,7 @@ class GroupBy():
         self.input_queue = input_queue
         self.reducers_amount = reducers_amount
         self.reducers = [
-            f"{queue_group_by}_{i}" for i in range(1, reducers_amount+1)]
+            f"{queue_group_by}_{i}" for i in range(1, reducers_amount + 1)]
         self.listening_queue = listening_queue
         self.handle_group_by_fields(fields_group_by)
 
@@ -26,10 +26,13 @@ class GroupBy():
             self.field_group_by = fields_group_by[0]
 
     def run(self):
+        self.queue_middleware.create_queue(self.input_queue)
         if self.input_queue == '':  # reading from an exchange
-            self.queue_middleware.subscribe_to(self.input_exchange,
-                                               self.__callback,
-                                               queue=self.listening_queue)
+            self.queue_middleware.create_queue(self.listening_queue)
+            self.queue_middleware.create_exchange(self.input_exchange, 'fanout')
+            self.queue_middleware.subscribe(self.input_exchange,
+                                            self.__callback,
+                                            self.listening_queue)
         elif self.input_exchange == '':  # listening from a queue
             self.queue_middleware.listen_on(self.input_queue, self.__callback)
 
@@ -39,15 +42,15 @@ class GroupBy():
         if op_code == EOF_FLIGHTS_FILE:
             # EOF
             for reducer in self.reducers:
-                self.queue_middleware.send_message_to(reducer, body)
+                self.queue_middleware.send_message(reducer, body)
             self.queue_middleware.finish()
             return
         if self.fields_list is not None:
             flight[self.field_group_by] = self.__create_route(flight,
                                                               self.fields_list)
         output_queue = self.__get_output_queue(flight, self.field_group_by)
-        self.queue_middleware.send_message_to(self.reducers[output_queue],
-                                              json.dumps(flight))
+        self.queue_middleware.send_message(self.reducers[output_queue],
+                                           json.dumps(flight))
 
     def __create_route(self, flight, fields_list):
         return ("-").join(flight[str(field)] for field in fields_list)

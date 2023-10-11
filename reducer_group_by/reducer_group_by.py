@@ -20,16 +20,17 @@ class ReducerGroupBy():
                                5: handle_query_5}
 
     def run(self):
-
+        self.queue_middleware.create_queue(self.input_queue)
+        self.queue_middleware.create_queue(self.output_queue)
         self.queue_middleware.listen_on(self.input_queue, self.__callback)
 
     def __callback(self, body):
         flight = json.loads(body)
         op_code = flight.get("op_code")
         if op_code == 0:
-            # EOF
+            print("llegue al eof")
             self.__handle_eof()
-            self.queue_middleware.send_message_to(self.output_queue, body)
+            self.queue_middleware.send_message(self.output_queue, body)
             self.queue_middleware.finish()
             return
 
@@ -46,8 +47,8 @@ class ReducerGroupBy():
                 pass
             if type(msg) is list:
                 for message in msg:
-                    self.queue_middleware.send_message_to(self.output_queue,
-                                                          json.dumps(message))
+                    self.queue_middleware.send_message(self.output_queue,
+                                                       json.dumps(message))
             else:
-                self.queue_middleware.send_message_to(self.output_queue,
-                                                      json.dumps(msg))
+                self.queue_middleware.send_message(self.output_queue,
+                                                   json.dumps(msg))

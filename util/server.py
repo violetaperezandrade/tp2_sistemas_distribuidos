@@ -1,8 +1,11 @@
+import json
 import socket
 import logging
 import signal
+from _socket import timeout
 
 from util import protocol
+from threading import Thread
 from util.constants import (EOF_FLIGHTS_FILE, FLIGHT_REGISTER,
                             AIRPORT_REGISTER, EOF_AIRPORTS_FILE)
 from util.queue_middleware import QueueMiddleware
@@ -23,8 +26,10 @@ class Server:
             AIRPORT_REGISTER: self.__read_line,
             EOF_AIRPORTS_FILE: self.__handle_eof
         }
+        self.counter=0
 
     def run(self):
+        self.__queue_middleware.create_queue("full_flight_registers")
         signal.signal(signal.SIGTERM, self.handle_sigterm)
         client_sock = self.__accept_new_connection()
         try:
@@ -103,11 +108,17 @@ class Server:
 
     def __read_line(self, payload):
         msg = protocol.decode_to_str(payload)
-        self.__queue_middleware.send_message_to("full_flight_registers", msg)
+        self.counter += 1
+        if self.counter >= 1200000:
+            msg=protocol.encode_eof(EOF_FLIGHTS_FILE)
+            self.__queue_middleware.send_message("full_flight_registers", msg)
+            self._reading_file = False
+            return
+        self.__queue_middleware.send_message("full_flight_registers", msg)
 
     def __handle_eof(self, payload):
         opcode = protocol.get_opcode(payload)
         msg = protocol.encode_eof(opcode)
-        self.__queue_middleware.send_message_to("full_flight_registers", msg)
+        self.__queue_middleware.send_message("full_flight_registers", msg)
         if opcode == EOF_FLIGHTS_FILE:
             self._reading_file = False

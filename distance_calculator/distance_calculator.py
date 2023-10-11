@@ -15,8 +15,11 @@ class DistanceCalculator:
         self.__airports_distances = {}
 
     def run(self):
-        self.__middleware.subscribe_to(self.__input_exchange,
-                                       self.__airport_callback)
+        self.__middleware.create_queue(self.__output_queue)
+        self.__middleware.create_exchange(self.__input_exchange,"fanout")
+        self.__middleware.create_queue(self.__input_queue)
+        self.__middleware.subscribe(self.__input_exchange,
+                                    self.__airport_callback)
         self.__middleware.listen_on(self.__input_queue,
                                     self.__flight_callback)
 
@@ -38,7 +41,7 @@ class DistanceCalculator:
             register.pop('directDistance', None)
             register.pop('op_code', None)
             register = json.dumps(register)
-            self.__middleware.send_message_to(self.__output_queue, register)
+            self.__middleware.send_message(self.__output_queue, register)
 
     def __store_value(self, register):
         coordinates = (register["Latitude"], register["Longitude"])
@@ -53,11 +56,8 @@ class DistanceCalculator:
             distance_float = float(register["totalTravelDistance"])
             register["totalTravelDistance"] = distance_float
             return
-        distance = 0
-        for i in range(len(stops) - 1):
-            distance += self.__calculate_distance(stops[i],
-                                                  stops[i + 1])
-        register["totalTravelDistance"] = distance
+        else:
+            register["totalTravelDistance"] = 0
 
     def __calculate_distance(self, start, end):
         coordinates_start = self.__airports_distances[start]

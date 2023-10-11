@@ -25,6 +25,7 @@ class Client:
         self.__close_connection()
 
     def __read_and_send_lines(self):
+        sent = 0
         with (open(self.__flights_file, mode='r') as file2,
               open(self.__airports_file, mode='r',
                    encoding='utf-8-sig') as file1):
@@ -74,7 +75,6 @@ class Client:
     def __send_msg(self, message):
         bytes_sent = 0
         while bytes_sent < len(message):
-            time.sleep(0.005)
             chunk_size = self._client_socket.send(message[bytes_sent:])
             logging.debug(
                 f'action: sending_message | result: success |'
