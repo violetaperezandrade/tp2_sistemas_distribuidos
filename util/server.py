@@ -1,6 +1,7 @@
 import socket
 import logging
 import signal
+import json
 
 from util import protocol
 from util.constants import (EOF_FLIGHTS_FILE, FLIGHT_REGISTER,
@@ -49,11 +50,12 @@ class Server:
         client socket will also be closed
         """
         try:
-            header = self.__read_exact(2, client_sock)
+            header = self.__read_exact(3, client_sock)
             payload = self.__read_exact(int.from_bytes(
                 header, byteorder='big'), client_sock)
-            op_code = protocol.get_opcode(payload)
-            data = self._operations_map.get(op_code, lambda _: 0)(payload)
+            registers, op_code = protocol.get_opcode_batch(payload)
+            data = self._operations_map.get(op_code, lambda _: 0)(registers)
+            self.__send_ack(client_sock)
             # TODO: error handling
             if data == 0:
                 logging.error(
@@ -101,9 +103,10 @@ class Server:
         logging.info('action: close_server | result: success')
         return
 
-    def __read_line(self, payload):
-        msg = protocol.decode_to_str(payload)
-        self.__queue_middleware.send_message_to("full_flight_registers", msg)
+    def __read_line(self, registers):
+        for register in registers:
+            self.__queue_middleware.send_message_to("full_flight_registers",
+                                                    json.dumps(register))
 
     def __handle_eof(self, payload):
         opcode = protocol.get_opcode(payload)
@@ -111,3 +114,7 @@ class Server:
         self.__queue_middleware.send_message_to("full_flight_registers", msg)
         if opcode == EOF_FLIGHTS_FILE:
             self._reading_file = False
+
+    def __send_ack(self, client_sock):
+        msg = protocol.encode_server_ack(8)
+        self.__send_exact(msg, client_sock)
