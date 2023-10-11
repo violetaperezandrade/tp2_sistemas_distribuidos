@@ -36,11 +36,11 @@ def main():
     required_columns_flights = config_params["required_columns_flights"]
     required_columns_airports = config_params["required_columns_airports"]
     routing_key = config_params["routing_key"]
-    cleaner = ColumnCleaner(output_queue, output_exchange,
+    cleaner = ColumnCleaner(output_queue, output_exchange, input_queue,
                             required_columns_flights,
                             required_columns_airports,
                             routing_key)
-    cleaner.run(input_exchange, input_queue)
+    cleaner.run(input_exchange)
 
 
 if __name__ == '__main__':

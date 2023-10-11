@@ -47,10 +47,12 @@ services:
       - filter_by_three_stopovers_1
       - filter_by_three_stopovers_2
       - filter_by_three_stopovers_3
-      - filter_by_three_stopovers_4
       - query_2_column_filter_1
       - query_2_column_filter_2
-      - query_5_column_filter
+      - query_2_column_filter_3
+      - query_5_column_filter_1
+      - query_5_column_filter_2
+      - query_5_column_filter_3
       - avg_calculator_1
       - avg_calculator_2
       - avg_calculator_3
@@ -68,10 +70,12 @@ services:
       - filter_by_three_stopovers_1
       - filter_by_three_stopovers_2
       - filter_by_three_stopovers_3
-      - filter_by_three_stopovers_4
       - query_2_column_filter_1
       - query_2_column_filter_2
-      - query_5_column_filter
+      - query_2_column_filter_3
+      - query_5_column_filter_1
+      - query_5_column_filter_2
+      - query_5_column_filter_3
       - avg_calculator_1
       - avg_calculator_2
       - avg_calculator_3
@@ -89,10 +93,12 @@ services:
       - filter_by_three_stopovers_1
       - filter_by_three_stopovers_2
       - filter_by_three_stopovers_3
-      - filter_by_three_stopovers_4
       - query_2_column_filter_1
       - query_2_column_filter_2
-      - query_5_column_filter
+      - query_2_column_filter_3
+      - query_5_column_filter_1
+      - query_5_column_filter_2
+      - query_5_column_filter_3
       - avg_calculator_1
       - avg_calculator_2
       - avg_calculator_3
@@ -107,7 +113,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
-      - query_handler
+      - group_by_route
 
   filter_by_three_stopovers_2:
     container_name: filter_by_three_stopovers_2
@@ -116,7 +122,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
-      - query_handler
+      - group_by_route
 
   filter_by_three_stopovers_3:
     container_name: filter_by_three_stopovers_3
@@ -125,16 +131,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
-      - query_handler
-
-  filter_by_three_stopovers_4:
-    container_name: filter_by_three_stopovers_4
-    image: filter_by_three_stopovers:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - query_handler
+      - group_by_route
 
   query_2_column_filter_1:
     container_name: query_2_column_filter_1
@@ -155,7 +152,35 @@ services:
     depends_on:
       - distance_calculator_1
       - distance_calculator_2
-  
+
+  query_2_column_filter_3:
+    container_name: query_2_column_filter_3
+    image: query_2_column_filter:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - distance_calculator_1
+      - distance_calculator_2
+
+  distance_calculator_1:
+    container_name: distance_calculator_1
+    image: distance_calculator:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - query_handler
+
+  distance_calculator_2:
+    container_name: distance_calculator_2
+    image: distance_calculator:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - query_handler
+
   group_by_route:
     container_name: group_by_route
     image: group_by:latest
@@ -169,8 +194,8 @@ services:
       - LISTENING_QUEUE=group_by_route
       - INPUT_QUEUE=
     depends_on:
-      rabbitmq:
-        condition: service_healthy
+      - reducer_group_by_route_1
+      - reducer_group_by_route_2
 
   reducer_group_by_route_1:
     container_name: reducer_group_by_route_1
@@ -183,8 +208,7 @@ services:
       - OUTPUT_QUEUE=output_3
       - QUERY_NUMBER=3
     depends_on:
-      rabbitmq:
-        condition: service_healthy
+      - query_handler
 
   reducer_group_by_route_2:
     container_name: reducer_group_by_route_2
@@ -197,31 +221,28 @@ services:
       - OUTPUT_QUEUE=output_3
       - QUERY_NUMBER=3
     depends_on:
-      rabbitmq:
-        condition: service_healthy
+      - query_handler
 
-  distance_calculator_1:
-    container_name: distance_calculator_1
-    image: distance_calculator:latest
+  query_5_column_filter_1:
+    container_name: query_5_column_filter_1
+    image: query_5_column_filter:latest
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
-      rabbitmq:
-        condition: service_healthy
+      - group_by_airport
 
-  distance_calculator_2:
-    container_name: distance_calculator_2
-    image: distance_calculator:latest
+  query_5_column_filter_2:
+    container_name: query_5_column_filter_2
+    image: query_5_column_filter:latest
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
-      rabbitmq:
-        condition: service_healthy
+      - group_by_airport
 
-  query_5_column_filter:
-    container_name: query_5_column_filter
+  query_5_column_filter_3:
+    container_name: query_5_column_filter_3
     image: query_5_column_filter:latest
     entrypoint: python3 /main.py
     environment:
@@ -256,8 +277,7 @@ services:
       - OUTPUT_QUEUE=output_5
       - QUERY_NUMBER=5
     depends_on:
-      rabbitmq:
-        condition: service_healthy
+      - query_handler
 
   reducer_group_by_airport_2:
     container_name: reducer_group_by_airport_2
@@ -270,8 +290,7 @@ services:
       - OUTPUT_QUEUE=output_5
       - QUERY_NUMBER=5
     depends_on:
-      rabbitmq:
-        condition: service_healthy
+      - query_handler
 
   avg_calculator_1:
     container_name: avg_calculator_1

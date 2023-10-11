@@ -1,6 +1,7 @@
 import json
 
 from util.constants import EOF_FLIGHTS_FILE
+from util.initialization import initialize_queues
 from util.queue_middleware import QueueMiddleware
 
 
@@ -14,6 +15,7 @@ class QueryHandler:
         self.__eof_max = eof_max
 
     def run(self):
+        initialize_queues([self.__output_queue], self.__middleware)
         self.__middleware.listen_on(self.__output_queue, self.__callback)
 
     def __callback(self, body):
