@@ -32,7 +32,7 @@ class ReducerGroupBy():
         flight = json.loads(body)
         op_code = flight.get("op_code")
 
-        if op_code == 0:
+        if op_code == EOF_FLIGHTS_FILE:
             self.__handle_eof()
             self.queue_middleware.send_message(self.output_queue, body)
             self.queue_middleware.finish()

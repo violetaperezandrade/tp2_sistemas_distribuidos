@@ -37,6 +37,7 @@ services:
       rabbitmq:
         condition: service_healthy
 
+
   initial_column_cleaner:
     container_name: initial_column_cleaner
     image: initial_column_cleaner:latest

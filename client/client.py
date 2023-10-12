@@ -27,7 +27,7 @@ class Client:
         while not self.__sigterm:
             self.__read_and_send_lines()
         if self.__sigterm:
-            sigterm_msg = protocol.encode_eof_client(9)
+            sigterm_msg = protocol.encode_eof_client(SIGTERM)
             self.__send_msg(sigterm_msg)
             self._client_socket.shutdown(socket.SHUT_RDWR)
             logging.info('action: close_client | result: success')
