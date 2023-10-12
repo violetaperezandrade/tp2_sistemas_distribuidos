@@ -1,5 +1,6 @@
 import json
-from util.constants import EOF_FLIGHTS_FILE, FLIGHT_REGISTER
+import signal
+from util.constants import EOF_FLIGHTS_FILE, FLIGHT_REGISTER, SIGTERM
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
 
@@ -16,6 +17,7 @@ class FilterByThreeStopovers:
         self.__middleware = QueueMiddleware()
 
     def run(self, input_exchange):
+        signal.signal(signal.SIGTERM, self.__middleware.handle_sigterm)
 
         initialize_exchanges([input_exchange, self.__output_exchange], self.__middleware)
         initialize_queues([self.__input_queue, self.__output_queue], self.__middleware)
@@ -26,6 +28,7 @@ class FilterByThreeStopovers:
     def callback(self, body):
         flight = json.loads(body)
         op_code = flight.get("op_code")
+
         if op_code > FLIGHT_REGISTER:
             return
         if op_code == EOF_FLIGHTS_FILE:

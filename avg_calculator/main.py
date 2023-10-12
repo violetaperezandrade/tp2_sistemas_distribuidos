@@ -1,7 +1,8 @@
-import json
 from avg_calculator import AvgCalculator
 from configparser import ConfigParser
 import os
+import pika
+
 
 def initialize_config():
 
@@ -27,11 +28,14 @@ def main():
     config_params = initialize_config()
     input_exchange = config_params["input_exchange"]
     output_exchange = config_params["output_exchange"]
-    logging_level = config_params["logging_level"]
     column_name = config_params["column_name"]
-    
-    avg_calculator = AvgCalculator(column_name, output_exchange, input_exchange, "avg_queue")
-    avg_calculator.run()
+
+    avg_calculator = AvgCalculator(column_name, output_exchange,
+                                   input_exchange, "avg_queue")
+    try:
+        avg_calculator.run()
+    except pika.exceptions.ChannelWrongStateError:
+        pass
 
 
 if __name__ == '__main__':

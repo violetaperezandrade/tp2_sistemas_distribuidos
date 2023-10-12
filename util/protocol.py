@@ -1,5 +1,6 @@
 import json
 import struct
+from util.constants import *
 
 
 def encode_register(flight, opcode):
@@ -34,6 +35,11 @@ def encode_eof_client(opcode):
 
     message = eof_length_bytes + eof_bytes
     return message
+
+
+def encode_sigterm_msg(opcode):
+    eof = {"op_code": opcode}
+    return json.dumps(eof)
 
 
 def encode_registers_batch(batch, op_code):

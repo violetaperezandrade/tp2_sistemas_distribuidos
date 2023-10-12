@@ -1,5 +1,6 @@
 from reducer_group_by import ReducerGroupBy
 import os
+import pika
 
 
 def initialize_config():
@@ -30,7 +31,10 @@ def main():
     reducer_group_by = ReducerGroupBy(field_group_by, input_queue,
                                       output_queue, query_number)
 
-    reducer_group_by.run()
+    try:
+        reducer_group_by.run()
+    except pika.exceptions.ChannelWrongStateError:
+        pass
 
 
 if __name__ == '__main__':

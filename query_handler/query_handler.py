@@ -1,4 +1,5 @@
 import json
+import signal
 
 from util.constants import EOF_FLIGHTS_FILE
 from util.initialization import initialize_queues
@@ -15,12 +16,18 @@ class QueryHandler:
         self.__eof_max = eof_max
 
     def run(self):
+        signal.signal(signal.SIGTERM,
+                      self.__middleware.handle_sigterm)
         initialize_queues([self.__output_queue], self.__middleware)
         self.__middleware.listen_on(self.__output_queue, self.__callback)
 
     def __callback(self, body):
         result = json.loads(body)
-        if result.get("op_code") == EOF_FLIGHTS_FILE:
+        op_code = result.get("op_code")
+
+        if op_code == EOF_FLIGHTS_FILE:
+            self.__middleware.finish()
+        if op_code == EOF_FLIGHTS_FILE:
             self.__eofs_received += 1
             if self.__eofs_received >= self.__eof_max:
                 self.__middleware.finish()

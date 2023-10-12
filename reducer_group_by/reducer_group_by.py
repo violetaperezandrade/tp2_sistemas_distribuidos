@@ -1,10 +1,12 @@
 import json
+import signal
 
 from util.initialization import initialize_queues
 from util.queue_middleware import QueueMiddleware
 from util.utils_query_3 import *
 from util.utils_query_4 import *
 from util.utils_query_5 import handle_query_5
+from util.constants import *
 
 
 class ReducerGroupBy():
@@ -21,12 +23,15 @@ class ReducerGroupBy():
                                5: handle_query_5}
 
     def run(self):
-        initialize_queues([self.output_queue, self.input_queue], self.queue_middleware)
+        signal.signal(signal.SIGTERM, self.queue_middleware.handle_sigterm)
+        initialize_queues([self.output_queue, self.input_queue],
+                          self.queue_middleware)
         self.queue_middleware.listen_on(self.input_queue, self.__callback)
 
     def __callback(self, body):
         flight = json.loads(body)
         op_code = flight.get("op_code")
+
         if op_code == 0:
             self.__handle_eof()
             self.queue_middleware.send_message(self.output_queue, body)
@@ -40,7 +45,8 @@ class ReducerGroupBy():
 
     def __handle_eof(self):
         for route, flights in self.grouped.items():
-            msg = self.operations_map.get(self.query_number, lambda _: None)(flights)
+            msg = self.operations_map.get(self.query_number,
+                                          lambda _: None)(flights)
             if msg is None:
                 # Error handling
                 pass

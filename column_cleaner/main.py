@@ -1,5 +1,6 @@
 from column_cleaner import ColumnCleaner
 from configparser import ConfigParser
+import pika
 
 
 def initialize_config():
@@ -21,7 +22,7 @@ def initialize_config():
     except KeyError as e:
         raise KeyError(
             "Key was not found. Error: {} .Aborting client".format(e))
-    
+
     except ValueError as e:
         raise ValueError(
             "Key could not be parsed. Error: {}. Aborting client".format(e))
@@ -42,7 +43,10 @@ def main():
                             required_columns_flights,
                             required_columns_airports,
                             routing_key, connected_nodes)
-    cleaner.run(input_exchange)
+    try:
+        cleaner.run(input_exchange)
+    except pika.exceptions.ChannelWrongStateError:
+        pass
 
 
 if __name__ == '__main__':

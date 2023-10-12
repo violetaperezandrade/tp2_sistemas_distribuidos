@@ -1,7 +1,7 @@
 import socket
 import logging
 import csv
-import time
+import signal
 
 from util import protocol
 from util.constants import (AIRPORT_REGISTER,
@@ -19,10 +19,18 @@ class Client:
         self._server_address = address
         self.__flights_file = flights_file
         self.__airports_file = airports_file
+        self.__sigterm = False
 
     def run(self):
+        signal.signal(signal.SIGTERM, self.handle_sigterm)
         self.__start_connection_with_server()
-        self.__read_and_send_lines()
+        while not self.__sigterm:
+            self.__read_and_send_lines()
+        if self.__sigterm:
+            sigterm_msg = protocol.encode_eof_client(9)
+            self.__send_msg(sigterm_msg)
+            self._client_socket.shutdown(socket.SHUT_RDWR)
+            logging.info('action: close_client | result: success')
         self.__close_connection()
 
     def __read_and_send_lines(self):
@@ -32,6 +40,8 @@ class Client:
             reader1 = csv.DictReader(file1, delimiter=";")
             rows = []
             for row in reader1:
+                if self.__sigterm:
+                    return
                 rows.append(row)
                 if len(rows) == BATCH_SIZE:
                     try:
@@ -45,6 +55,8 @@ class Client:
                             f'action: sent line | result: fail | error: {e}')
                     rows = []
             if len(rows) != 0:
+                if self.__sigterm:
+                    return
                 try:
                     msg = protocol.encode_registers_batch(rows, AIRPORT_REGISTER)
                     self.__send_msg(msg)
@@ -60,6 +72,8 @@ class Client:
             self.__retrieve_server_ack()
             reader2 = csv.DictReader(file2)
             for row in reader2:
+                if self.__sigterm:
+                    return
                 rows.append(row)
                 if len(rows) == BATCH_SIZE:
                     try:
@@ -73,10 +87,14 @@ class Client:
                             f'action: sent line | result: fail | error: {e}')
                     rows = []
             if len(rows) != 0:
+                if self.__sigterm:
+                    return
                 try:
                     msg = protocol.encode_registers_batch(rows, FLIGHT_REGISTER)
                     self.__send_msg(msg)
                     self.__retrieve_server_ack()
+                    if self.__sigterm:
+                        return
                     logging.debug(
                         f'action: sent line | result: success | msg: {msg}')
                 except OSError as e:
@@ -152,3 +170,9 @@ class Client:
         logging.debug('action: close_connection | result: in_progress')
         self._client_socket.close()
         logging.info('action: close_connection | result: success ')
+
+    def handle_sigterm(self, signum, frame):
+        logging.info(
+            f'action: sigterm received | signum: {signum}, frame:{frame}')
+        self.__sigterm = True
+        return

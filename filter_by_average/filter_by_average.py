@@ -1,4 +1,5 @@
 import json
+import signal
 
 from util.constants import EOF_FLIGHTS_FILE, FLIGHT_REGISTER
 from util.initialization import initialize_exchanges, initialize_queues
@@ -13,6 +14,7 @@ class FilterByAverage:
         self.__middleware = QueueMiddleware()
 
     def run(self, avg_exchange):
+        signal.signal(signal.SIGTERM, self.__middleware.handle_sigterm)
         initialize_exchanges([self.__input_exchange, avg_exchange], self.__middleware)
         initialize_queues([self.__output_queue, self.__input_queue,
                            "cleaned_column_queue"], self.__middleware)

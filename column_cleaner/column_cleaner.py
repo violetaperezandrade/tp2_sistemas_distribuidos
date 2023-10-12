@@ -1,7 +1,10 @@
 from util.constants import (EOF_FLIGHTS_FILE,
                             AIRPORT_REGISTER,
-                            EOF_AIRPORTS_FILE, FLIGHT_REGISTER)
+                            EOF_AIRPORTS_FILE,
+                            FLIGHT_REGISTER,
+                            SIGTERM)
 import json
+import signal
 
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
@@ -21,6 +24,7 @@ class ColumnCleaner:
         self.middleware = QueueMiddleware()
 
     def run(self, input_exchange):
+        signal.signal(signal.SIGTERM, self.middleware.handle_sigterm)
         initialize_exchanges([self.__output_exchange, input_exchange], self.middleware)
         initialize_queues([self.__output_queue, self.__input_queue], self.middleware)
         if input_exchange is not None:
@@ -33,6 +37,7 @@ class ColumnCleaner:
     def callback(self, body):
         register = json.loads(body)
         op_code = register.get("op_code")
+
         if self.__routing_key == "flights" and op_code > FLIGHT_REGISTER:
             return
         if op_code == EOF_AIRPORTS_FILE:

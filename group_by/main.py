@@ -1,5 +1,6 @@
 from group_by import GroupBy
 import os
+import pika
 
 
 def initialize_config():
@@ -33,7 +34,10 @@ def main():
     group_by = GroupBy(field_group_by, input_exchange,
                        reducers_amount, queue_group_by, listening_queue,
                        input_queue)
-    group_by.run()
+    try:
+        group_by.run()
+    except pika.exceptions.ChannelWrongStateError:
+        pass
 
 
 if __name__ == '__main__':

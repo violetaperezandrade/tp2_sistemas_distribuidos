@@ -1,3 +1,5 @@
+import pika
+
 from filter_by_three_stopovers import FilterByThreeStopovers
 from configparser import ConfigParser
 
@@ -44,7 +46,10 @@ def main():
                                                max_stopovers, output_queue,
                                                input_queue, output_exchange)
 
-    filterByStopOvers.run(input_exchange)
+    try:
+        filterByStopOvers.run(input_exchange)
+    except pika.exceptions.ChannelWrongStateError:
+        pass
 
 
 if __name__ == '__main__':

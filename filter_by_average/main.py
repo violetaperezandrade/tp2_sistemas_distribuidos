@@ -1,4 +1,4 @@
-import json
+import pika
 from filter_by_average import FilterByAverage
 from configparser import ConfigParser
 import os
@@ -31,9 +31,14 @@ def main():
     output_queue = config_params["output_queue"]
     logging_level = config_params["logging_level"]
 
-    filter_by_average = FilterByAverage(output_queue, "cleaned_column_queue", cleaner_column_exchange)
+    filter_by_average = FilterByAverage(output_queue, "cleaned_column_queue",
+                                        cleaner_column_exchange)
 
-    filter_by_average.run(avg_exchange)
+    try:
+        filter_by_average.run(avg_exchange)
+    except pika.exceptions.ChannelWrongStateError:
+        pass
+
 
 if __name__ == '__main__':
     main()

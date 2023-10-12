@@ -1,8 +1,16 @@
 import multiprocessing
 import os
+import pika
+import signal
 
 from query_handler import QueryHandler
 QUERIES = 5
+processes = []
+
+
+def handle_sigterm(signum, sigframe):
+    for process in processes:
+        os.kill(process.pid, signal.SIGTERM)
 
 
 def run(query_number):
@@ -10,10 +18,13 @@ def run(query_number):
     if query_number in [1, 2]:
         reducers = 1
     query_handler = QueryHandler(query_number, reducers)
-    query_handler.run()
+    try:
+        query_handler.run()
+    except pika.exceptions.ChannelWrongStateError:
+        pass
 
 
-processes = []
+signal.signal(signal.SIGTERM, handle_sigterm)
 for i in range(1, QUERIES+1):
     process = multiprocessing.Process(target=run, args=(i,))
     processes.append(process)

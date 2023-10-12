@@ -2,6 +2,7 @@ from util.constants import EOF_FLIGHTS_FILE, FLIGHT_REGISTER, AVG_READY
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import (QueueMiddleware)
 import json
+import signal
 
 
 class AvgCalculator:
@@ -16,6 +17,7 @@ class AvgCalculator:
         self.__middleware = QueueMiddleware()
 
     def run(self):
+        signal.signal(signal.SIGTERM, self.__middleware.handle_sigterm)
         initialize_exchanges([self.__output_exchange, self.__input_exchange], self.__middleware)
         initialize_queues([self.__input_queue], self.__middleware)
         self.__middleware.subscribe(self.__input_exchange,
