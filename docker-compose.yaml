@@ -401,6 +401,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - TOTAL_REDUCERS=2
+      - LISTEN_BACKLOG=1
     depends_on:
       rabbitmq:
         condition: service_healthy

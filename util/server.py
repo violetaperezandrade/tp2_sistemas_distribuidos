@@ -97,6 +97,7 @@ class Server:
 
     def __read_line(self, registers):
         for register in registers:
+            pass
             self.__queue_middleware.send_message("full_flight_registers",
                                                  json.dumps(register))
 
