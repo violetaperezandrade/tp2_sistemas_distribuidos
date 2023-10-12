@@ -1,5 +1,6 @@
 import json
 from hashlib import sha256
+import signal
 
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
@@ -28,6 +29,7 @@ class GroupBy():
             self.field_group_by = fields_group_by[0]
 
     def run(self):
+        signal.signal(signal.SIGTERM, self.queue_middleware.handle_sigterm)
 
         initialize_exchanges([self.input_exchange], self.queue_middleware)
         initialize_queues([self.listening_queue, self.input_queue] + self.reducers, self.queue_middleware)
@@ -42,14 +44,6 @@ class GroupBy():
     def __callback(self, body):
         flight = json.loads(body)
         op_code = flight.get("op_code")
-
-        if op_code == SIGTERM:
-            print("Received sigterm")
-            print(flight)
-            for reducer in self.reducers:
-                self.queue_middleware.send_message_to(reducer, body)
-            self.queue_middleware.finish()
-            return
 
         if op_code == EOF_FLIGHTS_FILE:
             # EOF

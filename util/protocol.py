@@ -1,5 +1,6 @@
 import json
 import struct
+from util.constants import *
 
 
 def encode_register(flight, opcode):

@@ -4,6 +4,7 @@ from util.constants import (EOF_FLIGHTS_FILE,
                             FLIGHT_REGISTER,
                             SIGTERM)
 import json
+import signal
 
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
@@ -23,6 +24,7 @@ class ColumnCleaner:
         self.middleware = QueueMiddleware()
 
     def run(self, input_exchange):
+        signal.signal(signal.SIGTERM, self.middleware.handle_sigterm)
         initialize_exchanges([self.__output_exchange, input_exchange], self.middleware)
         initialize_queues([self.__output_queue, self.__input_queue], self.middleware)
         if input_exchange is not None:
@@ -35,15 +37,6 @@ class ColumnCleaner:
     def callback(self, body):
         register = json.loads(body)
         op_code = register.get("op_code")
-        if op_code == SIGTERM:
-            print("Received sigterm")
-            print(register)
-            if self.__output_exchange is not None:
-                self.middleware.publish_on(self.__output_exchange, body,
-                                           'flights')
-            else:
-                self.middleware.send_message_to(self.__output_queue, body)
-            return
 
         if self.__routing_key == "flights" and op_code > FLIGHT_REGISTER:
             return
