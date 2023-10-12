@@ -7,9 +7,8 @@ from util import protocol
 from util.constants import (AIRPORT_REGISTER,
                             FLIGHT_REGISTER,
                             EOF_FLIGHTS_FILE,
-                            EOF_AIRPORTS_FILE)
-
-BATCH_SIZE = 1000
+                            EOF_AIRPORTS_FILE,
+                            SIGTERM, BATCH_SIZE)
 
 
 class Client:
