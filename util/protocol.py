@@ -63,3 +63,15 @@ def decode_server_ack(msg):
 
 def encode_server_ack(ack):
     return ack.to_bytes(1, byteorder='big')
+
+
+def decode_query_result(payload):
+    return json.loads(payload.decode('utf-8'))
+
+
+def encode_query_result(result):
+    result_bytes = (json.dumps(result)).encode('utf-8')
+    result_length_bytes = len(result_bytes).to_bytes(2, byteorder="big")
+
+    message = result_length_bytes + result_bytes
+    return message

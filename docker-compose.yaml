@@ -24,6 +24,8 @@ services:
       - PYTHONUNBUFFERED=1
     depends_on:
       - server
+    links:
+      - query_handler
 
   server:
     container_name: server
@@ -406,6 +408,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - TOTAL_REDUCERS=2
+      - LISTEN_BACKLOG=1
     depends_on:
       rabbitmq:
         condition: service_healthy
