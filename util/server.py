@@ -4,7 +4,8 @@ import json
 
 from util import protocol
 from util.constants import (EOF_FLIGHTS_FILE, FLIGHT_REGISTER,
-                            AIRPORT_REGISTER, EOF_AIRPORTS_FILE)
+                            AIRPORT_REGISTER, EOF_AIRPORTS_FILE,
+                            SIGTERM)
 from util.queue_middleware import QueueMiddleware
 
 
