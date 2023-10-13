@@ -15,6 +15,7 @@ def initialize_config():
         config_params["input_exchange_1"] = os.getenv('INPUT_EXCHANGE_1', config["DEFAULT"]["INPUT_EXCHANGE_1"])
         config_params["input_exchange_2"] = os.getenv('INPUT_EXCHANGE_2', config["DEFAULT"]["INPUT_EXCHANGE_2"])
         config_params["logging_level"] = os.getenv('LOGGING_LEVEL', config["DEFAULT"]["LOGGING_LEVEL"])
+        config_params["id"] = os.getenv("ID")
     except KeyError as e:
         raise KeyError("Key was not found. Error: {} .Aborting client".format(e))
     except ValueError as e:
@@ -30,9 +31,11 @@ def main():
     cleaner_column_exchange = config_params["input_exchange_2"]
     output_queue = config_params["output_queue"]
     logging_level = config_params["logging_level"]
+    node_id = config_params["id"]
 
     filter_by_average = FilterByAverage(output_queue, "cleaned_column_queue",
-                                        cleaner_column_exchange)
+                                        cleaner_column_exchange, node_id)
+
 
     try:
         filter_by_average.run(avg_exchange)

@@ -10,7 +10,7 @@ from util.constants import *
 class GroupBy():
     def __init__(self, fields_group_by, input_exchange,
                  reducers_amount, queue_group_by, listening_queue,
-                 input_queue):
+                 input_queue, required_eof):
         self.queue_middleware = QueueMiddleware()
         self.input_exchange = input_exchange
         self.input_queue = input_queue
@@ -18,6 +18,8 @@ class GroupBy():
         self.reducers = [
             f"{queue_group_by}_{i}" for i in range(1, reducers_amount + 1)]
         self.listening_queue = listening_queue
+        self.required_eof = required_eof
+        self.eof = 0
         self.handle_group_by_fields(fields_group_by)
 
     def handle_group_by_fields(self, fields_group_by):
@@ -46,7 +48,9 @@ class GroupBy():
         op_code = flight.get("op_code")
 
         if op_code == EOF_FLIGHTS_FILE:
-            # EOF
+            self.eof += 1
+            if self.eof < self.required_eof:
+                return
             for reducer in self.reducers:
                 self.queue_middleware.send_message(reducer, body)
             self.queue_middleware.finish()

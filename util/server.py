@@ -23,7 +23,7 @@ class Server:
             FLIGHT_REGISTER: self.__read_line,
             AIRPORT_REGISTER: self.__read_line,
             EOF_AIRPORTS_FILE: self.__handle_eof,
-            9: self.__handle_sigterm
+            SIGTERM: self.__handle_sigterm
         }
 
     def run(self):

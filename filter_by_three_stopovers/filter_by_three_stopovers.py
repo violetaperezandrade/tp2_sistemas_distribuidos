@@ -1,6 +1,6 @@
 import json
 import signal
-from util.constants import EOF_FLIGHTS_FILE, FLIGHT_REGISTER, SIGTERM
+from util.constants import EOF_FLIGHTS_FILE, FLIGHT_REGISTER
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
 

@@ -39,6 +39,7 @@ services:
       rabbitmq:
         condition: service_healthy
 
+
   initial_column_cleaner:
     container_name: initial_column_cleaner
     image: initial_column_cleaner:latest
@@ -333,6 +334,7 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+      - ID=1
     depends_on:
       - group_by_route_query_4
 
@@ -342,6 +344,7 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+      - ID=2
     depends_on:
       - group_by_route_query_4
 
@@ -351,6 +354,7 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+      - ID=3
     depends_on:
       - group_by_route_query_4
 
@@ -366,6 +370,7 @@ services:
       - INPUT_EXCHANGE=
       - QUEUE_GROUP_BY=group_by_route_queue_q4
       - INPUT_QUEUE=filtered_by_average
+      - EOF_REQUIRED=3
     depends_on:
       - reducer_group_by_route_q4_1
       - reducer_group_by_route_q4_2
