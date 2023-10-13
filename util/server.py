@@ -4,8 +4,7 @@ import json
 
 from util import protocol
 from util.constants import (EOF_FLIGHTS_FILE, FLIGHT_REGISTER,
-                            AIRPORT_REGISTER, EOF_AIRPORTS_FILE,
-                            SIGTERM)
+                            AIRPORT_REGISTER, EOF_AIRPORTS_FILE)
 from util.queue_middleware import QueueMiddleware
 
 
@@ -97,7 +96,6 @@ class Server:
 
     def __read_line(self, registers):
         for register in registers:
-            pass
             self.__queue_middleware.send_message("full_flight_registers",
                                                  json.dumps(register))
 

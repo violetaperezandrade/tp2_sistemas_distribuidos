@@ -70,7 +70,7 @@ def decode_query_result(payload):
 
 
 def encode_query_result(result):
-    result_bytes = result.encode('utf-8')
+    result_bytes = (json.dumps(result)).encode('utf-8')
     result_length_bytes = len(result_bytes).to_bytes(2, byteorder="big")
 
     message = result_length_bytes + result_bytes

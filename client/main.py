@@ -49,18 +49,18 @@ def main():
     queries = config_params["queries"]
     host_listen = config_params["host_listen"]
 
-    server_address = (host, port)
-    initialize_log(logging_level)
-    sender_client = SenderClient(server_address, flights_name, airports_name)
-    sender_client.run()
-
     listener_processes = []
     for i in range(1, queries+1):
-        listening_address = (host_listen, i)
+        listening_address = (host_listen, 12345+i)
         listener_process = Process(target=run_listener,
                                    args=(listening_address, i))
         listener_processes.append(listener_process)
         listener_process.start()
+
+    server_address = (host, port)
+    initialize_log(logging_level)
+    sender_client = SenderClient(server_address, flights_name, airports_name)
+    sender_client.run()
 
     for listener_process in listener_processes:
         listener_process.join()

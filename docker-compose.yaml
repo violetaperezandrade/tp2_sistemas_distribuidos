@@ -24,6 +24,8 @@ services:
       - PYTHONUNBUFFERED=1
     depends_on:
       - server
+    links:
+      - query_handler
 
   server:
     container_name: server

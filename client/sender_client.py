@@ -70,7 +70,6 @@ class SenderClient(Client):
                     try:
                         msg = protocol.encode_registers_batch(rows, AIRPORT_REGISTER)
                         self._send_exact(msg)
-                        print(f"Sending: {msg}")
                         self.__retrieve_server_ack()
                         logging.debug(
                             f'action: sent line | result: success | msg: {msg}')
@@ -116,7 +115,7 @@ class SenderClient(Client):
                 try:
                     msg = protocol.encode_registers_batch(rows, FLIGHT_REGISTER)
                     self._send_exact(msg)
-                    self._retrieve_server_ack()
+                    self.__retrieve_server_ack()
                     if self._sigterm:
                         return
                     logging.debug(
