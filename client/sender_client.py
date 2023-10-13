@@ -8,9 +8,11 @@ from util import protocol
 from util.constants import (AIRPORT_REGISTER,
                             FLIGHT_REGISTER,
                             EOF_FLIGHTS_FILE,
-                            EOF_AIRPORTS_FILE)
+                            EOF_AIRPORTS_FILE,
+                            BATCH_SIZE,
+                            SIGTERM,
+                            SERVER_ACK)
 
-BATCH_SIZE = 1000
 
 class SenderClient(Client):
     def __init__(self, address, flights_file, airports_file):
@@ -24,7 +26,7 @@ class SenderClient(Client):
         while not self._sigterm:
             self.__read_and_send_lines()
         if self._sigterm:
-            sigterm_msg = protocol.encode_eof_client(9)
+            sigterm_msg = protocol.encode_eof_client(SIGTERM)
             self._send_exact(sigterm_msg)
             self._client_socket.shutdown(socket.SHUT_RDWR)
             logging.info('action: close_client | result: success')
@@ -39,7 +41,7 @@ class SenderClient(Client):
     def __retrieve_server_ack(self):
         msg = self._read_exact(1)
         ack = protocol.decode_server_ack(msg)
-        if ack != 8:
+        if ack != SERVER_ACK:
             logging.info(
                 f'action: receive_message | host: {self._address[0]} | '
                 f'port: {self._address[1]} | result: error'
