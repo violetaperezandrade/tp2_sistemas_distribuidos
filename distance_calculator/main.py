@@ -1,11 +1,16 @@
+import os
+
 from distance_calculator import DistanceCalculator
 import pika
 
 
 def main():
-    query_handler = DistanceCalculator("airport_registers",
-                                       "distance_calculation",
-                                       "output_2")
+    input_queue = os.getenv("INPUT_QUEUE", None)
+    input_exchange = os.getenv("INPUT_EXCHANGE", None)
+    output_exchange = os.getenv("OUTPUT_QUEUE", None)
+    query_handler = DistanceCalculator(input_exchange,
+                                       input_queue,
+                                       output_exchange)
     try:
         query_handler.run()
     except pika.exceptions.ChannelWrongStateError:

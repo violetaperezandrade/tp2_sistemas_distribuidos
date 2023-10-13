@@ -24,7 +24,6 @@ services:
       - PYTHONUNBUFFERED=1
     depends_on:
       - server
-    links:
       - query_handler
 
   server:
@@ -35,79 +34,27 @@ services:
       - rabbitmq
     environment:
       - PYTHONUNBUFFERED=1
+      - NODE_MULTIPLIER=1
     depends_on:
       rabbitmq:
         condition: service_healthy
 
-
-  initial_column_cleaner:
-    container_name: initial_column_cleaner
-    image: initial_column_cleaner:latest
+  initial_column_cleaner_1:
+    container_name: initial_column_cleaner_1
+    image: column_cleaner:latest
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=full_flight_registers
+      - OUTPUT_EXCHANGE=cleaned_flight_registers
+      - REQUIRED_COLUMNS_FLIGHTS=op_code,legId,startingAirport,destinationAirport,travelDuration,baseFare,totalFare,totalTravelDistance,segmentsArrivalAirportCode
+      - CONNECTED_NODES=1
     depends_on:
       - filter_by_three_stopovers_1
-      - filter_by_three_stopovers_2
-      - filter_by_three_stopovers_3
       - query_2_column_filter_1
-      - query_2_column_filter_2
-      - query_2_column_filter_3
       - query_5_column_filter_1
-      - query_5_column_filter_2
-      - query_5_column_filter_3
       - avg_calculator_1
-      - avg_calculator_2
-      - avg_calculator_3
       - filter_by_average_1
-      - filter_by_average_2
-      - filter_by_average_3
-
-  initial_column_cleaner_2:
-    container_name: initial_column_cleaner_2
-    image: initial_column_cleaner:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - filter_by_three_stopovers_1
-      - filter_by_three_stopovers_2
-      - filter_by_three_stopovers_3
-      - query_2_column_filter_1
-      - query_2_column_filter_2
-      - query_2_column_filter_3
-      - query_5_column_filter_1
-      - query_5_column_filter_2
-      - query_5_column_filter_3
-      - avg_calculator_1
-      - avg_calculator_2
-      - avg_calculator_3
-      - filter_by_average_1
-      - filter_by_average_2
-      - filter_by_average_3
-
-  initial_column_cleaner_3:
-    container_name: initial_column_cleaner_3
-    image: initial_column_cleaner:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - filter_by_three_stopovers_1
-      - filter_by_three_stopovers_2
-      - filter_by_three_stopovers_3
-      - query_2_column_filter_1
-      - query_2_column_filter_2
-      - query_2_column_filter_3
-      - query_5_column_filter_1
-      - query_5_column_filter_2
-      - query_5_column_filter_3
-      - avg_calculator_1
-      - avg_calculator_2
-      - avg_calculator_3
-      - filter_by_average_1
-      - filter_by_average_2
-      - filter_by_average_3
 
   filter_by_three_stopovers_1:
     container_name: filter_by_three_stopovers_1
@@ -115,53 +62,27 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
-    depends_on:
-      - group_by_route
-
-  filter_by_three_stopovers_2:
-    container_name: filter_by_three_stopovers_2
-    image: filter_by_three_stopovers:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - group_by_route
-
-  filter_by_three_stopovers_3:
-    container_name: filter_by_three_stopovers_3
-    image: filter_by_three_stopovers:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
+      - OUTPUT_QUEUE=output_1
+      - INPUT_QUEUE=filter_three_stop_overs_queue
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - OUTPUT_EXCHANGE=three_or_more_stopovers
+      - COLUMNS_TO_FILTER=op_code,legId,startingAirport,destinationAirport,stopovers,totalFare
     depends_on:
       - group_by_route
 
   query_2_column_filter_1:
     container_name: query_2_column_filter_1
-    image: query_2_column_filter:latest
+    image: column_cleaner:latest
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
-    depends_on:
-      - distance_calculator_1
-      - distance_calculator_2
-
-  query_2_column_filter_2:
-    container_name: query_2_column_filter_2
-    image: query_2_column_filter:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - distance_calculator_1
-      - distance_calculator_2
-
-  query_2_column_filter_3:
-    container_name: query_2_column_filter_3
-    image: query_2_column_filter:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - INPUT_QUEUE=query_2_filter_queue
+      - OUTPUT_EXCHANGE=airport_registers
+      - OUTPUT_QUEUE=distance_calculation
+      - REQUIRED_COLUMNS_FLIGHTS=op_code,legId,startingAirport,destinationAirport,totalTravelDistance,segmentsArrivalAirportCode
+      - REQUIRED_COLUMNS_AIRPORTS=op_code,Airport Code,Latitude,Longitude
+      - ROUTING_KEY=all
     depends_on:
       - distance_calculator_1
       - distance_calculator_2
@@ -172,6 +93,9 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=distance_calculation
+      - OUTPUT_QUEUE=output_2
+      - INPUT_EXCHANGE=airport_registers
     depends_on:
       - query_handler
 
@@ -181,6 +105,9 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=distance_calculation
+      - OUTPUT_QUEUE=output_2
+      - INPUT_EXCHANGE=airport_registers
     depends_on:
       - query_handler
 
@@ -191,7 +118,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - FIELD_GROUP_BY=startingAirport,destinationAirport
-      - INPUT_EXCHANGE=3_or_more_stop_overs
+      - INPUT_EXCHANGE=three_or_more_stopovers
       - REDUCERS_AMOUNT=2
       - QUEUE_GROUP_BY=group_by_route_queue
       - LISTENING_QUEUE=group_by_route
@@ -228,28 +155,16 @@ services:
 
   query_5_column_filter_1:
     container_name: query_5_column_filter_1
-    image: query_5_column_filter:latest
+    image: column_cleaner:latest
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
-    depends_on:
-      - group_by_airport
-
-  query_5_column_filter_2:
-    container_name: query_5_column_filter_2
-    image: query_5_column_filter:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - group_by_airport
-
-  query_5_column_filter_3:
-    container_name: query_5_column_filter_3
-    image: query_5_column_filter:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - INPUT_QUEUE=query_5_filter_queue
+      - OUTPUT_QUEUE=mode_calculation
+      - REQUIRED_COLUMNS_FLIGHTS=op_code,startingAirport,baseFare
+      - CONNECTED_NODES=1
+      - ROUTING_KEY=flights
     depends_on:
       - group_by_airport
 
@@ -301,32 +216,11 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=avg_queue
+      - OUTPUT_EXCHANGE=flights_avg
+      - INPUT_EXCHANGE=cleaned_flight_registers
     depends_on:
       - filter_by_average_1
-      - filter_by_average_2
-      - filter_by_average_3
-
-  avg_calculator_2:
-    container_name: avg_calculator_2
-    image: avg_calculator:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - filter_by_average_1
-      - filter_by_average_2
-      - filter_by_average_3
-
-  avg_calculator_3:
-    container_name: avg_calculator_3
-    image: avg_calculator:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - filter_by_average_1
-      - filter_by_average_2
-      - filter_by_average_3
 
   filter_by_average_1:
     container_name: filter_by_average_1
@@ -334,27 +228,11 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=cleaned_column_queue
+      - OUTPUT_QUEUE=filtered_by_average
+      - INPUT_EXCHANGE_1=flights_avg
+      - INPUT_EXCHANGE_2=cleaned_flight_registers
       - ID=1
-    depends_on:
-      - group_by_route_query_4
-
-  filter_by_average_2:
-    container_name: filter_by_average_2
-    image: filter_by_average:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-      - ID=2
-    depends_on:
-      - group_by_route_query_4
-
-  filter_by_average_3:
-    container_name: filter_by_average_3
-    image: filter_by_average:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-      - ID=3
     depends_on:
       - group_by_route_query_4
 
@@ -370,7 +248,7 @@ services:
       - INPUT_EXCHANGE=
       - QUEUE_GROUP_BY=group_by_route_queue_q4
       - INPUT_QUEUE=filtered_by_average
-      - EOF_REQUIRED=3
+      - EOF_REQUIRED=1
     depends_on:
       - reducer_group_by_route_q4_1
       - reducer_group_by_route_q4_2

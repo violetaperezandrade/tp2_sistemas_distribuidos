@@ -1,6 +1,3 @@
-from util.queue_middleware import QueueMiddleware
-
-
 def initialize_queues(queue_list, middleware):
     for queue in queue_list:
         if queue is None:

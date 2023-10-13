@@ -1,4 +1,5 @@
 import json
+import os
 import struct
 from util.constants import *
 
@@ -23,7 +24,7 @@ def decode_to_str(payload):
 
 
 def encode_eof(opcode):
-    eof = {"op_code": opcode, "remaining_nodes": 3}
+    eof = {"op_code": opcode, "remaining_nodes": int(os.getenv("NODE_MULTIPLIER", 1))}
     return json.dumps(eof)
 
 

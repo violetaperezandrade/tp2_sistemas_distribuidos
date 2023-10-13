@@ -6,10 +6,9 @@ from util.queue_middleware import QueueMiddleware
 
 
 class FilterByThreeStopovers:
-    def __init__(self, stopovers_column_name, columns_to_filter, max_stopovers,
+    def __init__(self, columns_to_filter, max_stopovers,
                  output_queue, input_queue, output_exchange):
         self.__max_stopovers = max_stopovers
-        self.__stopovers_column_name = stopovers_column_name
         self.__columns_to_filter = columns_to_filter
         self.__output_queue = output_queue
         self.__input_queue = input_queue
@@ -43,7 +42,7 @@ class FilterByThreeStopovers:
                                            json.dumps(flight))
             self.__middleware.finish()
             return
-        stopovers = flight[self.__stopovers_column_name].split("||")[:-1]
+        stopovers = flight["segmentsArrivalAirportCode"].split("||")[:-1]
         if len(stopovers) >= self.__max_stopovers:
             flight["stopovers"] = stopovers
             self.__middleware.publish(self.__output_exchange, json.dumps(flight))

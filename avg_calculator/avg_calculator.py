@@ -39,6 +39,10 @@ class AvgCalculator:
         self.__result["count"] += 1
 
     def __handle_eof(self, flight):
+        if flight["remaining_nodes"] == 1:
+            flight["sum"] = 0
+            flight["count"] = 0
+            self.__handle_avg_res(flight)
         flight["sum"] = self.__result["sum"]
         flight["count"] = self.__result["count"]
         flight["op_code"] = AVG_READY
