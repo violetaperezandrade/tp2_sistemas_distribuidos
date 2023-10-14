@@ -22,7 +22,7 @@ Los siguientes targets repiten las mismas tareas pero utilizando el archivo _doc
 
 ## Escalacion
 
-Se ofrece un script _scale.py_ que permite escalar facilmente los principales nodos del sistema y los reducers
+Se ofrece un script _scale.py_ que permite escalar facilmente los principales nodos del sistema y los reducers.  
 Ejecutar como
 
 `python3 scale.py <NUMERO_DE_NODOS> <NUMERO_DE_REDUCERS>`
