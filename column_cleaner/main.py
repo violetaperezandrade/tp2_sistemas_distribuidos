@@ -14,7 +14,7 @@ def main():
     required_columns_flights = os.getenv("REQUIRED_COLUMNS_FLIGHTS", '').split(',')
     required_columns_airports = os.getenv("REQUIRED_COLUMNS_AIRPORTS", '').split(',')
     routing_key = os.getenv("ROUTING_KEY", '')
-    connected_nodes = int(os.getenv("CONNECTED_NODES", 2))
+    connected_nodes = int(os.getenv("CONNECTED_NODES", 3))
     cleaner = ColumnCleaner(output_queue, output_exchange, input_queue,
                             required_columns_flights,
                             required_columns_airports,

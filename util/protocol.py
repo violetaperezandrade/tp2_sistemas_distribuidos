@@ -24,7 +24,7 @@ def decode_to_str(payload):
 
 
 def encode_eof(opcode):
-    eof = {"op_code": opcode, "remaining_nodes": int(os.getenv("NODE_MULTIPLIER", 1))}
+    eof = {"op_code": opcode, "remaining_nodes": int(os.getenv("CONNECTED_NODES", 1))}
     return json.dumps(eof)
 
 

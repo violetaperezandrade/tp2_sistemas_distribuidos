@@ -27,3 +27,16 @@ docker-compose-down:
 docker-compose-logs:
 	docker compose -f docker-compose.yaml logs -f
 .PHONY: docker-compose-logs
+
+docker-compose-scaled-up: docker-image
+	docker compose -f docker-compose-scaled.yaml up -d --build
+.PHONY: docker-compose-up
+
+docker-compose-scaled-down:
+	docker compose -f docker-compose-scaled.yaml stop -t 10
+	docker compose -f docker-compose-scaled.yaml down --remove-orphans
+.PHONY: docker-compose-down
+
+docker-compose-scaled-logs:
+	docker compose -f docker-compose-scaled.yaml logs -f
+.PHONY: docker-compose-logs
