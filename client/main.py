@@ -1,15 +1,15 @@
-"""Basic RabbitMQ client."""
-from configparser import ConfigParser
 # pylint: disable=import-error
-from sender_client import SenderClient
-from listener_client import ListenerClient
+from configparser import ConfigParser
 import logging
 import os
+import signal
 from multiprocessing import Process
+
+from sender_client import SenderClient
+from listener_client import ListenerClient
 
 
 def initialize_config():
-
     config = ConfigParser(os.environ)
     # If config.ini does not exists original config object is not modified
     config.read("config.ini")
@@ -22,7 +22,7 @@ def initialize_config():
         config_params["logging_level"] = config["DEFAULT"]["LOGGING_LEVEL"]
         config_params["flights_name"] = config["DEFAULT"]["FLIGHTS_FILE"]
         config_params["airports_name"] = config["DEFAULT"]["AIRPORTS_FILE"]
-        config_params["queries"] = int(config["DEFAULT"]["QUERIES"])
+        config_params["address_listen"] = int(config["DEFAULT"]["ADDRESS_LISTEN"])
     except KeyError as e:
         raise KeyError(
             "Key was not found. Error: {} .Aborting client".format(e))
@@ -33,37 +33,30 @@ def initialize_config():
     return config_params
 
 
-def run_listener(address, query_number):
-    listener_client = ListenerClient(address, query_number)
+def run_listener(address):
+    listener_client = ListenerClient(address)
     listener_client.run()
 
 
 def main():
-
     config_params = initialize_config()
     logging_level = config_params["logging_level"]
     port = config_params["port"]
     host = config_params["host"]
     flights_name = config_params["flights_name"]
     airports_name = config_params["airports_name"]
-    queries = config_params["queries"]
+    address_listen = config_params["address_listen"]
     host_listen = config_params["host_listen"]
-
-    listener_processes = []
-    for i in range(1, queries+1):
-        listening_address = (host_listen, 12345+i)
-        listener_process = Process(target=run_listener,
-                                   args=(listening_address, i))
-        listener_processes.append(listener_process)
-        listener_process.start()
-
+    listening_address = (host_listen, address_listen)
+    listener_process = Process(target=run_listener,
+                               args=(listening_address,))
+    listener_process.start()
     server_address = (host, port)
     initialize_log(logging_level)
     sender_client = SenderClient(server_address, flights_name, airports_name)
     sender_client.run()
-
-    for listener_process in listener_processes:
-        listener_process.join()
+    signal.signal(signal.SIGTERM, signal.SIG_DFL)
+    listener_process.join()
 
 
 def initialize_log(logging_level):

@@ -1,6 +1,5 @@
 FROM python:3.11-slim
 COPY column_cleaner /
-COPY query_5_column_filter /
 COPY util /util
 COPY requirements.txt /
 RUN pip install pip --upgrade

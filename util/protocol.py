@@ -1,4 +1,5 @@
 import json
+import os
 import struct
 from util.constants import *
 
@@ -23,7 +24,7 @@ def decode_to_str(payload):
 
 
 def encode_eof(opcode):
-    eof = {"op_code": opcode, "remaining_nodes": 3}
+    eof = {"op_code": opcode, "remaining_nodes": int(os.getenv("CONNECTED_NODES", 1))}
     return json.dumps(eof)
 
 
@@ -71,6 +72,14 @@ def decode_query_result(payload):
 
 def encode_query_result(result):
     result_bytes = (json.dumps(result)).encode('utf-8')
+    result_length_bytes = len(result_bytes).to_bytes(2, byteorder="big")
+
+    message = result_length_bytes + result_bytes
+    return message
+
+
+def encode_signal(code):
+    result_bytes = code.to_bytes(1, byteorder="big")
     result_length_bytes = len(result_bytes).to_bytes(2, byteorder="big")
 
     message = result_length_bytes + result_bytes
