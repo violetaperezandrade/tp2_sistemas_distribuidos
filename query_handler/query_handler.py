@@ -35,12 +35,10 @@ class QueryHandler:
         op_code = result.get("op_code")
         if op_code == EOF_FLIGHTS_FILE:
             self.__eofs_received += 1
-            print(f"QH: {self.query_number} received eof, max is: {self.__eof_max:}, I have so far: {self.__eofs_received}")
             if self.__eofs_received == self.__eof_max:
                 self.__middleware.finish()
                 msg = protocol.encode_signal(0)
                 self.__send_exact(msg)
-                print(f"QH: {self.query_number} SENT EOF, msg: {msg}")
             return
         result.pop('op_code', None)
         msg = protocol.encode_query_result(result)
@@ -57,10 +55,8 @@ class QueryHandler:
             bytes_sent += chunk_size
 
     def _handle_sigterm(self, signum, frame):
-        print(f"QUERY HANDLER {self.query_number} Received sigterm, signum: {signum}, frame: {frame}")
         self.__middleware.handle_sigterm(signum, frame)
         msg = protocol.encode_signal(7)
         self.__send_exact(msg)
-        print(f"SENT: {msg}")
         self.__client_socket.shutdown(socket.SHUT_RDWR)
         self.__client_socket.close()

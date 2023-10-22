@@ -32,7 +32,6 @@ class SenderClient(Client):
             self._client_socket.shutdown(socket.SHUT_RDWR)
             logging.info('action: close_client | result: success')
         self._close_connection()
-        print("SENDER RETURNED")
         return
 
     def handle_sigterm(self, signum, frame):

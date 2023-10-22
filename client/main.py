@@ -62,7 +62,6 @@ def main():
     sender_client = SenderClient(server_address, flights_name, airports_name)
     sender_client.run()
     signal.signal(signal.SIGTERM, signal.SIG_DFL)
-    print("client main: SENDER RETURNED")
 
     for listener_process in listener_processes:
         listener_process.join()
