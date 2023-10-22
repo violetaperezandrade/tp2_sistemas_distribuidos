@@ -21,13 +21,9 @@ docker-compose-up: docker-image
 .PHONY: docker-compose-up
 
 docker-compose-down:
-	docker compose -f docker-compose.yaml stop -t 33
+	docker compose -f docker-compose.yaml stop -t 20
 	docker compose -f docker-compose.yaml down --remove-orphans
 .PHONY: docker-compose-down
-
-docker-compose-terminate:
-	docker compose -f docker-compose.yaml stop -t 33
-.PHONY: docker-compose-terminate
 
 docker-compose-logs:
 	docker compose -f docker-compose.yaml logs -f
@@ -38,7 +34,7 @@ docker-compose-scaled-up: docker-image
 .PHONY: docker-compose-up
 
 docker-compose-scaled-down:
-	docker compose -f docker-compose-scaled.yaml stop -t 10
+	docker compose -f docker-compose-scaled.yaml stop -t 20
 	docker compose -f docker-compose-scaled.yaml down --remove-orphans
 .PHONY: docker-compose-down
 

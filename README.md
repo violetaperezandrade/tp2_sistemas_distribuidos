@@ -2,7 +2,7 @@
 
 ## Ejecucion mediante Docker
 
-Se ofrecen los siguientes comandos, tomados del _TP 0_
+Se ofrecen los siguientes comandos:
 
 - **make** <**target**>: Los target imprescindibles para iniciar y detener el sistema son docker-compose-up y docker-compose-down.
 
@@ -19,6 +19,10 @@ Los siguientes targets repiten las mismas tareas pero utilizando el archivo _doc
 - **docker-compose-scaled-up**
 - **docker-compose-scaled-logs**
 - **docker-compose-scaled-down**
+
+## Resultados
+
+Luego de ejecutar el sistema en cualquiera de sus versiones, se genera una carpeta **results**
 
 ## Escalacion
 

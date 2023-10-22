@@ -36,7 +36,6 @@ class ColumnCleaner:
     def callback(self, body):
         register = json.loads(body)
         op_code = register.get("op_code")
-
         if self.__routing_key == "flights" and op_code > FLIGHT_REGISTER:
             return
         if op_code == EOF_AIRPORTS_FILE:

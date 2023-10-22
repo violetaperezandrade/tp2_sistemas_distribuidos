@@ -62,6 +62,7 @@ def main():
         doc = yaml.safe_load(f)
         doc["services"]["server"]["environment"][1] = f"CONNECTED_NODES={node_scaler}"
         doc["services"]["initial_column_cleaner_1"]["environment"][4] = f"CONNECTED_NODES={node_scaler}"
+        doc["services"]["query_2_column_filter_1"]["environment"][8] = f"CONNECTED_NODES={node_scaler}"
         doc["services"]["group_by_route"]["environment"][1] = f"REDUCERS_AMOUNT={reducer_scaler}"
         doc["services"]["group_by_airport"]["environment"][1] = f"REDUCERS_AMOUNT={reducer_scaler}"
         doc["services"]["group_by_route_query_4"]["environment"][1] = f"REDUCERS_AMOUNT={reducer_scaler}"

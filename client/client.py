@@ -1,3 +1,4 @@
+import time
 from abc import ABC, abstractmethod
 import socket
 import logging
@@ -24,7 +25,14 @@ class Client(ABC):
         logging.info(
             f"action: start_connection | host: {self._address[0]}"
             f"| port: {self._address[1]} | result: in_progress")
-        self._client_socket.connect(self._address)
+        attempts = 0
+        while attempts < 3:
+            try:
+                self._client_socket.connect(self._address)
+                break
+            except socket.error:
+                time.sleep(1)
+                attempts += 1
         logging.info(
             f'action: start_connection | host: {self._address[0]} | '
             f'port: {self._address[1]} | result: success'
