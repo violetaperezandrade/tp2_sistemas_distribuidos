@@ -27,6 +27,10 @@ docker-compose-down:
 	docker compose -f docker-compose.yaml down --remove-orphans
 .PHONY: docker-compose-down
 
+docker-compose-terminate:
+	docker compose -f docker-compose.yaml stop -t 33
+.PHONY: docker-compose-terminate
+
 docker-compose-logs:
 	docker compose -f docker-compose.yaml logs -f
 .PHONY: docker-compose-logs

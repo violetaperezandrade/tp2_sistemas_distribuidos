@@ -32,15 +32,16 @@ class ListenerClient(Client):
             header = self._read_exact(2)
             payload = self._read_exact(int.from_bytes(header, byteorder='big'))
             if len(payload) == 1:
-                if payload == b'\x09':
+                if payload == b'\x07':
                     self._sigterm = True
                     return
                 if payload == b'\x00':
                     self._eof = True
                     return
             result = protocol.decode_query_result(payload)
-            print(f"QUERY {result.get('query_number')}:"
-                  f"{result.pop('query_number')}")
+            query_number = result.pop('query_number')
+            print(f"QUERY {query_number}:"
+                  f"{result}")
         except OSError as e:
             logging.info(
                 f"action: receive_result | result: fail | error: {e}")

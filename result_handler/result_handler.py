@@ -1,4 +1,5 @@
 import json
+import signal
 import socket
 
 from util import protocol
@@ -20,8 +21,10 @@ class ResultHandler:
         self._result_handler_socket.listen(listen_backlog)
 
     def run(self):
+        signal.signal(signal.SIGTERM, self._handle_sigterm)
         initialize_queues(["results"], self.__middleware)
         self.__client_socket = self.__accept_new_connection()
+        self.__middleware.listen_on("results", self.__callback)
 
     def __callback(self, body):
         result = json.loads(body)
@@ -29,6 +32,8 @@ class ResultHandler:
         if op_code == EOF_FLIGHTS_FILE:
             self.__eofs_received += 1
             if self.__eofs_received == self.__eof_max:
+                msg = protocol.encode_signal(EOF_FLIGHTS_FILE)
+                self.__send_exact(msg)
                 self.__middleware.finish()
             return
         msg = protocol.encode_query_result(result)

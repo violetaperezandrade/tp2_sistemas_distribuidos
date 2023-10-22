@@ -50,12 +50,6 @@ class SenderClient(Client):
                 f'port: {self._address[1]} | result: error'
                 f'|received unkown ack from server: {ack}'
             )
-        else:
-            logging.info(
-                f'action: receive_message | host: {self._address[0]} | '
-                f'port: {self._address[1]} | result: success'
-                f'|received ack from server'
-            )
 
     def __send_eof(self, opcode):
         msg = protocol.encode_eof_client(opcode)

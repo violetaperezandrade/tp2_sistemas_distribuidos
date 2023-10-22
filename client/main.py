@@ -3,12 +3,13 @@ from configparser import ConfigParser
 import logging
 import os
 import signal
+from multiprocessing import Process
+
 from sender_client import SenderClient
 from listener_client import ListenerClient
 
 
 def initialize_config():
-
     config = ConfigParser(os.environ)
     # If config.ini does not exists original config object is not modified
     config.read("config.ini")
@@ -32,8 +33,12 @@ def initialize_config():
     return config_params
 
 
-def main():
+def run_listener(address):
+    listener_client = ListenerClient(address)
+    listener_client.run()
 
+
+def main():
     config_params = initialize_config()
     logging_level = config_params["logging_level"]
     port = config_params["port"]
@@ -42,15 +47,16 @@ def main():
     airports_name = config_params["airports_name"]
     address_listen = config_params["address_listen"]
     host_listen = config_params["host_listen"]
-
+    listening_address = (host_listen, address_listen)
+    listener_process = Process(target=run_listener,
+                               args=(listening_address,))
+    listener_process.start()
     server_address = (host, port)
     initialize_log(logging_level)
     sender_client = SenderClient(server_address, flights_name, airports_name)
     sender_client.run()
     signal.signal(signal.SIGTERM, signal.SIG_DFL)
-    listening_address = (host_listen, address_listen)
-    listener_client = ListenerClient(listening_address)
-    listener_client.run()
+    listener_process.join()
 
 
 def initialize_log(logging_level):

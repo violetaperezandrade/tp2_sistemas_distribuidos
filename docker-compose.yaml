@@ -16,6 +16,17 @@ services:
       retries: 10
       start_period: 50s
 
+  result_handler:
+    container_name: result_handler
+    image: result_handler:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LISTEN_BACKLOG=1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
   client:
     container_name: client
     image: client:latest
@@ -24,8 +35,6 @@ services:
       - PYTHONUNBUFFERED=1
     depends_on:
       - server
-    links:
-      - query_handler
 
   server:
     container_name: server
@@ -407,16 +416,6 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - TOTAL_REDUCERS=2
-    depends_on:
-      - result_handler
-
-  result_handler:
-    container_name: result_handler
-    image: result_handler:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-      - LISTEN_BACKLOG=1
     depends_on:
       rabbitmq:
         condition: service_healthy
