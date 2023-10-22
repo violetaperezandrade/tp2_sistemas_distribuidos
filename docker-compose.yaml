@@ -39,7 +39,6 @@ services:
       rabbitmq:
         condition: service_healthy
 
-
   initial_column_cleaner:
     container_name: initial_column_cleaner
     image: initial_column_cleaner:latest
@@ -408,6 +407,15 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - TOTAL_REDUCERS=2
+    depends_on:
+      - result_handler
+
+  result_handler:
+    container_name: result_handler
+    image: result_handler:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
       - LISTEN_BACKLOG=1
     depends_on:
       rabbitmq:

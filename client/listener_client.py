@@ -2,13 +2,12 @@ import logging
 
 from client import Client
 from util import protocol
-from util.constants import EOF_RESULTS, SIGTERM_RESULTS
+# from util.constants import EOF_RESULTS, SIGTERM_RESULTS
 
 
 class ListenerClient(Client):
-    def __init__(self, address, query_number):
+    def __init__(self, address):
         super().__init__(address)  # Call the constructor of the abstract class
-        self._query_number = query_number
         self._eof = False
 
     def run(self):
@@ -33,14 +32,15 @@ class ListenerClient(Client):
             header = self._read_exact(2)
             payload = self._read_exact(int.from_bytes(header, byteorder='big'))
             if len(payload) == 1:
-                if payload == b'\x07':
+                if payload == b'\x09':
                     self._sigterm = True
                     return
                 if payload == b'\x00':
                     self._eof = True
                     return
             result = protocol.decode_query_result(payload)
-            print(f"QUERY {self._query_number}: {result}")
+            print(f"QUERY {result.get('query_number')}:"
+                  f"{result.pop('query_number')}")
         except OSError as e:
             logging.info(
                 f"action: receive_result | result: fail | error: {e}")

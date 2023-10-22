@@ -10,7 +10,7 @@ from util import protocol
 
 class QueryHandler:
 
-    def __init__(self, query_number, eof_max, listen_backlog):
+    def __init__(self, query_number, eof_max):
         self.query_number = query_number
         self.__input_queue = f"output_{query_number}"
         self.__middleware = QueueMiddleware()

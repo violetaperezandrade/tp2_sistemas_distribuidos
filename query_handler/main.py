@@ -15,10 +15,9 @@ def handle_sigterm(signum, sigframe):
 
 def run(query_number):
     reducers = int(os.environ['TOTAL_REDUCERS'])
-    listen_backlog = int(os.environ['LISTEN_BACKLOG'])
     if query_number in [1, 2]:
         reducers = 1
-    query_handler = QueryHandler(query_number, reducers, listen_backlog)
+    query_handler = QueryHandler(query_number, reducers)
     try:
         query_handler.run()
     except pika.exceptions.ChannelWrongStateError:
