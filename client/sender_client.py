@@ -19,11 +19,12 @@ class SenderClient(Client):
         super().__init__(address)  # Call the constructor of the abstract class
         self._flights_file = flights_file
         self._airports_file = airports_file
+        self._eof = False
 
     def run(self):
         signal.signal(signal.SIGTERM, self.handle_sigterm)
         self._start_connection()
-        while not self._sigterm:
+        while not self._sigterm and not self._eof:
             self.__read_and_send_lines()
         if self._sigterm:
             sigterm_msg = protocol.encode_eof_client(SIGTERM)
@@ -31,8 +32,11 @@ class SenderClient(Client):
             self._client_socket.shutdown(socket.SHUT_RDWR)
             logging.info('action: close_client | result: success')
         self._close_connection()
+        print("SENDER RETURNED")
+        return
 
     def handle_sigterm(self, signum, frame):
+        print("SENDER received sigterm")
         logging.info(
             f'action: sigterm received | signum: {signum}, frame:{frame}')
         self._sigterm = True
@@ -128,3 +132,4 @@ class SenderClient(Client):
                 rows = []
         self.__send_eof(EOF_FLIGHTS_FILE)
         self.__retrieve_server_ack()
+        self._eof = True

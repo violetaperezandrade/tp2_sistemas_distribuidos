@@ -58,8 +58,9 @@ class ReducerGroupBy():
                 pass
             if type(msg) is list:
                 for message in msg:
-                    self.queue_middleware.send_message(self.output_queue,
-                                                       json.dumps(message))
+                    if message != {}:
+                        self.queue_middleware.send_message(self.output_queue,
+                                                           json.dumps(message))
             else:
                 self.queue_middleware.send_message(self.output_queue,
                                                    json.dumps(msg))

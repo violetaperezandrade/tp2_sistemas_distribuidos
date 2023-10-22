@@ -75,3 +75,11 @@ def encode_query_result(result):
 
     message = result_length_bytes + result_bytes
     return message
+
+
+def encode_signal(code):
+    result_bytes = code.to_bytes(1, byteorder="big")
+    result_length_bytes = len(result_bytes).to_bytes(2, byteorder="big")
+
+    message = result_length_bytes + result_bytes
+    return message

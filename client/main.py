@@ -1,11 +1,11 @@
-"""Basic RabbitMQ client."""
-from configparser import ConfigParser
 # pylint: disable=import-error
-from sender_client import SenderClient
-from listener_client import ListenerClient
+from configparser import ConfigParser
 import logging
 import os
+import signal
 from multiprocessing import Process
+from sender_client import SenderClient
+from listener_client import ListenerClient
 
 
 def initialize_config():
@@ -61,6 +61,8 @@ def main():
     initialize_log(logging_level)
     sender_client = SenderClient(server_address, flights_name, airports_name)
     sender_client.run()
+    signal.signal(signal.SIGTERM, signal.SIG_DFL)
+    print("client main: SENDER RETURNED")
 
     for listener_process in listener_processes:
         listener_process.join()
