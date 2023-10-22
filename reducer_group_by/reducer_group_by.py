@@ -23,7 +23,7 @@ class ReducerGroupBy():
         self.operations_map = {3: handle_query_3,
                                4: handle_query_4,
                                5: handle_query_5}
-        self.__filename = f"{input_queue}.txt"
+        self.__filename = "stored_flights.txt"
         self.__tmp_flights = []
 
     def run(self):

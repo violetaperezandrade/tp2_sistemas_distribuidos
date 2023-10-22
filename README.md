@@ -14,6 +14,21 @@ Los targets disponibles son:
 
 - **docker-compose-down**: Realiza un docker-compose stop para detener los containers asociados al compose y luego realiza un docker-compose down para destruir todos los recursos asociados al proyecto que fueron inicializados. Se recomienda ejecutar este comando al finalizar cada ejecución para evitar que el disco de la máquina host se llene.
 
+Los siguientes targets repiten las mismas tareas pero utilizando el archivo _docker-compose-scaled.yaml_, resultante de la ejecucion del script para escalado (**ver Escalacion**)
+
+- **docker-compose-scaled-up**
+- **docker-compose-scaled-logs**
+- **docker-compose-scaled-down**
+
+## Escalacion
+
+Se ofrece un script _scale.py_ que permite escalar facilmente los principales nodos del sistema y los reducers.  
+Ejecutar como
+
+`python3 scale.py <NUMERO_DE_NODOS> <NUMERO_DE_REDUCERS>`
+
+con `<NUMERO_DE_NODOS>` y `<NUMERO_DE_REDUCERS>` ambos mayor que 1.
+
 ## Link al informe
 
 https://docs.google.com/document/d/1sfDgIPvl476iK7hpkfC1Prq8Wgsqr3SpUPQEF4L8-9w/edit

@@ -1,8 +1,7 @@
 from util.constants import (EOF_FLIGHTS_FILE,
                             AIRPORT_REGISTER,
                             EOF_AIRPORTS_FILE,
-                            FLIGHT_REGISTER,
-                            SIGTERM)
+                            FLIGHT_REGISTER)
 import json
 import signal
 
@@ -58,8 +57,7 @@ class ColumnCleaner:
             if self.__required_columns_airports != ['']:
                 column_names = self.__required_columns_airports
             else:
-                self.middleware.publish(self.__output_exchange,
-                                        body)
+                self.middleware.publish(self.__output_exchange, body)
                 return
         for column in column_names:
             filtered_columns[column] = register[column]

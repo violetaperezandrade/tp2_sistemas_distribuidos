@@ -14,7 +14,7 @@ class FilterByAverage:
         self.__input_queue = input_queue
         self.__input_exchange = input_exchange
         self.id = node_id
-        self.__file_name = "file" + node_id + ".txt"
+        self.__file_name = "stored_flights.txt"
         self.__tmp_flights = []
         self.__middleware = QueueMiddleware()
 
