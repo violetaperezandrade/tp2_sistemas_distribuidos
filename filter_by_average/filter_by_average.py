@@ -17,18 +17,22 @@ class FilterByAverage:
         self.__file_name = "stored_flights.txt"
         self.__tmp_flights = []
         self.__middleware = QueueMiddleware()
+        self.sigterm_received = False
 
     def run(self, avg_exchange):
         receiver_queue = "avg_receiver_" + self.id
-        signal.signal(signal.SIGTERM, self.__middleware.handle_sigterm)
+        signal.signal(signal.SIGTERM, self._handle_sigterm)
         initialize_exchanges([self.__input_exchange, avg_exchange], self.__middleware)
         initialize_queues([self.__output_queue, self.__input_queue, receiver_queue], self.__middleware)
 
         self.__middleware.subscribe_without_consumption(avg_exchange, receiver_queue)
         self.__middleware.subscribe(self.__input_exchange, self.__callback_filter, self.__input_queue)
+        if self.sigterm_received:
+            return
         self.__middleware.listen_on(receiver_queue, self.__callback_avg)
+        if self.sigterm_received:
+            return
         self.__send_flights_over_average()
-        self.__middleware.finish()
 
     def __callback_avg(self, body):
         self.__avg = json.loads(body)["avg"]
@@ -61,3 +65,7 @@ class FilterByAverage:
                 flight = ast.literal_eval(line)
                 if flight["op_code"] == EOF_FLIGHTS_FILE or float(flight["totalFare"]) > self.__avg:
                     self.__middleware.send_message(self.__output_queue, json.dumps(flight))
+
+    def _handle_sigterm(self, signum, frame):
+        self.sigterm_received = True
+        self.__middleware.handle_sigterm(signum, frame)
