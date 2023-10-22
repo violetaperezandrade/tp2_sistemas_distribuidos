@@ -50,10 +50,8 @@ class ResultHandler:
             bytes_sent += chunk_size
 
     def _handle_sigterm(self, signum, frame):
-        print("Received SIGTERM")
         self.__middleware.handle_sigterm(signum, frame)
         msg = protocol.encode_signal(SIGTERM)
         self.__send_exact(msg)
-        print(f"SENT: {msg}")
         self.__client_socket.shutdown(socket.SHUT_RDWR)
         self.__client_socket.close()
