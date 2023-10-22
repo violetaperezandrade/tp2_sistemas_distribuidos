@@ -2,12 +2,12 @@ import logging
 
 from client import Client
 from util import protocol
-# from util.constants import EOF_RESULTS, SIGTERM_RESULTS
+from util.constants import EOF_B, SIGTERM_B
 
 
 class ListenerClient(Client):
     def __init__(self, address):
-        super().__init__(address)  # Call the constructor of the abstract class
+        super().__init__(address)
         self._eof = False
 
     def run(self):
@@ -32,12 +32,13 @@ class ListenerClient(Client):
             header = self._read_exact(2)
             payload = self._read_exact(int.from_bytes(header, byteorder='big'))
             if len(payload) == 1:
-                if payload == b'\x07':
+                if payload == SIGTERM_B:
                     self._sigterm = True
                     return
-                if payload == b'\x00':
+                if payload == EOF_B:
                     self._eof = True
                     return
+            print(f"Payload: {payload}")
             result = protocol.decode_query_result(payload)
             query_number = result.pop('query_number')
             print(f"QUERY {query_number}:"

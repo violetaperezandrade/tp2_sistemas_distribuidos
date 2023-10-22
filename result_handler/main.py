@@ -1,7 +1,5 @@
-import multiprocessing
 import os
 import pika
-import signal
 
 from result_handler import ResultHandler
 
