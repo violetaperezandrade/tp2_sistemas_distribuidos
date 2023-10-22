@@ -74,7 +74,7 @@ class QueueMiddleware:
                                   routing_key='')
 
     def handle_sigterm(self, signum, frame):
-        self.__channel.close()
+        self.__channel.stop_consuming()
 
     def __del__(self):
         self.__connection.close()

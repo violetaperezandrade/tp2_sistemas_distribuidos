@@ -35,7 +35,6 @@ class SenderClient(Client):
         return
 
     def handle_sigterm(self, signum, frame):
-        print("SENDER received sigterm")
         logging.info(
             f'action: sigterm received | signum: {signum}, frame:{frame}')
         self._sigterm = True
