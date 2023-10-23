@@ -78,7 +78,7 @@ services:
       - INPUT_QUEUE=filter_three_stop_overs_queue
       - INPUT_EXCHANGE=cleaned_flight_registers
       - OUTPUT_EXCHANGE=three_or_more_stopovers
-      - COLUMNS_TO_FILTER=op_code,legId,startingAirport,destinationAirport,stopovers,totalFare
+      - COLUMNS_TO_FILTER=legId,startingAirport,destinationAirport,stopovers,totalFare
     depends_on:
       - group_by_route
 
