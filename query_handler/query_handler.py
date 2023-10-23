@@ -1,11 +1,9 @@
 import json
 import signal
-import socket
 
 from util.constants import EOF_FLIGHTS_FILE
 from util.initialization import initialize_queues
 from util.queue_middleware import QueueMiddleware
-from util import protocol
 
 
 class QueryHandler:
@@ -33,4 +31,3 @@ class QueryHandler:
             return
         result["query_number"] = self.query_number
         self.__middleware.send_message("results", json.dumps(result))
-

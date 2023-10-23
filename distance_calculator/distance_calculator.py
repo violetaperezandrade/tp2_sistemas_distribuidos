@@ -19,7 +19,8 @@ class DistanceCalculator:
     def run(self):
         signal.signal(signal.SIGTERM, self.__middleware.handle_sigterm)
         initialize_exchanges([self.__input_exchange], self.__middleware)
-        initialize_queues([self.__input_queue, self.__output_queue], self.__middleware)
+        initialize_queues([self.__input_queue, self.__output_queue],
+                          self.__middleware)
         self.__middleware.subscribe(self.__input_exchange,
                                     self.__airport_callback)
         self.__middleware.listen_on(self.__input_queue,
@@ -36,10 +37,11 @@ class DistanceCalculator:
         register = json.loads(body)
         if register["op_code"] == EOF_FLIGHTS_FILE:
             if register["remaining_nodes"] == 1:
-                self.__middleware.send_message(self.__output_queue,body)
+                self.__middleware.send_message(self.__output_queue, body)
             else:
                 register["remaining_nodes"] -= 1
-                self.__middleware.send_message(self.__input_queue, json.dumps(register))
+                self.__middleware.send_message(self.__input_queue,
+                                               json.dumps(register))
             self.__middleware.finish()
             return
         self.__calculate_total_distance(register)

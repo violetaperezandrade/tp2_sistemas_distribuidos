@@ -24,8 +24,10 @@ class ColumnCleaner:
 
     def run(self, input_exchange):
         signal.signal(signal.SIGTERM, self.middleware.handle_sigterm)
-        initialize_exchanges([self.__output_exchange, input_exchange], self.middleware)
-        initialize_queues([self.__output_queue, self.__input_queue], self.middleware)
+        initialize_exchanges([self.__output_exchange, input_exchange],
+                             self.middleware)
+        initialize_queues([self.__output_queue, self.__input_queue],
+                          self.middleware)
         if input_exchange is not None:
             self.middleware.subscribe(input_exchange,
                                       self.callback,
@@ -47,7 +49,8 @@ class ColumnCleaner:
                 self.__output_message(json.dumps(register), op_code)
             else:
                 register["remaining_nodes"] -= 1
-                self.middleware.send_message(self.__input_queue, json.dumps(register))
+                self.middleware.send_message(self.__input_queue,
+                                             json.dumps(register))
             self.middleware.finish()
             return
         filtered_columns = dict()

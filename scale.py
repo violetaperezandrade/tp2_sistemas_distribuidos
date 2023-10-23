@@ -1,12 +1,14 @@
 import sys
 import yaml
 
-nodes_with_dependencies = ["initial_column_cleaner_1", "query_2_column_filter_1",
+nodes_with_dependencies = ["initial_column_cleaner_1",
+                           "query_2_column_filter_1",
                            "group_by_route", "group_by_airport",
                            "avg_calculator_1"]
 
 nodes_to_scale = ["initial_column_cleaner_1", "filter_by_three_stopovers_1",
-                  "query_2_column_filter_1", "avg_calculator_1", "distance_calculator_1",
+                  "query_2_column_filter_1", "avg_calculator_1",
+                  "distance_calculator_1",
                   "query_5_column_filter_1", "filter_by_average_1"]
 
 reducers_to_scale = ["reducer_group_by_route_1", "reducer_group_by_airport_1",
@@ -60,16 +62,25 @@ def main():
         return
     with open("docker-compose.yaml", 'r') as f:
         doc = yaml.safe_load(f)
-        doc["services"]["server"]["environment"][1] = f"CONNECTED_NODES={node_scaler}"
-        doc["services"]["initial_column_cleaner_1"]["environment"][4] = f"CONNECTED_NODES={node_scaler}"
-        doc["services"]["query_2_column_filter_1"]["environment"][8] = f"CONNECTED_NODES={node_scaler}"
-        doc["services"]["group_by_route"]["environment"][1] = f"REDUCERS_AMOUNT={reducer_scaler}"
-        doc["services"]["group_by_airport"]["environment"][1] = f"REDUCERS_AMOUNT={reducer_scaler}"
-        doc["services"]["group_by_route_query_4"]["environment"][1] = f"REDUCERS_AMOUNT={reducer_scaler}"
-        doc["services"]["query_handler"]["environment"][1] = f"TOTAL_REDUCERS={reducer_scaler}"
-        doc["services"]["group_by_route_query_4"]["environment"][2] = f"EOF_REQUIRED={node_scaler}"
+        doc["services"]["server"]["environment"][1] = \
+            f"CONNECTED_NODES={node_scaler}"
+        doc["services"]["initial_column_cleaner_1"]["environment"][4] = \
+            f"CONNECTED_NODES={node_scaler}"
+        doc["services"]["query_2_column_filter_1"]["environment"][8] = \
+            f"CONNECTED_NODES={node_scaler}"
+        doc["services"]["group_by_route"]["environment"][1] = \
+            f"REDUCERS_AMOUNT={reducer_scaler}"
+        doc["services"]["group_by_airport"]["environment"][1] = \
+            f"REDUCERS_AMOUNT={reducer_scaler}"
+        doc["services"]["group_by_route_query_4"]["environment"][1] = \
+            f"REDUCERS_AMOUNT={reducer_scaler}"
+        doc["services"]["query_handler"]["environment"][1] = \
+            f"TOTAL_REDUCERS={reducer_scaler}"
+        doc["services"]["group_by_route_query_4"]["environment"][2] = \
+            f"EOF_REQUIRED={node_scaler}"
         for node in nodes_with_dependencies:
-            add_depends(doc["services"][node]["depends_on"], node_scaler, reducer_scaler)
+            add_depends(doc["services"][node]["depends_on"], node_scaler,
+                        reducer_scaler)
         for node in nodes_to_scale:
             multiply_node(doc["services"], node_scaler, node)
         for reducer in reducers_to_scale:

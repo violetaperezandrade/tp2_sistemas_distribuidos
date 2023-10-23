@@ -1,5 +1,4 @@
 from avg_calculator import AvgCalculator
-from configparser import ConfigParser
 import os
 import pika
 

@@ -41,7 +41,8 @@ class Client(ABC):
     def _read_exact(self, bytes_to_read):
         bytes_read = self._client_socket.recv(bytes_to_read)
         while len(bytes_read) < bytes_to_read:
-            new_bytes_read = self._client_socket.recv(bytes_to_read - len(bytes_read))
+            new_bytes_read = self._client_socket.recv(
+                bytes_to_read - len(bytes_read))
             bytes_read += new_bytes_read
         return bytes_read
 

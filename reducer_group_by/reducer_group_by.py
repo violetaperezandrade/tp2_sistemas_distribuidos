@@ -5,15 +5,16 @@ import signal
 from util.file_manager import save_to_file
 from util.initialization import initialize_queues
 from util.queue_middleware import QueueMiddleware
-from util.utils_query_3 import *
-from util.utils_query_4 import *
+from util.utils_query_3 import handle_query_3
+from util.utils_query_4 import handle_query_4
 from util.utils_query_5 import handle_query_5
-from util.constants import *
+from util.constants import BATCH_SIZE, EOF_FLIGHTS_FILE
 
 
 class ReducerGroupBy():
 
-    def __init__(self, field_group_by, input_queue, output_queue, query_number):
+    def __init__(self, field_group_by, input_queue,
+                 output_queue, query_number):
         self.queue_middleware = QueueMiddleware()
         self.field_group_by = field_group_by
         self.output_queue = output_queue
@@ -32,7 +33,6 @@ class ReducerGroupBy():
                           self.queue_middleware)
         self.queue_middleware.listen_on(self.input_queue, self.__callback)
 
-
     def __callback(self, body):
         flight = json.loads(body)
         op_code = flight.get("op_code")
@@ -47,7 +47,6 @@ class ReducerGroupBy():
             self.queue_middleware.finish()
             return
         self.__tmp_flights.append(flight)
-
 
     def __handle_eof(self):
         for route, flights in self.grouped.items():
