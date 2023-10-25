@@ -5,7 +5,7 @@ import json
 from util import protocol
 from util.constants import (EOF_FLIGHTS_FILE, FLIGHT_REGISTER,
                             AIRPORT_REGISTER, EOF_AIRPORTS_FILE,
-                            SIGTERM)
+                            SIGTERM, SERVER_ACK)
 from util.queue_middleware import QueueMiddleware
 
 
@@ -53,7 +53,8 @@ class Server:
         """
         try:
             header = self.__read_exact(3)
-            payload = self.__read_exact(int.from_bytes(header, byteorder='big'))
+            payload = self.__read_exact(int.from_bytes(header,
+                                                       byteorder='big'))
             registers, op_code = protocol.get_opcode_batch(payload)
             data = self._operations_map.get(op_code, lambda _: 0)(registers)
             self.__send_ack()
@@ -70,7 +71,8 @@ class Server:
     def __read_exact(self, bytes_to_read):
         bytes_read = self.__client_socket.recv(bytes_to_read)
         while len(bytes_read) < bytes_to_read:
-            new_bytes_read = self.__client_socket.recv(bytes_to_read - len(bytes_read))
+            new_bytes_read = self.__client_socket.recv(
+                bytes_to_read - len(bytes_read))
             bytes_read += new_bytes_read
         return bytes_read
 
@@ -108,7 +110,7 @@ class Server:
             self._reading_file = False
 
     def __send_ack(self):
-        msg = protocol.encode_server_ack(8)
+        msg = protocol.encode_server_ack(SERVER_ACK)
         self.__send_exact(msg)
 
     def __handle_sigterm(self, registers):

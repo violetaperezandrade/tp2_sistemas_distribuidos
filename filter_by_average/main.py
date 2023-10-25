@@ -1,6 +1,5 @@
 import pika
 from filter_by_average import FilterByAverage
-from configparser import ConfigParser
 import os
 
 
@@ -13,7 +12,6 @@ def main():
 
     filter_by_average = FilterByAverage(output_queue, input_queue,
                                         cleaner_column_exchange, node_id)
-
 
     try:
         filter_by_average.run(avg_exchange)

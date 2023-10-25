@@ -66,11 +66,13 @@ class SenderClient(Client):
                 rows.append(row)
                 if len(rows) == BATCH_SIZE:
                     try:
-                        msg = protocol.encode_registers_batch(rows, AIRPORT_REGISTER)
+                        msg = protocol.encode_registers_batch(rows,
+                                                              AIRPORT_REGISTER)
                         self._send_exact(msg)
                         self.__retrieve_server_ack()
                         logging.debug(
-                            f'action: sent line | result: success | msg: {msg}')
+                            'action: sent line | result: success | '
+                            f'msg: {msg}')
                     except OSError as e:
                         logging.error(
                             f'action: sent line | result: fail | error: {e}')
@@ -79,7 +81,8 @@ class SenderClient(Client):
                 if self._sigterm:
                     return
                 try:
-                    msg = protocol.encode_registers_batch(rows, AIRPORT_REGISTER)
+                    msg = protocol.encode_registers_batch(rows,
+                                                          AIRPORT_REGISTER)
                     self._send_exact(msg)
                     self.__retrieve_server_ack()
                     logging.debug(
@@ -98,11 +101,13 @@ class SenderClient(Client):
                 rows.append(row)
                 if len(rows) == BATCH_SIZE:
                     try:
-                        msg = protocol.encode_registers_batch(rows, FLIGHT_REGISTER)
+                        msg = protocol.encode_registers_batch(rows,
+                                                              FLIGHT_REGISTER)
                         self._send_exact(msg)
                         self.__retrieve_server_ack()
                         logging.debug(
-                            f'action: sent line | result: success | msg: {msg}')
+                            'action: sent line | result: success | '
+                            f'msg: {msg}')
                     except OSError as e:
                         logging.error(
                             f'action: sent line | result: fail | error: {e}')
@@ -111,7 +116,8 @@ class SenderClient(Client):
                 if self._sigterm:
                     return
                 try:
-                    msg = protocol.encode_registers_batch(rows, FLIGHT_REGISTER)
+                    msg = protocol.encode_registers_batch(rows,
+                                                          FLIGHT_REGISTER)
                     self._send_exact(msg)
                     self.__retrieve_server_ack()
                     if self._sigterm:

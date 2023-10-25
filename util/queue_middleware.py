@@ -20,9 +20,7 @@ class QueueMiddleware:
     def __setup_message_consumption(self, queue_name, user_function):
         self.__channel.basic_consume(queue=queue_name,
                                      on_message_callback=lambda channel,
-                                                                method,
-                                                                properties,
-                                                                body:
+                                     method, properties, body:
                                      (user_function(body),
                                       channel.basic_ack
                                       (delivery_tag=method.delivery_tag),

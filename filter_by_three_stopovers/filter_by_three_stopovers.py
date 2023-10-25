@@ -18,8 +18,10 @@ class FilterByThreeStopovers:
     def run(self, input_exchange):
         signal.signal(signal.SIGTERM, self.__middleware.handle_sigterm)
 
-        initialize_exchanges([input_exchange, self.__output_exchange], self.__middleware)
-        initialize_queues([self.__input_queue, self.__output_queue], self.__middleware)
+        initialize_exchanges([input_exchange, self.__output_exchange],
+                             self.__middleware)
+        initialize_queues([self.__input_queue, self.__output_queue],
+                          self.__middleware)
         self.__middleware.subscribe(input_exchange,
                                     self.callback,
                                     self.__input_queue)
@@ -45,14 +47,16 @@ class FilterByThreeStopovers:
         stopovers = flight["segmentsArrivalAirportCode"].split("||")[:-1]
         if len(stopovers) >= self.__max_stopovers:
             flight["stopovers"] = stopovers
-            self.__middleware.publish(self.__output_exchange, json.dumps(flight))
+            self.__middleware.publish(self.__output_exchange,
+                                      json.dumps(flight))
             message = self.__create_message(flight)
-            self.__middleware.send_message(self.__output_queue, json.dumps(message))
+            self.__middleware.send_message(self.__output_queue,
+                                           json.dumps(message))
 
     def __create_message(self, flight):
         message = dict()
         for i in range(len(self.__columns_to_filter)):
-            message[self.__columns_to_filter[i]
-            ] = flight[self.__columns_to_filter[i]]
+            message[self.__columns_to_filter[i]] = \
+                flight[self.__columns_to_filter[i]]
 
         return message

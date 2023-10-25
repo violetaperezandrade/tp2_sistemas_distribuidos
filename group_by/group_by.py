@@ -4,7 +4,7 @@ import signal
 
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
-from util.constants import *
+from util.constants import EOF_FLIGHTS_FILE
 
 
 class GroupBy():
@@ -34,7 +34,8 @@ class GroupBy():
         signal.signal(signal.SIGTERM, self.queue_middleware.handle_sigterm)
 
         initialize_exchanges([self.input_exchange], self.queue_middleware)
-        initialize_queues([self.listening_queue, self.input_queue] + self.reducers, self.queue_middleware)
+        initialize_queues([self.listening_queue, self.input_queue] +
+                          self.reducers, self.queue_middleware)
 
         if self.input_queue == '':  # reading from an exchange
             self.queue_middleware.subscribe(self.input_exchange,

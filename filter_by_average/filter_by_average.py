@@ -22,11 +22,15 @@ class FilterByAverage:
     def run(self, avg_exchange):
         receiver_queue = "avg_receiver_" + self.id
         signal.signal(signal.SIGTERM, self._handle_sigterm)
-        initialize_exchanges([self.__input_exchange, avg_exchange], self.__middleware)
-        initialize_queues([self.__output_queue, self.__input_queue, receiver_queue], self.__middleware)
+        initialize_exchanges([self.__input_exchange, avg_exchange],
+                             self.__middleware)
+        initialize_queues([self.__output_queue, self.__input_queue,
+                           receiver_queue], self.__middleware)
 
-        self.__middleware.subscribe_without_consumption(avg_exchange, receiver_queue)
-        self.__middleware.subscribe(self.__input_exchange, self.__callback_filter, self.__input_queue)
+        self.__middleware.subscribe_without_consumption(avg_exchange,
+                                                        receiver_queue)
+        self.__middleware.subscribe(self.__input_exchange,
+                                    self.__callback_filter, self.__input_queue)
         if self.sigterm_received:
             return
         self.__middleware.listen_on(receiver_queue, self.__callback_avg)
@@ -56,15 +60,18 @@ class FilterByAverage:
         save_to_file(self.__tmp_flights, self.__file_name)
         flight["remaining_nodes"] -= 1
         if flight["remaining_nodes"] > 0:
-            self.__middleware.send_message(self.__input_queue, json.dumps(flight))
+            self.__middleware.send_message(self.__input_queue,
+                                           json.dumps(flight))
         self.__middleware.finish(True)
 
     def __send_flights_over_average(self):
         with open(self.__file_name, "r") as file:
             for line in file:
                 flight = ast.literal_eval(line)
-                if flight["op_code"] == EOF_FLIGHTS_FILE or float(flight["totalFare"]) > self.__avg:
-                    self.__middleware.send_message(self.__output_queue, json.dumps(flight))
+                if flight["op_code"] == EOF_FLIGHTS_FILE or \
+                        float(flight["totalFare"]) > self.__avg:
+                    self.__middleware.send_message(self.__output_queue,
+                                                   json.dumps(flight))
 
     def _handle_sigterm(self, signum, frame):
         self.sigterm_received = True

@@ -22,7 +22,8 @@ def initialize_config():
         config_params["logging_level"] = config["DEFAULT"]["LOGGING_LEVEL"]
         config_params["flights_name"] = config["DEFAULT"]["FLIGHTS_FILE"]
         config_params["airports_name"] = config["DEFAULT"]["AIRPORTS_FILE"]
-        config_params["address_listen"] = int(config["DEFAULT"]["ADDRESS_LISTEN"])
+        config_params["address_listen"] = int(
+            config["DEFAULT"]["ADDRESS_LISTEN"])
     except KeyError as e:
         raise KeyError(
             "Key was not found. Error: {} .Aborting client".format(e))
