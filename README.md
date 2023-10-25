@@ -31,7 +31,7 @@ https://www.kaggle.com/code/parejafacundojose/flightripsoptimizer/
 
 Ejecutarlo y descargar los archivos _kaggle_queryX_ y compararlos con los resultados obtenidos anteriormente mediante el comando
 
-`diff <(sort <ARCHIVO_OBTENIDO>) <(sort <ARCHIVO_GENERADO>)`
+`diff <(sort <ARCHIVO_OBTENIDO) <(sort <ARCHIVO_GENERADO)`
 
 ## Escalacion
 
@@ -56,7 +56,7 @@ pip install pip --upgrade
 pip install -r dev-requirements.txt -r requirements.txt
 ```
 
-## Tests + Lint
+## Lint
 
 ```bash
 tox

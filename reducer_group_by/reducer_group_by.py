@@ -6,7 +6,7 @@ from util.file_manager import save_to_file
 from util.initialization import initialize_queues
 from util.queue_middleware import QueueMiddleware
 from util.utils_query_3 import handle_query_3_register
-from util.utils_query_4 import handle_query_4
+from util.utils_query_4 import handle_query_4_register, handle_query_4
 from util.utils_query_5 import handle_query_5
 from util.constants import BATCH_SIZE, EOF_FLIGHTS_FILE
 
@@ -23,9 +23,10 @@ class ReducerGroupBy():
         self.query_number = query_number
         self.operations_map = {4: handle_query_4,
                                5: handle_query_5}
+        self.handlers_map = {3: handle_query_3_register,
+                             4: handle_query_4_register}
         self.__filename = "stored_flights.txt"
         self.__tmp_flights = []
-        self._fastests = {}
 
     def run(self):
         signal.signal(signal.SIGTERM, self.queue_middleware.handle_sigterm)
@@ -47,29 +48,21 @@ class ReducerGroupBy():
             self.queue_middleware.send_message(self.output_queue, body)
             self.queue_middleware.finish()
             return
-        if (self.query_number == 3):
-            self._fastests = handle_query_3_register(flight, self._fastests)
+        if (self.query_number == 5):
+            self.__tmp_flights.append(flight)
             return
-        self.__tmp_flights.append(flight)
+
+        self.handlers_map[self.query_number](flight, self.grouped)
 
     def __handle_eof(self):
-        if (self.query_number == 3):
-            for key, value in self._fastests.items():
-                for item in value:
-                    self.queue_middleware.send_message(self.output_queue,
-                                                       json.dumps(item))
         for route, flights in self.grouped.items():
-            msg = self.operations_map.get(self.query_number,
-                                          lambda _: None)(flights)
-            if msg is None:
-                # Error handling
-                pass
-            if type(msg) is list:
-                for message in msg:
-                    if message != {}:
-                        self.queue_middleware.send_message(self.output_queue,
-                                                           json.dumps(message))
+            if (self.query_number == 3):
+                for flight in flights:
+                    self.queue_middleware.send_message(self.output_queue,
+                                                       json.dumps(flight))
             else:
+                msg = self.operations_map.get(self.query_number,
+                                              lambda _: None)(flights)
                 self.queue_middleware.send_message(self.output_queue,
                                                    json.dumps(msg))
 
