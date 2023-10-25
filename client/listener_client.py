@@ -13,11 +13,11 @@ class ListenerClient(Client):
     def run(self):
         self._start_connection()
         try:
-            with (open("results/query_1.txt", mode='w') as file1,
-                  open("results/query_2.txt", mode='w') as file2,
-                  open("results/query_3.txt", mode='w') as file3,
-                  open("results/query_4.txt", mode='w') as file4,
-                  open("results/query_5.txt", mode='w') as file5):
+            with (open("results/query1.txt", mode='w') as file1,
+                  open("results/query2.txt", mode='w') as file2,
+                  open("results/query3.txt", mode='w') as file3,
+                  open("results/query4.txt", mode='w') as file4,
+                  open("results/query5.txt", mode='w') as file5):
                 while not self._sigterm and not self._eof:
                     self.__retrieve_result([file1, file2, file3, file4, file5])
         except OSError:
