@@ -2,7 +2,7 @@ RESULT_FIELDS = ["legId", "route", "stopovers"]
 TOTAL_FARE_FIELD = "totalFare"
 
 
-def handle_query_4_new(flights):
+def handle_query_4(flights):
     sum = flights.pop("sum")
     count = flights.pop("count")
     flights["avg"] = float(sum / count)
