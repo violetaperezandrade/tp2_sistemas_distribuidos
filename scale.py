@@ -46,6 +46,9 @@ def multiply_reducers(node, reducer_scaler, base):
         index = base[:-1] + str(i)
         node[index] = node[base].copy()
         node[index]["container_name"] = index
+        node[index]["environment"] = node[base]["environment"].copy()
+        node[index]["environment"][2] = (node[base]["environment"][2][:-1]
+                                         + str(i))
 
 
 def main():

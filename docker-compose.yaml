@@ -46,6 +46,9 @@ services:
     entrypoint: python3 /main.py
     volumes:
       - "./results:/results:rw"
+      - type: bind
+        source: ./client/itineraries_random_2M.csv
+        target: /itineraries.csv
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:

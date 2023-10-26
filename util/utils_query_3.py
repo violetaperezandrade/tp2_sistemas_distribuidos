@@ -4,10 +4,10 @@ DURATION_FIELD = "travelDuration"
 
 
 def get_fastests(flight, duration, fastests):
-    if fastests[0] == {} or duration < fastests[0].get('duration', 0):
+    if not fastests[0] or duration < fastests[0].get('duration', 0):
         fastests[1] = fastests[0]
         fastests[0] = get_result(flight, duration)
-    elif fastests[1] == {} or duration < fastests[1].get('duration', 0):
+    elif not fastests[1] or duration < fastests[1].get('duration', 0):
         fastests[1] = get_result(flight, duration)
     return fastests
 
@@ -18,6 +18,8 @@ def handle_query_3_register(register, dic):
     route_flights = dic.get(route, [])
     if len(route_flights) < 2:
         route_flights.append(get_result(register, duration))
+        if len(route_flights) == 2:
+            route_flights.sort(key=lambda x: x.get('duration', float('inf')))
     else:
         route_flights = get_fastests(register, duration, route_flights)
     dic[route] = route_flights

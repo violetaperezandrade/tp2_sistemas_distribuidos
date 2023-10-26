@@ -28,7 +28,7 @@ class ResultHandler:
 
     def __callback(self, body):
         result = json.loads(body)
-        op_code = result.get("op_code")
+        op_code = result.pop("op_code", None)
         if op_code == EOF_FLIGHTS_FILE:
             self.__eofs_received += 1
             if self.__eofs_received == self.__eof_max:

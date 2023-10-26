@@ -22,7 +22,16 @@ Los siguientes targets repiten las mismas tareas pero utilizando el archivo _doc
 
 ## Resultados
 
-Luego de ejecutar el sistema en cualquiera de sus versiones, se genera una carpeta **results**
+Luego de ejecutar el sistema en cualquiera de sus versiones, se genera una carpeta **results** con los archivos _queryX.txt_
+donde X es un numero del 1 al 5 segun la consulta.
+
+Para corroborarlos se ofrece el siguiente notebook
+
+https://www.kaggle.com/code/parejafacundojose/flightripsoptimizer/
+
+Ejecutarlo y descargar los archivos _kaggle_queryX_ y compararlos con los resultados obtenidos anteriormente mediante el comando
+
+`diff <(sort <ARCHIVO_OBTENIDO) <(sort <ARCHIVO_GENERADO)`
 
 ## Escalacion
 
@@ -47,7 +56,7 @@ pip install pip --upgrade
 pip install -r dev-requirements.txt -r requirements.txt
 ```
 
-## Tests + Lint
+## Lint
 
 ```bash
 tox
