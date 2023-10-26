@@ -5,13 +5,14 @@ TOTAL_FARE_FIELD = "totalFare"
 def handle_query_4(flights):
     sum = flights.pop("sum")
     count = flights.pop("count")
-    flights["avg"] = float(sum / count)
+    flights["avg"] = "{:.10f}".format(float(sum / count))
+    flights["avg"] = flights["avg"][:-7]
     return flights
 
 
 def handle_query_4_register(register, dic):
     route = register.get("route")
-    price = register.get(TOTAL_FARE_FIELD)
+    price = float(register.get(TOTAL_FARE_FIELD))
     route_flights = dic.get(route, {})
     if route_flights == {}:
         dic[route] = {

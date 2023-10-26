@@ -45,6 +45,7 @@ class AvgCalculator:
             flight["sum"] = 0
             flight["count"] = 0
             self.__handle_avg_res(flight)
+            return
         flight["sum"] = self.__result["sum"]
         flight["count"] = self.__result["count"]
         flight["op_code"] = AVG_READY
@@ -65,7 +66,6 @@ class AvgCalculator:
                                       json.dumps(message))
             self.__middleware.finish()
             return
-
         flight["remaining_nodes"] -= 1
         self.__middleware.send_message(self.__input_queue, json.dumps(flight))
         self.__middleware.finish()
