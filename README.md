@@ -27,7 +27,7 @@ donde X es un numero del 1 al 5 segun la consulta.
 
 Para corroborarlos se ofrece el siguiente notebook
 
-https://www.kaggle.com/code/parejafacundojose/flightripsoptimizer/
+https://www.kaggle.com/parejafacundojose/flights-optimizer-result-comparison
 
 Ejecutarlo y descargar los archivos _kaggle_queryX_ y compararlos con los resultados obtenidos anteriormente mediante el comando
 
