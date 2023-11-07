@@ -67,7 +67,7 @@ class FilterByAverage:
     def __send_flights_over_average(self):
         with open(self.__file_name, "r") as file:
             for line in file:
-                flight = ast.literal_eval(line)
+                flight = json.loads(line)
                 if flight["op_code"] == EOF_FLIGHTS_FILE or \
                         float(flight["totalFare"]) > self.__avg:
                     self.__middleware.send_message(self.__output_queue,
