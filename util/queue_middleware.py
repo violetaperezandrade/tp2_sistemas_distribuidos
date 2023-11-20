@@ -21,9 +21,7 @@ class QueueMiddleware:
         self.__channel.basic_consume(queue=queue_name,
                                      on_message_callback=lambda channel,
                                      method, properties, body:
-                                     (user_function(body),
-                                      channel.basic_ack
-                                      (delivery_tag=method.delivery_tag),
+                                     (user_function(body, method),
                                       self.__verify_connection_end()))
         self.__channel.start_consuming()
 
@@ -70,6 +68,9 @@ class QueueMiddleware:
         self.__channel.queue_bind(exchange=exchange,
                                   queue=queue,
                                   routing_key='')
+
+    def manual_ack(self, method):
+        self.__channel.basic_ack(delivery_tag=method.delivery_tag)
 
     def handle_sigterm(self, signum, frame):
         self.__channel.stop_consuming()

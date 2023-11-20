@@ -1,5 +1,4 @@
 import json
-import os
 import struct
 
 
@@ -22,9 +21,8 @@ def decode_to_str(payload):
     return flight_str
 
 
-def encode_eof(opcode):
-    eof = {"op_code": opcode, "remaining_nodes": int(os.getenv(
-        "CONNECTED_NODES", 1))}
+def encode_eof(opcode, id):
+    eof = {"op_code": opcode, "message_id": id, "client_id": id}
     return json.dumps(eof)
 
 

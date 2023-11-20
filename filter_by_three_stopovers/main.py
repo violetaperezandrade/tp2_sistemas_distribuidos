@@ -11,9 +11,11 @@ def main():
     output_queue = os.getenv("OUTPUT_QUEUE", None)
     columns_to_filter = os.getenv("COLUMNS_TO_FILTER", '').split(',')
     max_stopovers = os.getenv("MAX_STOPOVERS", 3)
+    name = os.getenv("HOSTNAME")
     filterByStopOvers = FilterByThreeStopovers(columns_to_filter,
                                                max_stopovers, output_queue,
-                                               input_queue, output_exchange)
+                                               input_queue, output_exchange,
+                                               name)
     try:
         filterByStopOvers.run(input_exchange)
     except pika.exceptions.ChannelWrongStateError:
