@@ -25,7 +25,7 @@ class FilterByThreeStopovers:
                              self.__middleware)
         initialize_queues([self.__input_queue, self.__output_queue],
                           self.__middleware)
-        self.__check_state
+        self.__check_state()
         self.__middleware.subscribe(input_exchange,
                                     self.callback,
                                     self.__input_queue)
