@@ -43,6 +43,9 @@ docker-compose-scaled-up: docker-image
 .PHONY: docker-compose-up
 
 docker-compose-scaled-down:
+	sudo rm -f column_cleaner/*.txt
+	sudo rm -f result_handler/*.txt
+	sudo rm -f filter_by_three_stopovers/*.txt
 	docker compose -f docker-compose-scaled.yaml stop -t 20
 	docker compose -f docker-compose-scaled.yaml down --remove-orphans
 .PHONY: docker-compose-down

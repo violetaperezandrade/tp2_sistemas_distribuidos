@@ -56,6 +56,7 @@ services:
     container_name: initial_column_cleaner_1
     image: column_cleaner:latest
     entrypoint: python3 /main.py
+    hostname: initial_column_cleaner_1
     volumes: &id004
       - ./column_cleaner:/column_cleaner:rw
     environment: &id001
@@ -72,6 +73,7 @@ services:
     container_name: filter_by_three_stopovers_1
     image: filter_by_three_stopovers:latest
     entrypoint: python3 /main.py
+    hostname: filter_by_three_stopovers_1
     volumes: &id005
       - ./filter_by_three_stopovers:/filter_by_three_stopovers:rw
     environment: &id003
@@ -96,6 +98,7 @@ services:
   initial_column_cleaner_2:
     container_name: initial_column_cleaner_2
     image: column_cleaner:latest
+    hostname: initial_column_cleaner_2
     entrypoint: python3 /main.py
     volumes: *id004
     environment: *id001
@@ -103,6 +106,7 @@ services:
   initial_column_cleaner_3:
     container_name: initial_column_cleaner_3
     image: column_cleaner:latest
+    hostname: initial_column_cleaner_3
     entrypoint: python3 /main.py
     volumes: *id004
     environment: *id001
@@ -110,6 +114,7 @@ services:
   filter_by_three_stopovers_2:
     container_name: filter_by_three_stopovers_2
     image: filter_by_three_stopovers:latest
+    hostname: filter_by_three_stopovers_2
     entrypoint: python3 /main.py
     volumes: *id005
     environment: *id003
@@ -118,6 +123,7 @@ services:
   filter_by_three_stopovers_3:
     container_name: filter_by_three_stopovers_3
     image: filter_by_three_stopovers:latest
+    hostname: filter_by_three_stopovers_3
     entrypoint: python3 /main.py
     volumes: *id005
     environment: *id003

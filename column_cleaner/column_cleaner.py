@@ -1,3 +1,6 @@
+from random import randint
+from time import sleep
+
 from util.constants import (EOF_FLIGHTS_FILE,
                             AIRPORT_REGISTER,
                             EOF_AIRPORTS_FILE,
@@ -25,7 +28,7 @@ class ColumnCleaner:
         self.__routing_key = routing_key
         self.__connected_nodes = connected_nodes
         self.middleware = QueueMiddleware()
-        self._filename = "column_cleaner/" + name + ".txt"
+        self._filename = "column_cleaner/" + name + "_log_state.txt"
 
     def run(self, input_exchange):
         signal.signal(signal.SIGTERM, self.middleware.handle_sigterm)
@@ -51,12 +54,21 @@ class ColumnCleaner:
             self.middleware.manual_ack(method)
             return
         if op_code == EOF_FLIGHTS_FILE:
-            log_to_file(self._filename, f"0,{register.get('message_id')},"
-                        f"{register.get('client_id')}")
+            log_to_file(self._filename, f"{BEGIN_EOF},{register.get('message_id')},{register.get('client_id')}")
+            sleep_time = randint(15, 30)
+            print(f"I am sleeping for {sleep_time}")
+            sleep(sleep_time)
             self.middleware.manual_ack(method)
+            print("Done sleeping")
             self.__output_message(body, op_code)
-            log_to_file(self._filename, f"1,{register.get('message_id')},"
-                        f"{register.get('client_id')}")
+            print(f"I am sleeping for {sleep_time}")
+            sleep(sleep_time)
+            print("Done sleeping")
+            log_to_file(self._filename, f"{EOF_SENT},{register.get('message_id')},"
+                                        f"{register.get('client_id')}")
+            print(f"I am sleeping for {sleep_time}")
+            sleep(sleep_time)
+            print("Done sleeping")
             return
         filtered_columns = dict()
         column_names = self.__required_columns_flights
@@ -90,16 +102,20 @@ class ColumnCleaner:
                 except IndexError:
                     return
                 if last_line.endswith("\n"):
-                    last_line.strip("\n")
-                    op_code, message_id, client_id = tuple(last_line.split(','))
+                    last_line = last_line.strip('\n')
+                    op_code,message_id,client_id = tuple(last_line.split(','))
+                    op_code = int(op_code)
                     # si es 1 -> ok
                     if op_code == EOF_SENT:
+                        print("Recovered state, no need to send anything")
                         return
                     # si es 0 -> repetir pasos
-                    self.__output_message({"op_code": op_code,
-                                           "message_id": message_id,
-                                           "client_id": client_id})
-                    log_to_file(f"{op_code}, {message_id}, {client_id}",
-                                self._filename)
+                    msg = {"op_code": op_code,
+                           "message_id": message_id,
+                           "client_id": client_id}
+                    self.__output_message(json.dumps(msg), op_code)
+                    print("Recovered state, sending EOF")
+                    log_to_file(self._filename, f"{EOF_SENT},{message_id},{client_id}")
+                    print("Wrote EOF SENT to file")
         else:
             return

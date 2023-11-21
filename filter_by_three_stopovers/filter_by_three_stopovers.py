@@ -72,14 +72,18 @@ class FilterByThreeStopovers:
                 if last_line.endswith("\n"):
                     last_line.strip("\n")
                     op_code, message_id, client_id = tuple(last_line.split(','))
+                    op_code = int(op_code)
                     # si es 1 -> ok
                     if op_code == EOF_SENT:
+                        print("Recovered state, no need to send anything")
                         return
                     # si es 0 -> repetir pasos
-                    self.__output_message({"op_code": op_code,
-                                           "message_id": message_id,
-                                           "client_id": client_id})
-                    log_to_file(f"{op_code}, {message_id}, {client_id}",
-                                self._filename)
+                    msg = {"op_code": op_code,
+                           "message_id": message_id,
+                           "client_id": client_id}
+                    self.__middleware.send_message(self.__output_queue,
+                                                   json.dumps(msg))
+                    print("Recovered state, sending EOF")
+                    log_to_file(self._filename, f"{EOF_SENT}, {message_id}, {client_id}")
         else:
             return

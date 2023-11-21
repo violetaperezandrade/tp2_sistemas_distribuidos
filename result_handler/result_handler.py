@@ -30,7 +30,6 @@ class ResultHandler:
 
     def __callback(self, body, method):
         result = json.loads(body)
-        print(result)
         if result.get('message_id') in self._results:
             self.__middleware.manual_ack(method)
             return
@@ -44,7 +43,7 @@ class ResultHandler:
         self._results.add(result.get('message_id'))
         if len(self._results) == 1:
             for r in self._results:
-                log_to_file(self._filename, r)
+                log_to_file(self._filename, str(r))
             self._results.clear()
         msg = protocol.encode_query_result(result)
         self.__send_exact(msg)
