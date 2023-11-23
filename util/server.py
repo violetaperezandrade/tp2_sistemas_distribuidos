@@ -26,7 +26,7 @@ class Server:
             EOF_AIRPORTS_FILE: self.__handle_eof,
             SIGTERM: self.__handle_sigterm
         }
-        self._register_number = 0
+        self._register_number = 1
 
     def run(self):
         self.__queue_middleware.create_queue("full_flight_registers")

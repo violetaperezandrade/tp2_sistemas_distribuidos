@@ -1,19 +1,13 @@
-from random import randint
-from time import sleep
-
 from util.constants import (EOF_FLIGHTS_FILE,
                             AIRPORT_REGISTER,
                             EOF_AIRPORTS_FILE,
-                            FLIGHT_REGISTER,
-                            BEGIN_EOF,
-                            EOF_SENT)
+                            FLIGHT_REGISTER)
 import json
 import signal
-import os
 
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
-from util.file_manager import log_to_file
+from util.recovery_logging import recover_state, propagate_eof_column_cleaner
 
 
 class ColumnCleaner:
@@ -36,7 +30,7 @@ class ColumnCleaner:
                              self.middleware)
         initialize_queues([self.__output_queue, self.__input_queue],
                           self.middleware)
-        self.__check_state()
+        recover_state(self._filename, self.middleware,  propagate_message=self.__output_message)
         if input_exchange is not None:
             self.middleware.subscribe(input_exchange,
                                       self.callback,
@@ -54,21 +48,8 @@ class ColumnCleaner:
             self.middleware.manual_ack(method)
             return
         if op_code == EOF_FLIGHTS_FILE:
-            log_to_file(self._filename, f"{BEGIN_EOF},{register.get('message_id')},{register.get('client_id')}")
-            sleep_time = randint(15, 30)
-            print(f"I am sleeping for {sleep_time}")
-            sleep(sleep_time)
-            self.middleware.manual_ack(method)
-            print("Done sleeping")
-            self.__output_message(body, op_code)
-            print(f"I am sleeping for {sleep_time}")
-            sleep(sleep_time)
-            print("Done sleeping")
-            log_to_file(self._filename, f"{EOF_SENT},{register.get('message_id')},"
-                                        f"{register.get('client_id')}")
-            print(f"I am sleeping for {sleep_time}")
-            sleep(sleep_time)
-            print("Done sleeping")
+            propagate_eof_column_cleaner(self.middleware, method, body,
+                                         self._filename, self.__output_message)
             return
         filtered_columns = dict()
         column_names = self.__required_columns_flights
@@ -93,29 +74,3 @@ class ColumnCleaner:
             self.middleware.publish(self.__output_exchange, msg)
         else:
             self.middleware.send_message(self.__output_queue, msg)
-
-    def __check_state(self):
-        if os.path.exists(self._filename):
-            with open(self._filename, 'r') as file:
-                try:
-                    last_line = file.readlines()[-1]
-                except IndexError:
-                    return
-                if last_line.endswith("\n"):
-                    last_line = last_line.strip('\n')
-                    op_code,message_id,client_id = tuple(last_line.split(','))
-                    op_code = int(op_code)
-                    # si es 1 -> ok
-                    if op_code == EOF_SENT:
-                        print("Recovered state, no need to send anything")
-                        return
-                    # si es 0 -> repetir pasos
-                    msg = {"op_code": op_code,
-                           "message_id": message_id,
-                           "client_id": client_id}
-                    self.__output_message(json.dumps(msg), op_code)
-                    print("Recovered state, sending EOF")
-                    log_to_file(self._filename, f"{EOF_SENT},{message_id},{client_id}")
-                    print("Wrote EOF SENT to file")
-        else:
-            return

@@ -7,6 +7,12 @@ def save_to_file(flight_list, filename):
             file.write(json.dumps(flight) + '\n')
 
 
-def log_to_file(filename, state):
+def log_to_file(filename, line):
     with open(filename, "a") as file:
-        file.write(state + '\n')
+        file.write(line + '\n')
+
+
+def log_batch_to_file(filename, batch):
+    with open(filename, "a") as file:
+        for message in batch:
+            file.write(str(message) + '\n')

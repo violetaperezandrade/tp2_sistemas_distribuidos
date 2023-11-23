@@ -66,9 +66,9 @@ services:
       - REQUIRED_COLUMNS_FLIGHTS=op_code,legId,startingAirport,destinationAirport,travelDuration,baseFare,totalFare,totalTravelDistance,segmentsArrivalAirportCode,message_id
       - CONNECTED_NODES=3
     depends_on: &id002
-      - filter_by_three_stopovers_1
-      - filter_by_three_stopovers_2
-      - filter_by_three_stopovers_3
+      - group_by_id_1
+      - group_by_id_2
+      - group_by_id_3
   filter_by_three_stopovers_1:
     container_name: filter_by_three_stopovers_1
     image: filter_by_three_stopovers:latest
@@ -78,9 +78,8 @@ services:
       - ./filter_by_three_stopovers:/filter_by_three_stopovers:rw
     environment: &id003
       - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
       - OUTPUT_QUEUE=output_1
-      - INPUT_QUEUE=filter_three_stop_overs_queue
-      - INPUT_EXCHANGE=cleaned_flight_registers
       - OUTPUT_EXCHANGE=three_or_more_stopovers
       - COLUMNS_TO_FILTER=legId,startingAirport,destinationAirport,stopovers,totalFare,message_id
     depends_on:
@@ -129,3 +128,32 @@ services:
     environment: *id003
     depends_on:
       - query_handler
+  group_by_id_1:
+    container_name: group_by_id_1
+    image: group_by:latest
+    entrypoint: python3 /main.py
+    environment: &id006
+      - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
+      - FIELD_GROUP_BY=
+      - GROUP_BY_ID=True
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - LISTENING_QUEUE=filter_by_three_stopovers_groupby
+      - QUEUE_GROUP_BY=filter_by_three_stopovers
+      - INPUT_QUEUE=
+    depends_on: &id007
+      - filter_by_three_stopovers_1
+      - filter_by_three_stopovers_2
+      - filter_by_three_stopovers_3
+  group_by_id_2:
+    container_name: group_by_id_2
+    image: group_by:latest
+    entrypoint: python3 /main.py
+    environment: *id006
+    depends_on: *id007
+  group_by_id_3:
+    container_name: group_by_id_3
+    image: group_by:latest
+    entrypoint: python3 /main.py
+    environment: *id006
+    depends_on: *id007

@@ -8,6 +8,7 @@ from util.constants import SIGTERM
 from util.initialization import initialize_queues
 from util.queue_middleware import QueueMiddleware
 from util.file_manager import log_to_file
+from util.recovery_logging import message_duplicated, log_message_batch
 
 
 class ResultHandler:
@@ -20,7 +21,7 @@ class ResultHandler:
         self._result_handler_socket.bind(('', 12346))
         self._result_handler_socket.listen(listen_backlog)
         self._results = set()
-        self._filename = "result_handler/" + name + ".txt"
+        self._filename = "result_handler/result_handler_logs.txt"
 
     def run(self):
         signal.signal(signal.SIGTERM, self._handle_sigterm)
@@ -30,21 +31,17 @@ class ResultHandler:
 
     def __callback(self, body, method):
         result = json.loads(body)
-        if result.get('message_id') in self._results:
+        message_id = result.get('message_id')
+        if message_id in self._results:
             self.__middleware.manual_ack(method)
             return
-        if os.path.exists(self._filename):
-            with open(self._filename, 'r') as file:
-                for line in file:
-                    line.strip("\n")
-                    if line == str(result.get('message_id')):
-                        self.__middleware.manual_ack(method)
-                        return
-        self._results.add(result.get('message_id'))
+        if message_duplicated(self._filename, str(message_id)):
+            print(f"Mensaje duplicado para {message_id}")
+            self.__middleware.manual_ack(method)
+            return
+        self._results.add(message_id)
         if len(self._results) == 1:
-            for r in self._results:
-                log_to_file(self._filename, str(r))
-            self._results.clear()
+            log_message_batch(self._filename, self._results)
         msg = protocol.encode_query_result(result)
         self.__send_exact(msg)
         self.__middleware.manual_ack(method)

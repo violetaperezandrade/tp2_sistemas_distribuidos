@@ -1,6 +1,7 @@
 import json
 from hashlib import sha256
 import signal
+from math import floor
 
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
@@ -20,6 +21,7 @@ class GroupBy():
         self.listening_queue = listening_queue
         self.required_eof = required_eof
         self.eof = 0
+        self.group_by_id = (fields_group_by == [""])
         self.handle_group_by_fields(fields_group_by)
 
     def handle_group_by_fields(self, fields_group_by):
@@ -44,24 +46,30 @@ class GroupBy():
         elif self.input_exchange == '':  # listening from a queue
             self.queue_middleware.listen_on(self.input_queue, self.__callback)
 
-    def __callback(self, body):
+    def __callback(self, body, method):
         flight = json.loads(body)
         op_code = flight.get("op_code")
-
         if op_code == EOF_FLIGHTS_FILE:
-            self.eof += 1
-            if self.eof < self.required_eof:
-                return
+            messages_sent = floor((flight["message_id"]-1) / self.reducers_amount)
+            module = (flight["message_id"]-1) % self.reducers_amount
             for reducer in self.reducers:
-                self.queue_middleware.send_message(reducer, body)
-            self.queue_middleware.finish()
+                flight["messages_sent"] = messages_sent
+                if (int(reducer[-1])) <= module:
+                    flight["messages_sent"] = messages_sent + 1
+                print(flight)
+                self.queue_middleware.send_message(reducer, json.dumps(flight))
+            self.queue_middleware.manual_ack(method)
             return
         if self.fields_list is not None:
             flight[self.field_group_by] = self.__create_route(flight,
                                                               self.fields_list)
-        output_queue = self.__get_output_queue(flight, self.field_group_by)
+        if self.group_by_id:
+            output_queue = self.__get_output_queue_with_message_id(flight)
+        else:
+            output_queue = self.__get_output_queue(flight, self.field_group_by)
         self.queue_middleware.send_message(self.reducers[output_queue],
                                            json.dumps(flight))
+        self.queue_middleware.manual_ack(method)
 
     def __create_route(self, flight, fields_list):
         return ("-").join(flight[str(field)] for field in fields_list)
@@ -70,3 +78,8 @@ class GroupBy():
         field = flight.get(field_group_by)
         hashed_field = int(sha256(field.encode()).hexdigest(), 16)
         return hashed_field % self.reducers_amount
+
+    def __get_output_queue_with_message_id(self, flight):
+        message_id = flight.get("message_id")
+        module = message_id % self.reducers_amount
+        return module
