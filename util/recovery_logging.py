@@ -3,7 +3,7 @@ import os
 from random import randint
 from time import sleep
 
-from util.constants import BEGIN_EOF, EOF_SENT
+from util.constants import BEGIN_EOF, EOF_SENT, ACCEPTED, FILTERED
 from util.file_manager import log_to_file, log_batch_to_file
 
 
@@ -77,14 +77,42 @@ MESSAGE_ID = 0
 FILTERING_RESULT = 1
 
 
-def log_get_missing_flights(filename, missing_flight_set, first_message, total_reducers):
+def log_get_missing_flights(filename, missing_flight_set, first_message, total_reducers, eof_message_id):
     last_value = first_message - total_reducers
+    max_id = -1
+    accepted_flighst = set()
     with open(filename, 'r') as file:
         for line in file:
             line = line.split(",")
             message_id = int(line[MESSAGE_ID])
+            if max_id < message_id:
+                max_id = message_id
+            if line[1] is ACCEPTED:
+                accepted_flighst.add(line[MESSAGE_ID])
             if message_id in missing_flight_set:
                 missing_flight_set.remove(message_id)
             if last_value + total_reducers != message_id:
                 missing_flight_set.add(last_value + total_reducers)
             last_value = message_id
+    
+    max_expected_id = eof_message_id - ( total_reducers - 1 )
+    if max_id < max_expected_id:
+        for i in range(max_id, max_expected_id, total_reducers - 1):
+            missing_flight_set.add(i)
+
+    return len(accepted_flighst)
+
+def get_filtered_flights_by_stopovers(filename):
+    result = dict()
+    accepted = set()
+    filtered = set()
+    with open(filename, 'r') as file:
+        for line in file:
+            info = line.split(",")
+            if ( info[1] == ACCEPTED ):
+                accepted.add(info[1])
+            else:
+                filtered.add(info[1])
+    result["accepted"] = len(accepted)
+    result["filtered"] = len(filtered)
+    return result

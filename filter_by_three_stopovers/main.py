@@ -14,7 +14,8 @@ def main():
     filterByStopOvers = FilterByThreeStopovers(columns_to_filter,
                                                max_stopovers, output_queue,
                                                output_exchange,
-                                               name, reducers_amount)
+                                               name, 
+                                               reducers_amount)
     try:
         filterByStopOvers.run()
     except pika.exceptions.ChannelWrongStateError:

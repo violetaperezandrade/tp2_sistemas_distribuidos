@@ -48,6 +48,8 @@ class GroupBy():
 
     def __callback(self, body, method):
         flight = json.loads(body)
+        # TODO delete this
+        flight["client_id"] = 1
         op_code = flight.get("op_code")
         if op_code == EOF_FLIGHTS_FILE:
             messages_sent = floor((flight["message_id"]-1) / self.reducers_amount)
