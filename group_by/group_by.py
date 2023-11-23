@@ -5,7 +5,7 @@ from math import floor
 
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
-from util.constants import EOF_FLIGHTS_FILE
+from util.constants import EOF_FLIGHTS_FILE, AIRPORT_REGISTER
 
 
 class GroupBy():
@@ -48,9 +48,11 @@ class GroupBy():
 
     def __callback(self, body, method):
         flight = json.loads(body)
-        # TODO delete this
         flight["client_id"] = 1
         op_code = flight.get("op_code")
+        if op_code == AIRPORT_REGISTER:
+            self.queue_middleware.manual_ack(method)
+            return
         if op_code == EOF_FLIGHTS_FILE:
             messages_sent = floor((flight["message_id"]-1) / self.reducers_amount)
             module = (flight["message_id"]-1) % self.reducers_amount
@@ -84,4 +86,7 @@ class GroupBy():
     def __get_output_queue_with_message_id(self, flight):
         message_id = flight.get("message_id")
         module = message_id % self.reducers_amount
-        return module
+        if module != 0:
+            return module-1
+        else:
+            return 2

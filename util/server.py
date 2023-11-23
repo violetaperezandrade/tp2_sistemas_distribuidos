@@ -101,6 +101,8 @@ class Server:
     def __read_line(self, registers):
         for register in registers:
             register["message_id"] = self._register_number
+            if int(register["op_code"]) == AIRPORT_REGISTER or int(register["op_code"] == EOF_AIRPORTS_FILE):
+                return
             self._register_number += 1
             self.__queue_middleware.send_message("full_flight_registers",
                                                  json.dumps(register))
