@@ -16,7 +16,7 @@ BATCH_SIZE = 10000
 class ReducerGroupBy():
 
     def __init__(self, field_group_by, input_queue,
-                 output_queue, query_number):
+                 output_queue, query_number, name):
         self.queue_middleware = QueueMiddleware()
         self.field_group_by = field_group_by
         self.output_queue = output_queue
@@ -28,7 +28,9 @@ class ReducerGroupBy():
                                5: handle_query_5}
         self.handlers_map = {3: handle_query_3_register,
                              4: handle_query_4_register}
-        self.__filename = "stored_flights.txt"
+        #self.__filename = "stored_flights.txt"
+        self.state_log_filename = "reducer_group_by/" + name + "_state_log.txt"
+        self.result_log_filename = "reducer_group_by/" + name + "_result_log.txt"
         self.__tmp_flights = []
 
     def run(self):
@@ -37,28 +39,37 @@ class ReducerGroupBy():
                           self.queue_middleware)
         self.queue_middleware.listen_on(self.input_queue, self.__callback)
 
-    def __callback(self, body):
+    # def __callback(self, body, method):
+    #     flight = json.loads(body)
+    #     op_code = flight.get("op_code")
+    #     if op_code == EOF_FLIGHTS_FILE:
+    #         if self.query_number == 5:
+    #             self.save_flights_to_file(self.__tmp_flights)
+    #             self.__read_file_and_send()
+    #             self.queue_middleware.send_message(self.output_queue, body)
+    #             self.queue_middleware.manual_ack(method)
+    #             return
+    #         self.__handle_eof()
+    #         self.queue_middleware.send_message(self.output_queue, body)
+    #         self.queue_middleware.manual_ack(method)
+    #         return
+    #     if self.query_number == 5:
+    #         self.__tmp_flights.append(flight)
+    #         self.queue_middleware.manual_ack(method)
+    #         return
+    #     self.handlers_map[self.query_number](flight, self.grouped)
+    #     self.queue_middleware.manual_ack(method)
+
+    def __callback(self, body, method):
         flight = json.loads(body)
         op_code = flight.get("op_code")
-        if len(self.__tmp_flights) >= BATCH_SIZE:
-            self.save_flights_to_file(self.__tmp_flights)
-            self.__tmp_flights = []
+        client_id = flight.get("client_id")
         if op_code == EOF_FLIGHTS_FILE:
-            if self.query_number == 5:
-                self.save_flights_to_file(self.__tmp_flights)
-                self.__read_file_and_send()
-                self.queue_middleware.send_message(self.output_queue, body)
-                self.queue_middleware.finish()
-                return
-            self.__handle_eof()
-            self.queue_middleware.send_message(self.output_queue, body)
-            self.queue_middleware.finish()
+            self.queue_middleware.manual_ack(method)
             return
-        if self.query_number == 5:
-            self.__tmp_flights.append(flight)
-            return
+        self.handlers_map[self.query_number](flight, self.grouped, self.result_log_filename)
+        self.queue_middleware.manual_ack(method)
 
-        self.handlers_map[self.query_number](flight, self.grouped)
 
     def __handle_eof(self):
         for route, flights in self.grouped.items():

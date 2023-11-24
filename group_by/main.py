@@ -11,10 +11,11 @@ def main():
     input_queue = os.environ['INPUT_QUEUE']
     listening_queue = os.environ['LISTENING_QUEUE']
     required_eof = int(os.getenv('EOF_REQUIRED', 1))
-
+    name = os.getenv("HOSTNAME")
+    requires_several_eof = (os.getenv("SEVERAL_EOF", "false") == "true")
     group_by = GroupBy(field_group_by, input_exchange,
                        reducers_amount, queue_group_by, listening_queue,
-                       input_queue, required_eof)
+                       input_queue, required_eof, name, requires_several_eof)
     try:
         group_by.run()
     except pika.exceptions.ChannelWrongStateError:

@@ -49,7 +49,6 @@ class FilterByThreeStopovers:
 
     def callback(self, body, method):
         flight = json.loads(body)
-        accepted = False
         op_code = flight.get("op_code")
         message_id = flight.get("message_id")
         client_id = flight.get("client_id")
@@ -72,6 +71,8 @@ class FilterByThreeStopovers:
                 flight["filter_id"] = self.__id
                 flight["messages_sent"] = self.__accepted_flights
                 print(flight)
+                self.__middleware.publish(self.__output_exchange,
+                                          json.dumps(flight))
                 self.__middleware.send_message(self.__output_queue, json.dumps(flight))
                 log_to_file(self.state_log_filename, f"{EOF_SENT},{flight.get('client_id')},")
             self.__middleware.manual_ack(method)
@@ -88,16 +89,20 @@ class FilterByThreeStopovers:
             filtering_result = ACCEPTED
 
         if self.__client_receive_eof_status[client_id - 1]:
-            if len(self.__missing_flights) > 0 and filtering_result == ACCEPTED: 
-                self.__accepted_flights += 1
+            if len(self.__missing_flights) > 0:
+                if filtering_result == ACCEPTED:
+                    self.__accepted_flights += 1
                 self.__missing_flights.remove(message_id)
             if len(self.__missing_flights) == 0:
                 register = self.create_eof_message(self.__accepted_flights,
-                                                    self.__id,
-                                                    client_id)
+                                                   self.__id,
+                                                   client_id)
+                register["message_id"] = -1
+                self.__middleware.publish(self.__output_exchange,
+                                          json.dumps(register))
                 self.__middleware.send_message(
                     self.__output_queue, json.dumps(register))
-                print(f"{register}")    
+                print(f"{register}")
                 log_to_file(self.state_log_filename, f"{EOF_SENT},{flight.get('client_id')}")
         log_to_file(self.flights_log_filename, f"{message_id},{filtering_result}")
         self.__middleware.manual_ack(method)
@@ -118,7 +123,8 @@ class FilterByThreeStopovers:
         register["filter_id"] = filter_id
         return register
 
-    def recover_state_filters(self, state_filename, flights_log_filename, accepted_flights, reducers_amount, first_message, middleware, missing_flight_set,
+    def recover_state_filters(self, state_filename, flights_log_filename, accepted_flights, reducers_amount,
+                              first_message, middleware, missing_flight_set,
                               eof_status, output_queue=None):
         missing_flight_set = set()
         accepted_flights = 0
@@ -144,7 +150,10 @@ class FilterByThreeStopovers:
                                                                    int(message_id))
                         if len(missing_flight_set) == 0:
                             register = self.create_eof_message(accepted_flights, filter_id, client_id)
+                            register["message_id"] = -1
                             print(f"{register}")
+                            self.__middleware.publish(self.__output_exchange,
+                                                      json.dumps(register))
                             middleware.send_message(output_queue, json.dumps(register))
                             log_to_file(self.state_log_filename, f"{EOF_SENT},{register.get('client_id')},")
         return

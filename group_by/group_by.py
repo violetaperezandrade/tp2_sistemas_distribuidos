@@ -3,15 +3,16 @@ from hashlib import sha256
 import signal
 from math import floor
 
+from util.file_manager import log_to_file
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
-from util.constants import EOF_FLIGHTS_FILE, AIRPORT_REGISTER
+from util.constants import EOF_FLIGHTS_FILE, AIRPORT_REGISTER, BEGIN_EOF, EOF_SENT, EOF_CLIENT
 
 
 class GroupBy():
     def __init__(self, fields_group_by, input_exchange,
                  reducers_amount, queue_group_by, listening_queue,
-                 input_queue, required_eof):
+                 input_queue, required_eof, name, requires_several_eof):
         self.queue_middleware = QueueMiddleware()
         self.input_exchange = input_exchange
         self.input_queue = input_queue
@@ -23,6 +24,12 @@ class GroupBy():
         self.eof = 0
         self.group_by_id = (fields_group_by == [""])
         self.handle_group_by_fields(fields_group_by)
+        self.requires_several_eof = requires_several_eof
+        self.state_log_filename = "group_by/" + name + "_state_log.txt"
+        self.flights_log_filename = "group_by/" + name + "_flights_log.txt"
+        self.flights = []
+        self.necessary_lines = None
+        self.reducer_messages = [0] * self.reducers_amount
 
     def handle_group_by_fields(self, fields_group_by):
         if len(fields_group_by) > 1:
@@ -49,19 +56,27 @@ class GroupBy():
     def __callback(self, body, method):
         flight = json.loads(body)
         flight["client_id"] = 1
+        message_id = flight["message_id"]
+        client_id = flight.get('client_id')
+        # si esta en la lista no hago nada
         op_code = flight.get("op_code")
         if op_code == AIRPORT_REGISTER:
             self.queue_middleware.manual_ack(method)
             return
         if op_code == EOF_FLIGHTS_FILE:
-            messages_sent = floor((flight["message_id"]-1) / self.reducers_amount)
-            module = (flight["message_id"]-1) % self.reducers_amount
-            for reducer in self.reducers:
-                flight["messages_sent"] = messages_sent
-                if (int(reducer[-1])) <= module:
-                    flight["messages_sent"] = messages_sent + 1
-                print(flight)
-                self.queue_middleware.send_message(reducer, json.dumps(flight))
+            if self.requires_several_eof:
+                self.handle_several_eofs(flight)
+            else:
+                log_to_file(self.state_log_filename, f"{BEGIN_EOF},{message_id},{client_id}")
+                messages_sent = floor((flight["message_id"] - 1) / self.reducers_amount)
+                module = (flight["message_id"] - 1) % self.reducers_amount
+                for reducer in self.reducers:
+                    flight["messages_sent"] = messages_sent
+                    if (int(reducer[-1])) <= module:
+                        flight["messages_sent"] = messages_sent + 1
+                    print(flight)
+                    self.queue_middleware.send_message(reducer, json.dumps(flight))
+                log_to_file(self.state_log_filename, f"{EOF_SENT},{message_id},{client_id}")
             self.queue_middleware.manual_ack(method)
             return
         if self.fields_list is not None:
@@ -73,6 +88,12 @@ class GroupBy():
             output_queue = self.__get_output_queue(flight, self.field_group_by)
         self.queue_middleware.send_message(self.reducers[output_queue],
                                            json.dumps(flight))
+        if self.requires_several_eof:
+            self.reducer_messages[output_queue] += 1
+            log_to_file(self.flights_log_filename, f"{message_id},{self.reducer_messages[0]},"
+                                                   f"{self.reducer_messages[1]},"
+                                                   f"{self.reducer_messages[2]}")
+            self.send_eof_to_reducers(client_id, flight)
         self.queue_middleware.manual_ack(method)
 
     def __create_route(self, flight, fields_list):
@@ -87,6 +108,40 @@ class GroupBy():
         message_id = flight.get("message_id")
         module = message_id % self.reducers_amount
         if module != 0:
-            return module-1
+            return module - 1
         else:
             return 2
+
+    def handle_several_eofs(self, flight):
+        messages_sent = flight["messages_sent"]
+        client_id = flight["client_id"]
+        reducer_id = flight["filter_id"]
+        log_to_file(self.state_log_filename, f"{EOF_CLIENT},{reducer_id},{messages_sent},{client_id}")
+        self.verify_all_eofs_received(client_id, flight)
+
+    def verify_all_eofs_received(self, client_id: str, flight):
+        eofs = set()
+        with open(self.state_log_filename, "r") as file:
+            for line in file:
+                if line.endswith("\n"):
+                    line = line.strip('\n')
+                    line = tuple(line.split(','))
+                    if int(line[3]) == int(client_id):
+                        eofs.add((line[1], line[2]))
+        if len(eofs) == self.reducers_amount:
+            corrected_eof = 0
+            for i in eofs:
+                corrected_eof += int(i[1])
+            self.necessary_lines = corrected_eof
+        self.send_eof_to_reducers(client_id, flight)
+
+    def send_eof_to_reducers(self, client_id, flight):
+        if self.necessary_lines is not None:
+            total = 0
+            for value in self.reducer_messages:
+                total += value
+            if total == self.necessary_lines:
+                log_to_file(self.state_log_filename, f"{EOF_SENT},{client_id}")
+                for i, reducer in enumerate(self.reducers):
+                    flight["messages_sent"] = self.reducer_messages[i]
+                    self.queue_middleware.send_message(reducer, json.dumps(flight))

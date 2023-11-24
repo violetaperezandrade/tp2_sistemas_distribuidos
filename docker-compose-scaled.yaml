@@ -132,6 +132,9 @@ services:
     container_name: group_by_id_1
     image: group_by:latest
     entrypoint: python3 /main.py
+    hostname: group_by_id_1
+    volumes: &id008
+      - ./group_by:/group_by:rw
     environment: &id006
       - PYTHONUNBUFFERED=1
       - REDUCERS_AMOUNT=3
@@ -148,12 +151,78 @@ services:
   group_by_id_2:
     container_name: group_by_id_2
     image: group_by:latest
+    hostname: group_by_id_2
     entrypoint: python3 /main.py
+    volumes: *id008
     environment: *id006
     depends_on: *id007
   group_by_id_3:
     container_name: group_by_id_3
     image: group_by:latest
+    hostname: group_by_id_3
     entrypoint: python3 /main.py
+    volumes: *id008
     environment: *id006
     depends_on: *id007
+  group_by_route:
+    container_name: group_by_route
+    image: group_by:latest
+    entrypoint: python3 /main.py
+    hostname: group_by_route
+    volumes: *id008
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
+      - FIELD_GROUP_BY=startingAirport,destinationAirport
+      - INPUT_EXCHANGE=three_or_more_stopovers
+      - QUEUE_GROUP_BY=group_by_route_queue
+      - LISTENING_QUEUE=group_by_route
+      - INPUT_QUEUE=
+      - SEVERAL_EOF=true
+    depends_on:
+      - reducer_group_by_route_1
+      - reducer_group_by_route_2
+      - reducer_group_by_route_3
+  reducer_group_by_route_1:
+    container_name: reducer_group_by_route_1
+    image: reducer_group_by:latest
+    hostname: reducer_group_by_route_1
+    entrypoint: python3 /main.py
+    volumes: &id009
+      - ./reducer_group_by:/reducer_group_by:rw
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=route
+      - INPUT_QUEUE=group_by_route_queue_1
+      - OUTPUT_QUEUE=output_3
+      - QUERY_NUMBER=3
+    depends_on:
+      - query_handler
+  reducer_group_by_route_2:
+    container_name: reducer_group_by_route_2
+    image: reducer_group_by:latest
+    hostname: reducer_group_by_route_2
+    entrypoint: python3 /main.py
+    volumes: *id009
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=route
+      - INPUT_QUEUE=group_by_route_queue_2
+      - OUTPUT_QUEUE=output_3
+      - QUERY_NUMBER=3
+    depends_on:
+      - query_handler
+  reducer_group_by_route_3:
+    container_name: reducer_group_by_route_3
+    image: reducer_group_by:latest
+    hostname: reducer_group_by_route_3
+    entrypoint: python3 /main.py
+    volumes: *id009
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=route
+      - INPUT_QUEUE=group_by_route_queue_3
+      - OUTPUT_QUEUE=output_3
+      - QUERY_NUMBER=3
+    depends_on:
+      - query_handler

@@ -12,7 +12,7 @@ def get_fastests(flight, duration, fastests):
     return fastests
 
 
-def handle_query_3_register(register, dic):
+def handle_query_3_register(register, dic, result_file):
     duration = convert_duration(register[DURATION_FIELD])
     route = register.get("route")
     route_flights = dic.get(route, [])
@@ -23,6 +23,8 @@ def handle_query_3_register(register, dic):
     else:
         route_flights = get_fastests(register, duration, route_flights)
     dic[route] = route_flights
+    with open(result_file, "w") as file:
+        file.write(str(dic)+'\n')
     return dic
 
 
