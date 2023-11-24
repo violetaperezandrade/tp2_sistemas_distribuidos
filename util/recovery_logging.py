@@ -88,8 +88,8 @@ def log_get_missing_flights(filename, missing_flight_set, first_message, total_r
             message_id = int(line[MESSAGE_ID])
             if max_id < message_id:
                 max_id = message_id
-            if line[FILTERING_RESULT] is ACCEPTED:
-                accepted_flights.add(line[MESSAGE_ID])
+            if int(line[FILTERING_RESULT]) == ACCEPTED:
+                accepted_flights.add(message_id)
             if message_id in missing_flight_set:
                 missing_flight_set.remove(message_id)
     return len(accepted_flights)
