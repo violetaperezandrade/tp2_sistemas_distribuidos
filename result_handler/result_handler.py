@@ -33,23 +33,24 @@ class ResultHandler:
         result = json.loads(body)
         message_id = result.get('message_id')
         client_id = result.get('client_id')
+        client_id = int(client_id)
         result_id = result.get('result_id')
-        print(body)
         query_number = result.get('query_number')
-        if result_id in self.results[int(client_id)]:
+        if result_id in self.results[client_id]:
             self.__middleware.manual_ack(method)
             return
-        if query_number == 3:
-            self.parse_query_3_result(result.get('result'))
+        if int(query_number) == 3:
+            self.parse_query_3_result(result.get('result'),
+                                      client_id,
+                                      query_number)
             self.__middleware.manual_ack(method)
             return
         if duplicated_message(self._filename, result_id):
-            print(f"Mensaje duplicado para {message_id}")
             self.__middleware.manual_ack(method)
             return
-        self.results[int(client_id)].add(result_id)
-        if len(self.results[int(client_id)]) == 1:
-            log_message_batch(self._filename, int(client_id))
+        self.results[client_id].add(result_id)
+        # if len(self.results[int(client_id)]) == 1:
+        # log_message_batch(self._filename, int(client_id))
         msg = protocol.encode_query_result(result)
         self.__send_exact(msg)
         self.__middleware.manual_ack(method)
@@ -71,8 +72,10 @@ class ResultHandler:
         self.__client_socket.shutdown(socket.SHUT_RDWR)
         self.__client_socket.close()
 
-    def parse_query_3_result(self, grouped):
-        for route, flights in self.grouped.items():
-            for flight in flights:
-                self.queue_middleware.send_message(self.output_queue,
-                                                   json.dumps(flight))
+    def parse_query_3_result(self, results, client_id, query_number):
+        for route, flights in results.items():
+            msg = flights[0]
+            msg["query_number"] = query_number
+            msg["client_id"] = client_id
+            msg = protocol.encode_query_result(msg)
+            self.__send_exact(msg)

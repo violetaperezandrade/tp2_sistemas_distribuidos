@@ -111,7 +111,10 @@ class FilterByThreeStopovers:
                     for i, line in enumerate(lines):
                         if line.endswith("\n"):
                             line = line.strip('\n')
-                            info, message_id, client_id, filter_id = tuple(line.split(","))
+                            try:
+                                info, message_id, client_id, filter_id = tuple(line.split(","))
+                            except ValueError as e:
+                                continue
                             if int(info) == BEGIN_EOF:
                                 client_id = int(client_id)
                                 if client_id in processed_clients:

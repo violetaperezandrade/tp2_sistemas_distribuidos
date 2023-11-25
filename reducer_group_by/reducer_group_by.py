@@ -94,10 +94,8 @@ class ReducerGroupBy:
         with open(self.result_log_filename, "r") as file:
             lines = file.readlines()
             result = ast.literal_eval(lines[int(client_id)-1])
-        eof_message = {'result': result}
-        eof_message["client_id"] = client_id
-        eof_message["query_number"] = self.query_number
-        eof_message["result_id"] = f"{self.name}_{client_id}"
+        eof_message = {'result': result, "client_id": client_id, "query_number": self.query_number,
+                       "result_id": f"{self.name}_{client_id}"}
         return eof_message
 
     def initialize_result_log(self):
@@ -112,7 +110,6 @@ class ReducerGroupBy:
                                            json.dumps(result))
         log_to_file(self.state_log_filename, f"{client_id}")
         self.processed_clients.append(int(client_id))
-        go_to_sleep()
         if method:
             self.queue_middleware.manual_ack(method)
 
