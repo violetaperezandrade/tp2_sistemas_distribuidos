@@ -65,6 +65,7 @@ class ReducerGroupBy():
         op_code = flight.get("op_code")
         client_id = flight.get("client_id")
         if op_code == EOF_FLIGHTS_FILE:
+            print(flight)
             self.queue_middleware.manual_ack(method)
             return
         self.handlers_map[self.query_number](flight, self.grouped, self.result_log_filename)

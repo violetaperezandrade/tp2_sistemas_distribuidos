@@ -12,7 +12,7 @@ from util.constants import EOF_FLIGHTS_FILE, AIRPORT_REGISTER, BEGIN_EOF, EOF_SE
 class GroupBy():
     def __init__(self, fields_group_by, input_exchange,
                  reducers_amount, queue_group_by, listening_queue,
-                 input_queue, required_eof, name, requires_several_eof):
+                 input_queue, name, requires_several_eof):
         self.queue_middleware = QueueMiddleware()
         self.input_exchange = input_exchange
         self.input_queue = input_queue
@@ -20,15 +20,13 @@ class GroupBy():
         self.reducers = [
             f"{queue_group_by}_{i}" for i in range(1, reducers_amount + 1)]
         self.listening_queue = listening_queue
-        self.required_eof = required_eof
-        self.eof = 0
         self.group_by_id = (fields_group_by == [""])
         self.handle_group_by_fields(fields_group_by)
         self.requires_several_eof = requires_several_eof
         self.state_log_filename = "group_by/" + name + "_state_log.txt"
         self.flights_log_filename = "group_by/" + name + "_flights_log.txt"
-        self.necessary_lines = None
-        self.reducer_messages = [0] * self.reducers_amount
+        self.necessary_lines = dict()
+        self.reducer_messages_per_client = dict()
 
     def handle_group_by_fields(self, fields_group_by):
         if len(fields_group_by) > 1:
@@ -76,11 +74,7 @@ class GroupBy():
         self.queue_middleware.send_message(self.reducers[output_queue],
                                            json.dumps(flight))
         if self.requires_several_eof:
-            self.reducer_messages[output_queue] += 1
-            log_to_file(self.flights_log_filename, f"{message_id},{self.reducer_messages[0]},"
-                                                   f"{self.reducer_messages[1]},"
-                                                   f"{self.reducer_messages[2]}")
-            self.send_eof_to_reducers(client_id, flight)
+            self.handle_reducer_message_per_client(client_id, output_queue, flight, message_id)
         self.queue_middleware.manual_ack(method)
 
     def __create_route(self, flight, fields_list):
@@ -123,25 +117,36 @@ class GroupBy():
         eofs = set()
         with open(self.state_log_filename, "r") as file:
             for line in file:
-                if line.endswith("\n"):
+                if not line.startswith(str(EOF_SENT)) and line.endswith("\n"):
                     line = line.strip('\n')
                     line = tuple(line.split(','))
+
                     if int(line[3]) == int(client_id):
                         eofs.add((line[1], line[2]))
         if len(eofs) == self.reducers_amount:
             corrected_eof = 0
             for i in eofs:
                 corrected_eof += int(i[1])
-            self.necessary_lines = corrected_eof
+            self.necessary_lines[client_id] = corrected_eof
         self.send_eof_to_reducers(client_id, flight)
 
     def send_eof_to_reducers(self, client_id, flight):
-        if self.necessary_lines is not None:
+        if client_id in self.necessary_lines.keys():
             total = 0
-            for value in self.reducer_messages:
+            for value in self.reducer_messages_per_client[client_id]:
                 total += value
-            if total == self.necessary_lines:
-                log_to_file(self.state_log_filename, f"{EOF_SENT},{client_id}")
+            if total == self.necessary_lines[client_id]:
                 for i, reducer in enumerate(self.reducers):
-                    flight["messages_sent"] = self.reducer_messages[i]
+                    flight["messages_sent"] = self.reducer_messages_per_client[client_id][i]
                     self.queue_middleware.send_message(reducer, json.dumps(flight))
+                log_to_file(self.state_log_filename, f"{EOF_SENT},{client_id}")
+
+    def handle_reducer_message_per_client(self, client_id, output_queue, flight, message_id):
+        if client_id not in self.reducer_messages_per_client.keys():
+            self.reducer_messages_per_client[client_id] = [0] * self.reducers_amount
+        self.reducer_messages_per_client[client_id][output_queue] += 1
+        log_reducers_amounts = ""
+        for i in range(self.reducers_amount):
+            log_reducers_amounts = f",{self.reducer_messages_per_client[client_id][i]}"
+        log_to_file(self.flights_log_filename, f"{message_id},{client_id}{log_reducers_amounts}")
+        self.send_eof_to_reducers(client_id, flight)
