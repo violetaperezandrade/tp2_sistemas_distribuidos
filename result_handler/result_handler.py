@@ -33,7 +33,9 @@ class ResultHandler:
         result = json.loads(body)
         message_id = result.get('message_id')
         client_id = result.get('client_id')
-        if (message_id, client_id)  in self._results:
+        print(body)
+        #query_number = result.get('query_number')
+        if (message_id, client_id) in self._results:
             self.__middleware.manual_ack(method)
             return
         if duplicated_message(self._filename, str(message_id), str(client_id)):

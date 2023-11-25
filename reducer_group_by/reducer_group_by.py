@@ -12,16 +12,17 @@ from util.constants import EOF_FLIGHTS_FILE, EOF_SENT, BEGIN_EOF
 from util.recovery_logging import log_to_file
 
 BATCH_SIZE = 10000
+CLIENT_NUMBER = 3
 
 
-class ReducerGroupBy():
+class ReducerGroupBy:
 
     def __init__(self, field_group_by, input_queue,
                  output_queue, query_number, name):
         self.queue_middleware = QueueMiddleware()
         self.field_group_by = field_group_by
         self.output_queue = output_queue
-        self.grouped = {}
+        self.grouped = [dict() for _ in range(CLIENT_NUMBER)]
         self.files = []
         self.input_queue = input_queue
         self.query_number = query_number
@@ -29,64 +30,29 @@ class ReducerGroupBy():
                                5: handle_query_5}
         self.handlers_map = {3: handle_query_3_register,
                              4: handle_query_4_register}
-        #self.__filename = "stored_flights.txt"
         self.state_log_filename = "reducer_group_by/" + name + "_state_log.txt"
         self.result_log_filename = "reducer_group_by/" + name + "_result_log.txt"
-        self.n_clients = 3
+        self.n_clients = CLIENT_NUMBER
         self.__tmp_flights = []
-
+        self.processed_clients = []
 
     def run(self):
         signal.signal(signal.SIGTERM, self.queue_middleware.handle_sigterm)
         initialize_queues([self.output_queue, self.input_queue],
                           self.queue_middleware)
-        self.initialize_result_log_filename()
+        self.initialize_result_log()
+        #self.recover_state()
         self.queue_middleware.listen_on(self.input_queue, self.__callback)
 
-    # def __callback(self, body, method):
-    #     flight = json.loads(body)
-    #     op_code = flight.get("op_code")
-    #     if op_code == EOF_FLIGHTS_FILE:
-    #         if self.query_number == 5:
-    #             self.save_flights_to_file(self.__tmp_flights)
-    #             self.__read_file_and_send()
-    #             self.queue_middleware.send_message(self.output_queue, body)
-    #             self.queue_middleware.manual_ack(method)
-    #             return
-    #         self.__handle_eof()
-    #         self.queue_middleware.send_message(self.output_queue, body)
-    #         self.queue_middleware.manual_ack(method)
-    #         return
-    #     if self.query_number == 5:
-    #         self.__tmp_flights.append(flight)
-    #         self.queue_middleware.manual_ack(method)
-    #         return
-    #     self.handlers_map[self.query_number](flight, self.grouped)
-    #     self.queue_middleware.manual_ack(method)
-
-    #TODO hacer map de callback
     def __callback(self, body, method):
         flight = json.loads(body)
         op_code = flight.get("op_code")
-        # client_id = flight.get("client_id")
+        client_id = flight.get("client_id")
         if op_code == EOF_FLIGHTS_FILE:
             self.handle_client_eof(flight, method)
             return
-        self.handlers_map[self.query_number](flight, self.grouped, self.result_log_filename)
+        self.handlers_map[self.query_number](flight, self.grouped[client_id-1], self.result_log_filename)
         self.queue_middleware.manual_ack(method)
-
-
-    def __handle_eof(self):
-        for route, flights in self.grouped.items():
-            if self.query_number == 3:
-                for flight in flights:
-                    self.queue_middleware.send_message(self.output_queue,
-                                                       json.dumps(flight))
-            else:
-                msg = self.operations_map.get(self.query_number,
-                                              lambda _: None)(flights)
-                self.queue_middleware.send_message(self.output_queue,
-                                                   json.dumps(msg))
 
     def __read_file(self):
         with open(self.__filename, "r") as file:
@@ -120,24 +86,21 @@ class ReducerGroupBy():
     def handle_client_eof(self, register, method):
         message_id = register.get('message_id')
         client_id = register.get('client_id')
-        log_to_file(self.state_log_filename, f"{BEGIN_EOF},{message_id},"f"{client_id}")
+        log_to_file(self.state_log_filename, f"{BEGIN_EOF},{message_id},{client_id}")
+        eof = self.generate_result_message(client_id)
+        self.queue_middleware.send_message(self.output_queue, json.dumps(eof))
         self.queue_middleware.manual_ack(method)
-        register = self.generate_result_message(client_id)
-        self.queue_middleware.send_message(self.output_queue,
-                                               json.dumps(register))
         log_to_file(self.state_log_filename, f"{EOF_SENT},{message_id},"f"{client_id}")
 
     def generate_result_message(self, client_id):
-        line = ""
-        eof_message = ""
         with open(self.result_log_filename, "r") as file:
-            file.seek(int(client_id) - 1)
-            line = file.readline().strip('\n')
-        eof_message = json.loads(line)
+            lines = file.readlines()
+            eof_message = ast.literal_eval(lines[client_id-1])
         eof_message["client_id"] = client_id
-        eof_message["query_number"] = 3
+        eof_message["query_number"] = self.query_number
         return eof_message
-    
-    def initialize_result_log_filename(self):
-        for i in range(self.n_clients):
-            log_to_file(self.result_log_filename,f"{i}")
+
+    def initialize_result_log(self):
+        with open(self.result_log_filename, "w") as file:
+            for i in range(self.n_clients):
+                file.write('\n')

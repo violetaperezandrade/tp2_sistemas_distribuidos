@@ -45,6 +45,7 @@ docker-compose-scaled-up: docker-image
 	sudo rm -f column_cleaner/*.txt
 	sudo rm -f result_handler/*.txt
 	sudo rm -f filter_by_three_stopovers/*.txt
+	sudo rm -f reducer_group_by/*.txt
 	docker compose -f docker-compose-scaled.yaml up -d --build
 .PHONY: docker-compose-up
 

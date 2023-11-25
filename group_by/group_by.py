@@ -139,7 +139,7 @@ class GroupBy():
                 flight["messages_sent"] = 0
                 for i, reducer in enumerate(self.reducers):
                     flight["messages_sent"] += self.reducer_messages_per_client[client_id][i]
-                self.queue_middleware.send_message(reducer, json.dumps(flight))
+                    self.queue_middleware.send_message(reducer, json.dumps(flight))
                 log_to_file(self.state_log_filename, f"{EOF_SENT},{client_id}")
 
     def handle_reducer_message_per_client(self, client_id, output_queue, flight, message_id):

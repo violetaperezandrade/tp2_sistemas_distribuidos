@@ -5,10 +5,8 @@ from util.constants import (EOF_FLIGHTS_FILE,
 import json
 import signal
 
-from util.file_manager import log_to_file
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
-from util.recovery_logging import recover_state, go_to_sleep
 
 
 class ColumnCleaner:
@@ -31,13 +29,6 @@ class ColumnCleaner:
                              self.middleware)
         initialize_queues([self.__output_queue, self.__input_queue],
                           self.middleware)
-        msg = recover_state(self.log_file)
-        if msg is not None:
-            message_id = msg["message_id"]
-            client_id = msg["client_id"]
-            self.__output_message(json.dumps(msg), msg["op_code"])
-            log_to_file(self.log_file, f"{EOF_SENT},{message_id},"
-                                       f"{client_id}")
         if input_exchange is not None:
             self.middleware.subscribe(input_exchange,
                                       self.callback,
@@ -49,18 +40,11 @@ class ColumnCleaner:
         register = json.loads(body)
         op_code = register.get("op_code")
         if self.__routing_key == "flights" and op_code > FLIGHT_REGISTER:
-            return
-        if op_code == EOF_AIRPORTS_FILE:
-            self.__output_message(body, op_code)
             self.middleware.manual_ack(method)
             return
-        if op_code == EOF_FLIGHTS_FILE:
-            log_to_file(self.log_file, f"{BEGIN_EOF},{register.get('message_id')},"
-                                       f"{register.get('client_id')}")
-            self.middleware.manual_ack(method)
+        if op_code == EOF_AIRPORTS_FILE or op_code == EOF_FLIGHTS_FILE:
             self.__output_message(body, op_code)
-            log_to_file(self.log_file, f"{EOF_SENT},{register.get('message_id')},"
-                                       f"{register.get('client_id')}")
+            self.middleware.manual_ack(method)
             return
         filtered_columns = dict()
         column_names = self.__required_columns_flights

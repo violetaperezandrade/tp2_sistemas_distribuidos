@@ -6,7 +6,6 @@ from time import sleep
 from util.constants import BEGIN_EOF, EOF_SENT, ACCEPTED, FILTERED, EOF_CLIENT
 from util.file_manager import log_to_file, log_batch_to_file
 
-
 MESSAGE_ID = 0
 CLIENT_ID = 1
 FILTERING_RESULT = 2
@@ -70,15 +69,17 @@ def log_message_batch(filename, message_list):
     log_batch_to_file(filename, message_list)
     message_list.clear()
 
-def handle_several_eofs(state_log_filename, 
-                        flight, 
+
+def handle_several_eofs(state_log_filename,
+                        flight,
                         sender_id,
-                        receivers_amount, 
+                        receivers_amount,
                         necessary_lines):
     messages_sent = flight["messages_sent"]
     client_id = flight["client_id"]
     log_to_file(state_log_filename, f"{EOF_CLIENT},{sender_id},{messages_sent},{client_id}")
-    verify_all_eofs_received(state_log_filename, client_id,receivers_amount, necessary_lines)
+    verify_all_eofs_received(state_log_filename, client_id, receivers_amount, necessary_lines)
+
 
 def verify_all_eofs_received(state_log_filename, client_id: str, reducers_amount, necessary_lines):
     eofs = set()
@@ -96,6 +97,7 @@ def verify_all_eofs_received(state_log_filename, client_id: str, reducers_amount
             corrected_eof += int(i[1])
         necessary_lines[client_id] = corrected_eof
 
+
 def send_eof_to_receivers(state_log_filename, queue_middleware, flight, necessary_lines, receivers_messages, receivers):
     client_id = flight["client_id"]
     if client_id in necessary_lines.keys():
@@ -109,7 +111,9 @@ def send_eof_to_receivers(state_log_filename, queue_middleware, flight, necessar
             queue_middleware.send_message(reducer, json.dumps(flight))
             log_to_file(state_log_filename, f"{EOF_SENT},{client_id}")
 
-def handle_receivers_message_per_client(flights_log_filename, flight, n_output_queue, receivers_messages, receivers_amount):
+
+def handle_receivers_message_per_client(flights_log_filename, flight, n_output_queue, receivers_messages,
+                                        receivers_amount):
     message_id = flight.get("message_id")
     client_id = flight.get("client_id")
     if client_id not in receivers_messages.keys():
@@ -118,7 +122,28 @@ def handle_receivers_message_per_client(flights_log_filename, flight, n_output_q
     log_reducers_amounts = ""
     for i in range(receivers_amount):
         log_reducers_amounts = f",{receivers_messages[client_id][i]}"
-    #TODO sacar este log y crear un log que pise y solo guarde la cantidad de mensajes recibidos
+    # TODO sacar este log y crear un log que pise y solo guarde la cantidad de mensajes recibidos
     log_to_file(flights_log_filename, f"{message_id},{client_id}{log_reducers_amounts}")
     # TODO en group agregar este metodo abajo de handle_receivers_message_per_client
     # self.send_eof_to_reducers(client_id, flight)
+
+    # def __callback(self, body, method):
+    #     flight = json.loads(body)
+    #     op_code = flight.get("op_code")
+    #     if op_code == EOF_FLIGHTS_FILE:
+    #         if self.query_number == 5:
+    #             self.save_flights_to_file(self.__tmp_flights)
+    #             self.__read_file_and_send()
+    #             self.queue_middleware.send_message(self.output_queue, body)
+    #             self.queue_middleware.manual_ack(method)
+    #             return
+    #         self.__handle_eof()
+    #         self.queue_middleware.send_message(self.output_queue, body)
+    #         self.queue_middleware.manual_ack(method)
+    #         return
+    #     if self.query_number == 5:
+    #         self.__tmp_flights.append(flight)
+    #         self.queue_middleware.manual_ack(method)
+    #         return
+    #     self.handlers_map[self.query_number](flight, self.grouped)
+    #     self.queue_middleware.manual_ack(method)
