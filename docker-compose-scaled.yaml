@@ -196,6 +196,7 @@ services:
       - INPUT_QUEUE=group_by_route_queue_1
       - OUTPUT_QUEUE=output_3
       - QUERY_NUMBER=3
+      - QUERY_HANDLER_AMOUNT=1
     depends_on:
       - query_handler
   reducer_group_by_route_2:

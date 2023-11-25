@@ -15,6 +15,7 @@ def get_fastests(flight, duration, fastests):
 def handle_query_3_register(register, dic, result_file):
     duration = convert_duration(register[DURATION_FIELD])
     route = register.get("route")
+    client_id = register.get("client_id")
     route_flights = dic.get(route, [])
     if len(route_flights) < 2:
         route_flights.append(get_result(register, duration))
@@ -23,7 +24,9 @@ def handle_query_3_register(register, dic, result_file):
     else:
         route_flights = get_fastests(register, duration, route_flights)
     dic[route] = route_flights
+    dic["client_id"] = client_id
     with open(result_file, "w") as file:
+        file.seek(int(client_id) - 1)
         file.write(str(dic)+'\n')
     return dic
 
