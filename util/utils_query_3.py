@@ -27,7 +27,8 @@ def handle_query_3_register(register, dic, result_file):
     dic[route] = route_flights
     dic["client_id"] = client_id
     # Hacer que esto solo pase si hay una update efectiva
-    # Hacer que tolere fallas durante escritura (tener copia de seguridad en 3, 4 y 5ta linea)
+    # Hacer que tolere fallas durante escritura (tener copia de seguridad en 3,
+    # 4 y 5ta linea)
     with open(result_file, "r+") as file:
         lines = file.readlines()
         lines[int(client_id)-1] = str(dic) + '\n'

@@ -91,6 +91,7 @@ class FilterByThreeStopovers:
         message = dict()
         for i in range(len(self.__columns_to_filter)):
             message[self.__columns_to_filter[i]] = flight[self.__columns_to_filter[i]]
+        message["result_id"] = f"{flight.get('message_id')}_{flight.get('client_id')}"
         return message
 
     def create_eof_flights_message(self, accepted_flights, filter_id, client_id):

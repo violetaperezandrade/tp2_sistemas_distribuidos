@@ -2,15 +2,20 @@ import json
 from hashlib import sha256
 import signal
 from math import floor
+import os
+from file_read_backwards import FileReadBackwards
 
 from util.file_manager import log_to_file
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
-from util.constants import EOF_FLIGHTS_FILE, AIRPORT_REGISTER, BEGIN_EOF, EOF_SENT, EOF_CLIENT
+from util.constants import (EOF_FLIGHTS_FILE, AIRPORT_REGISTER, BEGIN_EOF,
+                            EOF_SENT, EOF_CLIENT)
+from util.recovery_logging import go_to_sleep
 
 REDUCER_ID = 1
 MESSAGES_SENT = 2
 CLIENT_ID = 3
+CLIENTS = 3
 
 
 class GroupBy():
@@ -31,6 +36,8 @@ class GroupBy():
         self.flights_log_filename = "group_by/" + name + "_flights_log.txt"
         self.necessary_lines = dict()
         self.reducer_messages_per_client = dict()
+        # necessary_lines, clave: client_id, valor: cantidad de lineas cliente i
+        # reducer_messages_per_client, clave: client_id, valor: [cantidad reducers] cada posicion cantidad de lineas
 
     def handle_group_by_fields(self, fields_group_by):
         if len(fields_group_by) > 1:
@@ -46,7 +53,8 @@ class GroupBy():
         initialize_exchanges([self.input_exchange], self.queue_middleware)
         initialize_queues([self.listening_queue, self.input_queue] +
                           self.reducers, self.queue_middleware)
-        #recover_state()
+        if self.requires_several_eof:
+            self.recover_state()
         if self.input_queue == '':  # reading from an exchange
             self.queue_middleware.subscribe(self.input_exchange,
                                             self.__callback,
@@ -118,7 +126,7 @@ class GroupBy():
         log_to_file(self.state_log_filename, f"{EOF_CLIENT},{reducer_id},{messages_sent},{client_id}")
         self.verify_all_eofs_received(client_id, flight)
 
-    def verify_all_eofs_received(self, client_id, flight):
+    def verify_all_eofs_received(self, client_id, flight=None):
         eofs = set()
         with open(self.state_log_filename, "r") as file:
             for line in file:
@@ -132,7 +140,8 @@ class GroupBy():
             for i in eofs:
                 corrected_eof += int(i[1])
             self.necessary_lines[client_id] = corrected_eof
-        self.send_eof_to_reducers(client_id, flight)
+            if flight:
+                self.send_eof_to_reducers(client_id, flight)
 
     # Envia EOF a cada reducer si ya se recibieron todos los EOF previos necesarios
     def send_eof_to_reducers(self, client_id, flight):
@@ -148,11 +157,39 @@ class GroupBy():
                 log_to_file(self.state_log_filename, f"{EOF_SENT},{client_id}")
 
     def handle_reducer_message_per_client(self, client_id, output_queue, flight, message_id):
-        if client_id not in self.reducer_messages_per_client.keys():
-            self.reducer_messages_per_client[client_id] = [0] * self.reducers_amount
         self.reducer_messages_per_client[client_id][output_queue] += 1
-        log_reducers_amounts = ""
-        for i in range(self.reducers_amount):
-            log_reducers_amounts = f",{self.reducer_messages_per_client[client_id][i]}"
-        log_to_file(self.flights_log_filename, f"{message_id},{client_id}{log_reducers_amounts}")
+        log_reducers_amounts = ",".join(map(str,
+                                             self.reducer_messages_per_client[client_id]))
+        log_to_file(self.flights_log_filename, f"{message_id},{client_id}"
+                    f",{log_reducers_amounts}")
         self.send_eof_to_reducers(client_id, flight)
+
+    def recover_state(self):
+        clients_recovered = []
+        if os.path.exists(self.flights_log_filename):
+            with FileReadBackwards(self.flights_log_filename, encoding="utf-8") as frb:
+                while True:
+                    line = frb.readline()
+                    if not line:
+                        break
+                    if line == '\n':
+                        continue
+                    if not line.endswith("\n"):
+                        continue
+                    line_list_ = line.split(",")
+                    line_list = [int(x) for x in line_list_]
+                    message_id = line_list.pop(0)
+                    client_id = line_list.pop(0)
+                    if client_id in clients_recovered:
+                        continue
+                    else:
+                        self.reducer_messages_per_client[client_id] = line_list
+                        clients_recovered.append(client_id)
+        if len(clients_recovered) != CLIENTS:
+            for i in range(1, CLIENTS+1):
+                if i not in clients_recovered:
+                    self.reducer_messages_per_client[i] = [0] * self.reducers_amount
+        if os.path.exists(self.state_log_filename):
+            for client in range(1, CLIENTS+1):
+                self.verify_all_eofs_received(client)
+        return

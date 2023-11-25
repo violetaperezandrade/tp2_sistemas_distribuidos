@@ -20,7 +20,7 @@ class ResultHandler:
                                                     socket.SOCK_STREAM)
         self._result_handler_socket.bind(('', 12346))
         self._result_handler_socket.listen(listen_backlog)
-        self._results = set()
+        self.results = {key: set() for key in range(1, 6)}
         self._filename = "result_handler/result_handler_logs.txt"
 
     def run(self):
@@ -33,18 +33,23 @@ class ResultHandler:
         result = json.loads(body)
         message_id = result.get('message_id')
         client_id = result.get('client_id')
+        result_id = result.get('result_id')
         print(body)
-        #query_number = result.get('query_number')
-        if (message_id, client_id) in self._results:
+        query_number = result.get('query_number')
+        if result_id in self.results[int(client_id)]:
             self.__middleware.manual_ack(method)
             return
-        if duplicated_message(self._filename, str(message_id), str(client_id)):
+        if query_number == 3:
+            self.parse_query_3_result(result.get('result'))
+            self.__middleware.manual_ack(method)
+            return
+        if duplicated_message(self._filename, result_id):
             print(f"Mensaje duplicado para {message_id}")
             self.__middleware.manual_ack(method)
             return
-        self._results.add((message_id, client_id))
-        if len(self._results) == 1:
-            log_message_batch(self._filename, self._results)
+        self.results[int(client_id)].add(result_id)
+        if len(self.results[int(client_id)]) == 1:
+            log_message_batch(self._filename, int(client_id))
         msg = protocol.encode_query_result(result)
         self.__send_exact(msg)
         self.__middleware.manual_ack(method)
@@ -65,3 +70,9 @@ class ResultHandler:
         self.__send_exact(msg)
         self.__client_socket.shutdown(socket.SHUT_RDWR)
         self.__client_socket.close()
+
+    def parse_query_3_result(self, grouped):
+        for route, flights in self.grouped.items():
+            for flight in flights:
+                self.queue_middleware.send_message(self.output_queue,
+                                                   json.dumps(flight))

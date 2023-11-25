@@ -1,4 +1,3 @@
-import json
 import os
 from random import randint
 from time import sleep
@@ -49,12 +48,12 @@ def get_missing_flights(filename, missing_flight_set, first_message, total_reduc
     return len(accepted_flights)
 
 
-def duplicated_message(filename, message_id, client_id):
+def duplicated_message(filename, result_id):
     if os.path.exists(filename):
         with open(filename, 'r') as file:
             for line in file:
                 line = line.strip("\n")
-                if line[0] == message_id and line[1] == client_id:
+                if line == result_id:
                     return True
     return False
 
