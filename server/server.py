@@ -26,6 +26,7 @@ class Server:
             EOF_AIRPORTS_FILE: self.__handle_eof,
             SIGTERM: self.__handle_sigterm
         }
+        self._register_number = 1
 
     def run(self):
         self.__queue_middleware.create_queue("full_flight_registers")
@@ -99,13 +100,23 @@ class Server:
 
     def __read_line(self, registers):
         for register in registers:
-            self.__queue_middleware.send_message("full_flight_registers",
-                                                 json.dumps(register))
+            register["message_id"] = self._register_number
+            if int(register["op_code"]) == AIRPORT_REGISTER or int(register["op_code"] == EOF_AIRPORTS_FILE):
+                return
+            self._register_number += 1
+            for i in range(1, 4):
+                register["client_id"] = i
+                self.__queue_middleware.send_message("full_flight_registers",
+                                                     json.dumps(register))
 
     def __handle_eof(self, payload):
         opcode = protocol.get_opcode(payload)
-        msg = protocol.encode_eof(opcode)
-        self.__queue_middleware.send_message("full_flight_registers", msg)
+        msg = protocol.encode_eof(opcode, self._register_number)
+        for i in range(1, 4):
+            register = json.loads(msg)
+            register["client_id"] = i
+            self.__queue_middleware.send_message("full_flight_registers",
+                                                 json.dumps(register))
         if opcode == EOF_FLIGHTS_FILE:
             self._reading_file = False
 

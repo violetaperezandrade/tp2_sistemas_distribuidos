@@ -15,10 +15,11 @@ def main():
     required_columns_airports = os.getenv("REQUIRED_COLUMNS_AIRPORTS", '').split(',')
     routing_key = os.getenv("ROUTING_KEY", '')
     connected_nodes = int(os.getenv("CONNECTED_NODES", 3))
+    name = os.getenv("HOSTNAME")
     cleaner = ColumnCleaner(output_queue, output_exchange, input_queue,
                             required_columns_flights,
                             required_columns_airports,
-                            routing_key, connected_nodes)
+                            routing_key, connected_nodes, name)
     try:
         cleaner.run(input_exchange)
     except pika.exceptions.ChannelWrongStateError:

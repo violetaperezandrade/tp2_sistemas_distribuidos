@@ -1,4 +1,5 @@
 import re
+
 RESULT_FIELDS = ["legId", "route", "stopovers"]
 DURATION_FIELD = "travelDuration"
 
@@ -12,9 +13,10 @@ def get_fastests(flight, duration, fastests):
     return fastests
 
 
-def handle_query_3_register(register, dic):
+def handle_query_3_register(register, dic, result_file):
     duration = convert_duration(register[DURATION_FIELD])
     route = register.get("route")
+    client_id = register.get("client_id")
     route_flights = dic.get(route, [])
     if len(route_flights) < 2:
         route_flights.append(get_result(register, duration))
@@ -23,6 +25,14 @@ def handle_query_3_register(register, dic):
     else:
         route_flights = get_fastests(register, duration, route_flights)
     dic[route] = route_flights
+    dic["client_id"] = client_id
+    # Hacer que esto solo pase si hay una update efectiva
+    # Hacer que tolere fallas durante escritura (tener copia de seguridad en 3, 4 y 5ta linea)
+    with open(result_file, "r+") as file:
+        lines = file.readlines()
+        lines[int(client_id)-1] = str(dic) + '\n'
+        file.seek(0)
+        file.writelines(lines)
     return dic
 
 
