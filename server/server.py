@@ -104,13 +104,19 @@ class Server:
             if int(register["op_code"]) == AIRPORT_REGISTER or int(register["op_code"] == EOF_AIRPORTS_FILE):
                 return
             self._register_number += 1
-            self.__queue_middleware.send_message("full_flight_registers",
-                                                 json.dumps(register))
+            for i in range(1, 4):
+                register["client_id"] = i
+                self.__queue_middleware.send_message("full_flight_registers",
+                                                     json.dumps(register))
 
     def __handle_eof(self, payload):
         opcode = protocol.get_opcode(payload)
         msg = protocol.encode_eof(opcode, self._register_number)
-        self.__queue_middleware.send_message("full_flight_registers", msg)
+        for i in range(1, 4):
+            register = json.loads(msg)
+            register["client_id"] = i
+            self.__queue_middleware.send_message("full_flight_registers",
+                                                 json.dumps(register))
         if opcode == EOF_FLIGHTS_FILE:
             self._reading_file = False
 

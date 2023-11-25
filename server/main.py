@@ -1,7 +1,7 @@
 """Basic RabbitMQ server."""
 # pylint: disable=import-error,unused-argument
 from configparser import ConfigParser
-from util.server import Server
+from server import Server
 import logging
 import os
 

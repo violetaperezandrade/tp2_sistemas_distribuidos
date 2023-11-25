@@ -1,13 +1,14 @@
 from util.constants import (EOF_FLIGHTS_FILE,
                             AIRPORT_REGISTER,
                             EOF_AIRPORTS_FILE,
-                            FLIGHT_REGISTER)
+                            FLIGHT_REGISTER, BEGIN_EOF, EOF_SENT)
 import json
 import signal
 
+from util.file_manager import log_to_file
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
-from util.recovery_logging import recover_state, propagate_eof_column_cleaner
+from util.recovery_logging import recover_state, go_to_sleep
 
 
 class ColumnCleaner:
@@ -22,7 +23,7 @@ class ColumnCleaner:
         self.__routing_key = routing_key
         self.__connected_nodes = connected_nodes
         self.middleware = QueueMiddleware()
-        self._filename = "column_cleaner/" + name + "_log_state.txt"
+        self.log_file = "column_cleaner/" + name + "_state_log.txt"
 
     def run(self, input_exchange):
         signal.signal(signal.SIGTERM, self.middleware.handle_sigterm)
@@ -30,7 +31,13 @@ class ColumnCleaner:
                              self.middleware)
         initialize_queues([self.__output_queue, self.__input_queue],
                           self.middleware)
-        recover_state(self._filename, self.middleware,  propagate_message=self.__output_message)
+        msg = recover_state(self.log_file)
+        if msg is not None:
+            message_id = msg["message_id"]
+            client_id = msg["client_id"]
+            self.__output_message(json.dumps(msg), msg["op_code"])
+            log_to_file(self.log_file, f"{EOF_SENT},{message_id},"
+                                       f"{client_id}")
         if input_exchange is not None:
             self.middleware.subscribe(input_exchange,
                                       self.callback,
@@ -48,8 +55,12 @@ class ColumnCleaner:
             self.middleware.manual_ack(method)
             return
         if op_code == EOF_FLIGHTS_FILE:
-            propagate_eof_column_cleaner(self.middleware, method, body,
-                                         self._filename, self.__output_message)
+            log_to_file(self.log_file, f"{BEGIN_EOF},{register.get('message_id')},"
+                                       f"{register.get('client_id')}")
+            self.middleware.manual_ack(method)
+            self.__output_message(body, op_code)
+            log_to_file(self.log_file, f"{EOF_SENT},{register.get('message_id')},"
+                                       f"{register.get('client_id')}")
             return
         filtered_columns = dict()
         column_names = self.__required_columns_flights

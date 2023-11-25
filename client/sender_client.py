@@ -91,7 +91,6 @@ class SenderClient(Client):
                     logging.error(
                         f'action: sent line | result: fail | error: {e}')
                 rows = []
-
             self.__send_eof(EOF_AIRPORTS_FILE)
             self.__retrieve_server_ack()
             reader2 = csv.DictReader(file2)

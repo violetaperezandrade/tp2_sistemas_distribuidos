@@ -1,14 +1,14 @@
 import json
 import signal
 import os
-from random import randint
-from time import sleep
 
 from util.constants import EOF_FLIGHTS_FILE, FLIGHT_REGISTER, EOF_SENT, FILTERED, ACCEPTED, BEGIN_EOF
 from util.file_manager import log_to_file
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
-from util.recovery_logging import propagate_eof_standard, recover_state, message_duplicated, log_get_missing_flights
+from util.recovery_logging import get_missing_flights, go_to_sleep
+
+NUMBER_CLIENTS = 3
 
 
 class FilterByThreeStopovers:
@@ -23,11 +23,12 @@ class FilterByThreeStopovers:
         self.__output_exchange = output_exchange
         self.__middleware = QueueMiddleware()
         self.reducers_amount = reducers_amount
-        self.state_log_filename = "filter_by_three_stopovers/" + name + ".txt"
-        self.flights_log_filename = "filter_by_three_stopovers/" + name + "_flights.txt"
-        self.__missing_flights = set()
-        self.__client_receive_eof_status = [False]
-        self.__accepted_flights = 0
+        self.state_log_file = "filter_by_three_stopovers/" + name + "_state_log.txt"
+        self.flights_log_file = "filter_by_three_stopovers/" + name + "_flights_log.txt"
+        self.__missing_flights = [set() for _ in range(NUMBER_CLIENTS)]
+        self.eof_status = [False] * NUMBER_CLIENTS
+        self.__accepted_flights = [0] * NUMBER_CLIENTS
+        self.received = 0
 
     def run(self):
         signal.signal(signal.SIGTERM, self.__middleware.handle_sigterm)
@@ -35,16 +36,7 @@ class FilterByThreeStopovers:
                              self.__middleware)
         initialize_queues([self.__input_queue, self.__output_queue],
                           self.__middleware)
-        # aca se podria checkpointear
-        self.recover_state_filters(self.state_log_filename,
-                                   self.flights_log_filename,
-                                   self.__accepted_flights,
-                                   self.reducers_amount,
-                                   self.__id,
-                                   self.__middleware,
-                                   self.__missing_flights,
-                                   self.__client_receive_eof_status,
-                                   self.__output_queue)
+        self.recover_state_filters()
         self.__middleware.listen_on(self.__input_queue, self.callback)
 
     def callback(self, body, method):
@@ -52,31 +44,37 @@ class FilterByThreeStopovers:
         op_code = flight.get("op_code")
         message_id = flight.get("message_id")
         client_id = flight.get("client_id")
-        if message_id not in self.__missing_flights and self.__client_receive_eof_status[client_id - 1]:
+        index = int(client_id) - 1
+        if message_id not in self.__missing_flights[index] and self.eof_status[index]:
             self.__middleware.manual_ack(method)
             return
         if op_code > FLIGHT_REGISTER:
             self.__middleware.manual_ack(method)
             return
         if op_code == EOF_FLIGHTS_FILE:
-            messages_sent = flight["messages_sent"]
-            log_to_file(self.state_log_filename, f"{BEGIN_EOF},{message_id},{messages_sent},{client_id},{self.__id}")
-            self.__client_receive_eof_status[client_id - 1] = True
-            self.__accepted_flights = log_get_missing_flights(self.flights_log_filename,
-                                                              self.__missing_flights,
-                                                              self.__id,
-                                                              self.reducers_amount,
-                                                              message_id)
-            if len(self.__missing_flights) == 0:
-                flight["filter_id"] = self.__id
-                flight["messages_sent"] = self.__accepted_flights
-                print(flight)
-                self.__middleware.publish(self.__output_exchange,
-                                          json.dumps(flight))
-                self.__middleware.send_message(self.__output_queue, json.dumps(flight))
-                log_to_file(self.state_log_filename, f"{EOF_SENT},{flight.get('client_id')},")
+            log_to_file(self.state_log_file, f"{BEGIN_EOF},{message_id},{client_id},{self.__id}")
+            self.eof_status[index] = True
+            self.__accepted_flights[index] = get_missing_flights(self.flights_log_file,
+                                                                 self.__missing_flights[index],
+                                                                 self.__id,
+                                                                 self.reducers_amount,
+                                                                 message_id,
+                                                                 client_id)
+            self.send_and_log_eof(self.__accepted_flights[index],
+                                  self.__id, client_id, message_id)
             self.__middleware.manual_ack(method)
             return
+        filtering_result = self.filtering(flight)
+        if self.eof_status[index]:
+            if len(self.__missing_flights[index]) > 0:
+                if filtering_result == ACCEPTED:
+                    self.__accepted_flights[index] += 1
+                self.__missing_flights[index].remove(message_id)
+            self.send_and_log_eof(self.__accepted_flights[index], self.__id, client_id, message_id)
+        log_to_file(self.flights_log_file, f"{message_id},{client_id},{filtering_result}")
+        self.__middleware.manual_ack(method)
+
+    def filtering(self, flight):
         stopovers = flight["segmentsArrivalAirportCode"].split("||")[:-1]
         filtering_result = FILTERED
         if len(stopovers) >= self.__max_stopovers:
@@ -87,73 +85,58 @@ class FilterByThreeStopovers:
             self.__middleware.send_message(self.__output_queue,
                                            json.dumps(message))
             filtering_result = ACCEPTED
-
-        if self.__client_receive_eof_status[client_id - 1]:
-            if len(self.__missing_flights) > 0:
-                if filtering_result == ACCEPTED:
-                    self.__accepted_flights += 1
-                self.__missing_flights.remove(message_id)
-            if len(self.__missing_flights) == 0:
-                register = self.create_eof_message(self.__accepted_flights,
-                                                   self.__id,
-                                                   client_id)
-                register["message_id"] = -1
-                self.__middleware.publish(self.__output_exchange,
-                                          json.dumps(register))
-                self.__middleware.send_message(
-                    self.__output_queue, json.dumps(register))
-                print(f"{register}")
-                log_to_file(self.state_log_filename, f"{EOF_SENT},{flight.get('client_id')}")
-        log_to_file(self.flights_log_filename, f"{message_id},{filtering_result}")
-        self.__middleware.manual_ack(method)
+        return filtering_result
 
     def __create_message(self, flight):
         message = dict()
         for i in range(len(self.__columns_to_filter)):
-            message[self.__columns_to_filter[i]] = \
-                flight[self.__columns_to_filter[i]]
-
+            message[self.__columns_to_filter[i]] = flight[self.__columns_to_filter[i]]
         return message
 
-    def create_eof_message(self, accepted_flights, filter_id, client_id):
+    def create_eof_flights_message(self, accepted_flights, filter_id, client_id):
         register = dict()
-        register["op_code"] = 0
-        register["messages_sent"] = accepted_flights
-        register["client_id"] = client_id
-        register["filter_id"] = filter_id
+        register["op_code"] = EOF_FLIGHTS_FILE
+        register["messages_sent"] = int(accepted_flights)
+        register["client_id"] = int(client_id)
+        register["filter_id"] = int(filter_id)
         return register
 
-    def recover_state_filters(self, state_filename, flights_log_filename, accepted_flights, reducers_amount,
-                              first_message, middleware, missing_flight_set,
-                              eof_status, output_queue=None):
-        missing_flight_set = set()
-        accepted_flights = 0
-        if os.path.exists(state_filename):
-            with open(state_filename, 'r') as file:
+    def recover_state_filters(self):
+        processed_clients = []
+        if os.path.exists(self.state_log_file):
+            with open(self.state_log_file, 'r+') as file:
                 try:
-                    last_line = file.readlines()[-1]
-                except IndexError:
+                    lines = file.readlines()
+                    for i, line in enumerate(lines):
+                        if line.endswith("\n"):
+                            line = line.strip('\n')
+                            info, message_id, client_id, filter_id = tuple(line.split(","))
+                            if int(info) == BEGIN_EOF:
+                                client_id = int(client_id)
+                                if client_id in processed_clients:
+                                    continue
+                                processed_clients.append(client_id)
+                                index = client_id - 1
+                                self.eof_status[index] = True
+                                self.__accepted_flights[index] = get_missing_flights(self.flights_log_file,
+                                                                                     self.__missing_flights[index],
+                                                                                     self.__id,
+                                                                                     self.reducers_amount,
+                                                                                     int(message_id),
+                                                                                     client_id)
+                                self.send_and_log_eof(self.__accepted_flights[index], filter_id, client_id, message_id)
+                        else:
+                            file.truncate()
+                            return
+                except IndexError as e:
+                    print(e)
                     return
-                if last_line.endswith("\n"):
-                    last_line = last_line.strip('\n')
-                    info = last_line.split(",")
-                    if int(info[0]) == BEGIN_EOF:
-                        message_id = info[1]
-                        messages_sent = info[2]
-                        client_id = info[3]
-                        filter_id = info[4]
-                        eof_status[int(client_id) - 1] = True
-                        accepted_flights = log_get_missing_flights(flights_log_filename,
-                                                                   missing_flight_set,
-                                                                   first_message,
-                                                                   reducers_amount,
-                                                                   int(message_id))
-                        if len(missing_flight_set) == 0:
-                            register = self.create_eof_message(accepted_flights, filter_id, client_id)
-                            register["message_id"] = -1
-                            print(f"{register}")
-                            self.__middleware.publish(self.__output_exchange,
-                                                      json.dumps(register))
-                            middleware.send_message(output_queue, json.dumps(register))
-                            log_to_file(self.state_log_filename, f"{EOF_SENT},{register.get('client_id')},")
-        return
+
+    def send_and_log_eof(self, accepted_flights, filter_id, client_id, message_id):
+        if len(self.__missing_flights[client_id - 1]) == 0:
+            eof = self.create_eof_flights_message(accepted_flights, filter_id, client_id)
+            eof["message_id"] = int(message_id)
+            self.__middleware.publish(self.__output_exchange,
+                                      json.dumps(eof))
+            self.__middleware.send_message(self.__output_queue, json.dumps(eof))
+            log_to_file(self.state_log_file, f"{EOF_SENT},{eof.get('client_id')}")

@@ -63,7 +63,7 @@ services:
       - PYTHONUNBUFFERED=1
       - INPUT_QUEUE=full_flight_registers
       - OUTPUT_EXCHANGE=cleaned_flight_registers
-      - REQUIRED_COLUMNS_FLIGHTS=op_code,legId,startingAirport,destinationAirport,travelDuration,baseFare,totalFare,totalTravelDistance,segmentsArrivalAirportCode,message_id
+      - REQUIRED_COLUMNS_FLIGHTS=op_code,client_id,legId,startingAirport,destinationAirport,travelDuration,baseFare,totalFare,totalTravelDistance,segmentsArrivalAirportCode,message_id
       - CONNECTED_NODES=3
     depends_on: &id002
       - group_by_id_1
@@ -81,7 +81,7 @@ services:
       - REDUCERS_AMOUNT=3
       - OUTPUT_QUEUE=output_1
       - OUTPUT_EXCHANGE=three_or_more_stopovers
-      - COLUMNS_TO_FILTER=legId,startingAirport,destinationAirport,stopovers,totalFare,message_id
+      - COLUMNS_TO_FILTER=legId,client_id,startingAirport,destinationAirport,stopovers,totalFare,message_id
     depends_on:
       - query_handler
   query_handler:
