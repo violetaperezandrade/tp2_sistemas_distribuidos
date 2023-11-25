@@ -8,6 +8,10 @@ from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
 from util.constants import EOF_FLIGHTS_FILE, AIRPORT_REGISTER, BEGIN_EOF, EOF_SENT, EOF_CLIENT
 
+REDUCER_ID = 1
+MESSAGES_SENT = 2
+CLIENT_ID = 3
+
 
 class GroupBy():
     def __init__(self, fields_group_by, input_exchange,
@@ -42,6 +46,7 @@ class GroupBy():
         initialize_exchanges([self.input_exchange], self.queue_middleware)
         initialize_queues([self.listening_queue, self.input_queue] +
                           self.reducers, self.queue_middleware)
+        #recover_state()
         if self.input_queue == '':  # reading from an exchange
             self.queue_middleware.subscribe(self.input_exchange,
                                             self.__callback,
@@ -78,7 +83,7 @@ class GroupBy():
         self.queue_middleware.manual_ack(method)
 
     def __create_route(self, flight, fields_list):
-        return ("-").join(flight[str(field)] for field in fields_list)
+        return "-".join(flight[str(field)] for field in fields_list)
 
     def handle_eof(self, flight):
         message_id = flight.get("message_id")
@@ -113,16 +118,15 @@ class GroupBy():
         log_to_file(self.state_log_filename, f"{EOF_CLIENT},{reducer_id},{messages_sent},{client_id}")
         self.verify_all_eofs_received(client_id, flight)
 
-    def verify_all_eofs_received(self, client_id: str, flight):
+    def verify_all_eofs_received(self, client_id, flight):
         eofs = set()
         with open(self.state_log_filename, "r") as file:
             for line in file:
                 if not line.startswith(str(EOF_SENT)) and line.endswith("\n"):
                     line = line.strip('\n')
                     line = tuple(line.split(','))
-
-                    if int(line[3]) == int(client_id):
-                        eofs.add((line[1], line[2]))
+                    if int(line[CLIENT_ID]) == int(client_id):
+                        eofs.add((line[REDUCER_ID], line[MESSAGES_SENT]))
         if len(eofs) == self.reducers_amount:
             corrected_eof = 0
             for i in eofs:
@@ -130,6 +134,7 @@ class GroupBy():
             self.necessary_lines[client_id] = corrected_eof
         self.send_eof_to_reducers(client_id, flight)
 
+    # Envia EOF a cada reducer si ya se recibieron todos los EOF previos necesarios
     def send_eof_to_reducers(self, client_id, flight):
         if client_id in self.necessary_lines.keys():
             total = 0
