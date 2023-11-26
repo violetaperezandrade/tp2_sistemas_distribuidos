@@ -30,22 +30,59 @@ def recover_state(filename):
     return None
 
 
-def get_missing_flights(filename, missing_flight_set, first_message, total_reducers, eof_message_id, client_id):
+def get_missing_flights(filename, missing_flight_set, first_message,
+                        total_reducers, eof_message_id, client_id):
     for i in range(first_message, eof_message_id, total_reducers):
         missing_flight_set.add(i)
     accepted_flights = set()
     with open(filename, 'r') as file:
         for line in file:
-            line = line.split(",")
-            message_id = int(line[MESSAGE_ID])
-            flight_client_id = int(line[CLIENT_ID])
-            if client_id != flight_client_id:
-                continue
-            if int(line[FILTERING_RESULT]) == ACCEPTED:
-                accepted_flights.add(message_id)
-            if message_id in missing_flight_set:
-                missing_flight_set.remove(message_id)
+            if line.endswith("\n"):
+                if line[-2] == "#":
+                    continue
+                else:
+                    line = line.split(",")
+                    message_id = int(line[MESSAGE_ID])
+                    flight_client_id = int(line[CLIENT_ID])
+                    if client_id != flight_client_id:
+                        continue
+                    if int(line[FILTERING_RESULT]) == ACCEPTED:
+                        accepted_flights.add(message_id)
+                    if message_id in missing_flight_set:
+                        missing_flight_set.remove(message_id)
+            else:
+                file.write('#\n')
+                return
     return len(accepted_flights)
+
+
+def recover_broken_line(lines, temp_file, old_file, log_file):
+    lines.pop(-1)
+    # escribir nuevo archivo valido
+    with open(temp_file, 'w+') as file:
+        file.writelines(lines)
+    # renombrar archivo viejo
+    os.rename(log_file, old_file)
+    # borrar archivo viejo
+    os.remove(old_file)
+    os.rename(temp_file, log_file)
+
+
+def check_files(dir, log_file):
+    all_files = os.listdir(dir)
+    temp_files = [file for file in all_files if file.startswith("o") or file.startswith("t")]
+    if len(temp_files) == 2:
+        for file in temp_files:
+            if file.startswith("o"):
+                os.rmdir(file)
+            else:
+                os.rename(file, log_file)
+    elif len(temp_files) == 1:
+        if os.exists(log_file):
+            os.rmdir(file)
+        else:
+            os.rename(file, log_file)
+    return
 
 
 def duplicated_message(filename, result_id):
