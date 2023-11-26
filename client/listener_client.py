@@ -48,6 +48,7 @@ class ListenerClient(Client):
             print(f"QUERY {query_number}:"
                   f"{result}")
             files[int(query_number) - 1].write(str(result) + '\n')
+            files[int(query_number) - 1].flush()
         except OSError as e:
             logging.info(
                 f"action: receive_result | result: fail | error: {e}")

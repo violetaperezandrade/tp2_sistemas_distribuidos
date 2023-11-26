@@ -7,8 +7,8 @@ from util import protocol
 from util.constants import SIGTERM
 from util.initialization import initialize_queues
 from util.queue_middleware import QueueMiddleware
-from util.file_manager import log_to_file
-from util.recovery_logging import duplicated_message, log_message_batch
+from util.file_manager import log_batch_to_file
+from util.recovery_logging import duplicated_message
 
 
 class ResultHandler:
@@ -49,8 +49,9 @@ class ResultHandler:
             self.__middleware.manual_ack(method)
             return
         self.results[client_id].add(result_id)
-        # if len(self.results[int(client_id)]) == 1:
-        # log_message_batch(self._filename, int(client_id))
+        if len(self.results[client_id]) == 1:
+            log_batch_to_file(self._filename, self.results[client_id])
+            self.results[client_id].clear()
         msg = protocol.encode_query_result(result)
         self.__send_exact(msg)
         self.__middleware.manual_ack(method)

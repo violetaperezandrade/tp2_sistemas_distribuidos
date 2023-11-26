@@ -36,8 +36,6 @@ class GroupBy():
         self.flights_log_filename = "group_by/" + name + "_flights_log.txt"
         self.necessary_lines = dict()
         self.reducer_messages_per_client = dict()
-        # necessary_lines, clave: client_id, valor: cantidad de lineas cliente i
-        # reducer_messages_per_client, clave: client_id, valor: [cantidad reducers] cada posicion cantidad de lineas
 
     def handle_group_by_fields(self, fields_group_by):
         if len(fields_group_by) > 1:
@@ -143,7 +141,6 @@ class GroupBy():
             if flight:
                 self.send_eof_to_reducers(client_id, flight)
 
-    # Envia EOF a cada reducer si ya se recibieron todos los EOF previos necesarios
     def send_eof_to_reducers(self, client_id, flight):
         if client_id in self.necessary_lines.keys():
             total = 0

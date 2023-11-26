@@ -63,11 +63,6 @@ def go_to_sleep():
     print(f"Going to sleep for {sleepytime}")
     sleep(sleepytime)
 
-
-def log_message_batch(filename, message_list):
-    log_batch_to_file(filename, message_list)
-    message_list.clear()
-
 #
 # def handle_several_eofs(state_log_filename,
 #                         flight,
