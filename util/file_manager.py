@@ -14,5 +14,5 @@ def log_to_file(filename, line):
 
 def log_batch_to_file(filename, batch):
     with open(filename, "a") as file:
-        for message in batch:
-            file.write(f"{message[0]},{message[1]} + '\n'")
+        for element in batch:
+            file.write(element + '\n')

@@ -1,7 +1,7 @@
 from util.constants import (EOF_FLIGHTS_FILE,
                             AIRPORT_REGISTER,
                             EOF_AIRPORTS_FILE,
-                            FLIGHT_REGISTER, BEGIN_EOF, EOF_SENT)
+                            FLIGHT_REGISTER)
 import json
 import signal
 

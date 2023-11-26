@@ -42,6 +42,7 @@ docker-compose-logs:
 
 docker-compose-scaled-up: docker-image
 	sudo rm -f group_by/*.txt
+	sudo rm -f results/*.txt
 	sudo rm -f column_cleaner/*.txt
 	sudo rm -f result_handler/*.txt
 	sudo rm -f filter_by_three_stopovers/*.txt
