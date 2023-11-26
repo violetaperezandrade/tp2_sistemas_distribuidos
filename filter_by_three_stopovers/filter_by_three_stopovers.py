@@ -1,15 +1,13 @@
 import json
 import signal
 import os
-from file_read_backwards import FileReadBackwards
 
 from util.constants import (EOF_FLIGHTS_FILE, FLIGHT_REGISTER,
                             EOF_SENT, FILTERED, ACCEPTED, BEGIN_EOF)
 from util.file_manager import log_to_file
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
-from util.recovery_logging import (get_missing_flights,
-                                   go_to_sleep, check_files)
+from util.recovery_logging import (get_missing_flights, correct_last_line)
 
 NUMBER_CLIENTS = 3
 
@@ -108,42 +106,32 @@ class FilterByThreeStopovers:
     def recover_state_filters(self):
         processed_clients = []
         if os.path.exists(self.state_log_file):
-            # with FileReadBackwards(self.state_log_file, encoding="utf-8") as frb:
-            #     line = frb.readline()
-            #     if not line.endswith("\n"):
-            #         frb.write('#\n')
-            with open(self.state_log_file, 'a+') as file:
-                lines = file.read()
-                if not lines.endswith("\n"):
-                    file.write('#\n')
-            with open(self.state_log_file, 'r+') as file:
+            correct_last_line(self.state_log_file)
+            with open(self.state_log_file, 'r') as file:
                 try:
-                    for line in file:
+                    for line in file.readlines():
                         line = line.strip('\n')
                         if line.endswith("#"):
                             continue
-                        else:
-                            try:
-                                info, message_id, client_id, filter_id = tuple(line.split(","))
-                            except ValueError as e:
+                        try:
+                            info, message_id, client_id, filter_id = tuple(line.split(","))
+                        except ValueError as e:
+                            continue
+                        if int(info) == BEGIN_EOF:
+                            client_id = int(client_id)
+                            if client_id in processed_clients:
                                 continue
-                            if int(info) == BEGIN_EOF:
-                                client_id = int(client_id)
-                                if client_id in processed_clients:
-                                    continue
-                                processed_clients.append(client_id)
-                                index = client_id - 1
-                                self.eof_status[index] = True
-                                self.__accepted_flights[index] = get_missing_flights(self.flights_log_file,
-                                                                                    self.__missing_flights[index],
-                                                                                    self.__id,
-                                                                                    self.reducers_amount,
-                                                                                    int(message_id),
-                                                                                    client_id)
-                                self.send_and_log_eof(self.__accepted_flights[index], filter_id, client_id, message_id)
-                            return
+                            processed_clients.append(client_id)
+                            index = client_id - 1
+                            self.eof_status[index] = True
+                            self.__accepted_flights[index] = get_missing_flights(self.flights_log_file,
+                                                                                 self.__missing_flights[index],
+                                                                                 self.__id,
+                                                                                 self.reducers_amount,
+                                                                                 int(message_id),
+                                                                                 client_id)
+                            self.send_and_log_eof(self.__accepted_flights[index], filter_id, client_id, message_id)
                 except IndexError as e:
-                    print(e)
                     return
 
     def send_and_log_eof(self, accepted_flights, filter_id, client_id, message_id):

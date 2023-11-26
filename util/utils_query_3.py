@@ -1,4 +1,7 @@
+import os
 import re
+
+from util.recovery_logging import check_files
 
 RESULT_FIELDS = ["legId", "route", "stopovers"]
 DURATION_FIELD = "travelDuration"
@@ -13,7 +16,7 @@ def get_fastests(flight, duration, fastests):
     return fastests
 
 
-def handle_query_3_register(register, dic, result_file):
+def handle_query_3_register(register, dic, result_file, name):
     duration = convert_duration(register[DURATION_FIELD])
     route = register.get("route")
     client_id = register.get("client_id")
@@ -26,13 +29,16 @@ def handle_query_3_register(register, dic, result_file):
         route_flights = get_fastests(register, duration, route_flights)
     dic[route] = route_flights
     # Hacer que esto solo pase si hay una update efectiva
-    # Hacer que tolere fallas durante escritura (tener copia de seguridad en 3,
-    # 4 y 5ta linea)
-    with open(result_file, "r+") as file:
+    # Hacer que tolere fallas durante escritura
+    with open(result_file, "r") as file, open("reducer_group_by/temp_results_" + name + ".txt", 'w+') as tmp_file:
         lines = file.readlines()
         lines[int(client_id)-1] = str(dic) + '\n'
-        file.seek(0)
-        file.writelines(lines)
+        tmp_file.writelines(lines)
+    # renombrar archivo viejo
+    os.rename("reducer_group_by/" + name + "_result_log.txt", "reducer_group_by/old_results_" + name + ".txt")
+    # borrar archivo viejo
+    os.rename("reducer_group_by/temp_results_" + name + ".txt", "reducer_group_by/" + name + "_result_log.txt")
+    os.remove("reducer_group_by/old_results_" + name + ".txt")
     return dic
 
 

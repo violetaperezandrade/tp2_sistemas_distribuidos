@@ -10,7 +10,7 @@ from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
 from util.constants import (EOF_FLIGHTS_FILE, AIRPORT_REGISTER, BEGIN_EOF,
                             EOF_SENT, EOF_CLIENT)
-from util.recovery_logging import go_to_sleep
+from util.recovery_logging import go_to_sleep, correct_last_line
 
 REDUCER_ID = 1
 MESSAGES_SENT = 2
@@ -130,6 +130,8 @@ class GroupBy():
             for line in file:
                 if not line.startswith(str(EOF_SENT)) and line.endswith("\n"):
                     line = line.strip('\n')
+                    if line.endswith("#"):
+                        continue
                     line = tuple(line.split(','))
                     if int(line[CLIENT_ID]) == int(client_id):
                         eofs.add((line[REDUCER_ID], line[MESSAGES_SENT]))
@@ -164,6 +166,7 @@ class GroupBy():
     def recover_state(self):
         clients_recovered = []
         if os.path.exists(self.flights_log_filename):
+            correct_last_line(self.flights_log_filename)
             with FileReadBackwards(self.flights_log_filename, encoding="utf-8") as frb:
                 while True:
                     line = frb.readline()
@@ -171,7 +174,7 @@ class GroupBy():
                         break
                     if line == '\n':
                         continue
-                    if not line.endswith("\n"):
+                    if line.endswith("#\n"):
                         continue
                     line_list_ = line.split(",")
                     line_list = [int(x) for x in line_list_]
@@ -187,6 +190,7 @@ class GroupBy():
                 if i not in clients_recovered:
                     self.reducer_messages_per_client[i] = [0] * self.reducers_amount
         if os.path.exists(self.state_log_filename):
+            correct_last_line(self.state_log_filename)
             for client in range(1, CLIENTS+1):
                 self.verify_all_eofs_received(client)
         return

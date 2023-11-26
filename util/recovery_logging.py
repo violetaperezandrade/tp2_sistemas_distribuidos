@@ -2,8 +2,7 @@ import os
 from random import randint
 from time import sleep
 
-from util.constants import BEGIN_EOF, EOF_SENT, ACCEPTED, FILTERED, EOF_CLIENT
-from util.file_manager import log_to_file, log_batch_to_file
+from util.constants import EOF_SENT, ACCEPTED
 
 MESSAGE_ID = 0
 CLIENT_ID = 1
@@ -32,13 +31,14 @@ def recover_state(filename):
 
 def get_missing_flights(filename, missing_flight_set, first_message,
                         total_reducers, eof_message_id, client_id):
+    correct_last_line(filename)
     for i in range(first_message, eof_message_id, total_reducers):
         missing_flight_set.add(i)
     accepted_flights = set()
     with open(filename, 'r') as file:
         for line in file:
             if line.endswith("\n"):
-                if line[-2] == "#":
+                if line.endswith("#\n"):
                     continue
                 else:
                     line = line.split(",")
@@ -50,14 +50,17 @@ def get_missing_flights(filename, missing_flight_set, first_message,
                         accepted_flights.add(message_id)
                     if message_id in missing_flight_set:
                         missing_flight_set.remove(message_id)
-            else:
-                file.write('#\n')
-                return
     return len(accepted_flights)
 
 
+def correct_last_line(filename):
+    with open(filename, 'a+') as file:
+        line = file.read()
+        if not line.endswith("\n") and line != "#":
+            file.write('#\n')
+
+
 def recover_broken_line(lines, temp_file, old_file, log_file):
-    lines.pop(-1)
     # escribir nuevo archivo valido
     with open(temp_file, 'w+') as file:
         file.writelines(lines)
@@ -68,21 +71,22 @@ def recover_broken_line(lines, temp_file, old_file, log_file):
     os.rename(temp_file, log_file)
 
 
-def check_files(dir, log_file):
-    all_files = os.listdir(dir)
-    temp_files = [file for file in all_files if file.startswith("o") or file.startswith("t")]
-    if len(temp_files) == 2:
-        for file in temp_files:
+def check_files(directory, log_file):
+    all_files = os.listdir(directory)
+    aux_files = [file for file in all_files if file.startswith("o") or file.startswith("t")]
+    if len(aux_files) == 2:
+        for file in aux_files:
             if file.startswith("o"):
-                os.rmdir(file)
+                os.remove(file)
             else:
                 os.rename(file, log_file)
-    elif len(temp_files) == 1:
+    elif len(aux_files) == 1:
         if os.exists(log_file):
-            os.rmdir(file)
+            os.remove(aux_files[0])
         else:
-            os.rename(file, log_file)
+            os.rename(aux_files[0], log_file)
     return
+
 
 
 def duplicated_message(filename, result_id):
@@ -158,23 +162,23 @@ def go_to_sleep():
 #     # TODO en group agregar este metodo abajo de handle_receivers_message_per_client
 #     # self.send_eof_to_reducers(client_id, flight)
 
-    # def __callback(self, body, method):
-    #     flight = json.loads(body)
-    #     op_code = flight.get("op_code")
-    #     if op_code == EOF_FLIGHTS_FILE:
-    #         if self.query_number == 5:
-    #             self.save_flights_to_file(self.__tmp_flights)
-    #             self.__read_file_and_send()
-    #             self.queue_middleware.send_message(self.output_queue, body)
-    #             self.queue_middleware.manual_ack(method)
-    #             return
-    #         self.__handle_eof()
-    #         self.queue_middleware.send_message(self.output_queue, body)
-    #         self.queue_middleware.manual_ack(method)
-    #         return
-    #     if self.query_number == 5:
-    #         self.__tmp_flights.append(flight)
-    #         self.queue_middleware.manual_ack(method)
-    #         return
-    #     self.handlers_map[self.query_number](flight, self.grouped)
-    #     self.queue_middleware.manual_ack(method)
+# def __callback(self, body, method):
+#     flight = json.loads(body)
+#     op_code = flight.get("op_code")
+#     if op_code == EOF_FLIGHTS_FILE:
+#         if self.query_number == 5:
+#             self.save_flights_to_file(self.__tmp_flights)
+#             self.__read_file_and_send()
+#             self.queue_middleware.send_message(self.output_queue, body)
+#             self.queue_middleware.manual_ack(method)
+#             return
+#         self.__handle_eof()
+#         self.queue_middleware.send_message(self.output_queue, body)
+#         self.queue_middleware.manual_ack(method)
+#         return
+#     if self.query_number == 5:
+#         self.__tmp_flights.append(flight)
+#         self.queue_middleware.manual_ack(method)
+#         return
+#     self.handlers_map[self.query_number](flight, self.grouped)
+#     self.queue_middleware.manual_ack(method)

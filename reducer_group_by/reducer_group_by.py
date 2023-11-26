@@ -3,15 +3,14 @@ import json
 import signal
 import os
 
-from util.file_manager import save_to_file
-from util.recovery_logging import go_to_sleep
+from util.recovery_logging import correct_last_line, check_files
 from util.initialization import initialize_queues
 from util.queue_middleware import QueueMiddleware
 from util.utils_query_3 import handle_query_3_register
 from util.utils_query_4 import handle_query_4_register, handle_query_4
 from util.utils_query_5 import handle_query_5
-from util.constants import EOF_FLIGHTS_FILE, EOF_SENT, BEGIN_EOF
-from util.recovery_logging import log_to_file
+from util.constants import EOF_FLIGHTS_FILE
+from util.file_manager import log_to_file
 
 BATCH_SIZE = 10000
 CLIENT_NUMBER = 3
@@ -58,37 +57,37 @@ class ReducerGroupBy:
             self.spread_eof(client_id, method)
             return
         self.handlers_map[self.query_number](flight, self.grouped[client_id-1],
-                                             self.result_log_filename)
+                                             self.result_log_filename, self.name)
         self.queue_middleware.manual_ack(method)
 
-    def __read_file(self):
-        with open(self.__filename, "r") as file:
-            for line in file:
-                flight = json.loads(line)
-                flight_group_by_field = flight[self.field_group_by]
-                flights_list = self.grouped.pop(
-                    flight_group_by_field, [])
-                flights_list.append(flight)
-                self.grouped[flight_group_by_field] = flights_list
-
-    def __read_file_and_send(self):
-        for flight_file in self.files:
-            all_flights = []
-            with open(flight_file, "r") as file:
-                for line in file:
-                    all_flights.append(json.loads(line))
-            msg = self.operations_map.get(self.query_number,
-                                          lambda _: None)(all_flights)
-            self.queue_middleware.send_message(self.output_queue,
-                                               json.dumps(msg))
-
-    def save_flights_to_file(self, flight_list):
-        for flight in flight_list:
-            filename = flight[self.field_group_by] + ".txt"
-            if filename not in self.files:
-                self.files.append(filename)
-            with open(filename, "a") as file:
-                file.write(json.dumps(flight) + '\n')
+    # def __read_file(self):
+    #     with open(self.__filename, "r") as file:
+    #         for line in file:
+    #             flight = json.loads(line)
+    #             flight_group_by_field = flight[self.field_group_by]
+    #             flights_list = self.grouped.pop(
+    #                 flight_group_by_field, [])
+    #             flights_list.append(flight)
+    #             self.grouped[flight_group_by_field] = flights_list
+    #
+    # def __read_file_and_send(self):
+    #     for flight_file in self.files:
+    #         all_flights = []
+    #         with open(flight_file, "r") as file:
+    #             for line in file:
+    #                 all_flights.append(json.loads(line))
+    #         msg = self.operations_map.get(self.query_number,
+    #                                       lambda _: None)(all_flights)
+    #         self.queue_middleware.send_message(self.output_queue,
+    #                                            json.dumps(msg))
+    #
+    # def save_flights_to_file(self, flight_list):
+    #     for flight in flight_list:
+    #         filename = flight[self.field_group_by] + ".txt"
+    #         if filename not in self.files:
+    #             self.files.append(filename)
+    #         with open(filename, "a") as file:
+    #             file.write(json.dumps(flight) + '\n')
 
     def generate_result_message(self, client_id):
         with open(self.result_log_filename, "r") as file:
@@ -114,8 +113,12 @@ class ReducerGroupBy:
             self.queue_middleware.manual_ack(method)
 
     def recover_state(self):
+        check_files("/reducer_group_by", self.name + "_result_log.txt")
         if os.path.exists(self.state_log_filename):
+            correct_last_line(self.state_log_filename)
             with open(self.state_log_filename, 'r') as file:
                 for line in file:
+                    if line.endswith("#\n"):
+                        continue
                     self.processed_clients.append(int(line))
         self.processed_clients = list(set(self.processed_clients))
