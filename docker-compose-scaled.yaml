@@ -46,7 +46,7 @@ services:
     volumes:
       - ./results:/results:rw
       - type: bind
-        source: ./client/itineraries_random_2M.csv
+        source: ./client/itineraries_random_demo.csv
         target: /itineraries.csv
     environment:
       - PYTHONUNBUFFERED=1
@@ -69,6 +69,9 @@ services:
       - group_by_id_1
       - group_by_id_2
       - group_by_id_3
+      - query_2_column_filter_1
+      - query_2_column_filter_2
+      - query_2_column_filter_3
   filter_by_three_stopovers_1:
     container_name: filter_by_three_stopovers_1
     image: filter_by_three_stopovers:latest
@@ -227,3 +230,64 @@ services:
       - QUERY_NUMBER=3
     depends_on:
       - query_handler
+  query_2_column_filter_1:
+    container_name: query_2_column_filter_1
+    image: column_cleaner:latest
+    entrypoint: python3 /main.py
+    environment: &id015
+      - PYTHONUNBUFFERED=1
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - INPUT_QUEUE=query_2_filter_queue
+      - OUTPUT_QUEUE=distance_calculation
+      - OUTPUT_EXCHANGE=airport_registers
+      - REQUIRED_COLUMNS_FLIGHTS=op_code,message_id,client_id,legId,startingAirport,destinationAirport,totalTravelDistance,segmentsArrivalAirportCode
+      - REQUIRED_COLUMNS_AIRPORTS=op_code,message_id,client_id,Airport Code,Latitude,Longitude
+      - ROUTING_KEY=all
+      - CONNECTED_NODES=3
+    depends_on: &id016
+      - distance_calculator_1
+      - distance_calculator_2
+      - distance_calculator_3
+  query_2_column_filter_2:
+    container_name: query_2_column_filter_2
+    image: column_cleaner:latest
+    entrypoint: python3 /main.py
+    environment: *id015
+    depends_on: *id016
+  query_2_column_filter_3:
+    container_name: query_2_column_filter_3
+    image: column_cleaner:latest
+    entrypoint: python3 /main.py
+    environment: *id015
+    depends_on: *id016
+  distance_calculator_1:
+    container_name: distance_calculator_1
+    image: distance_calculator:latest
+    entrypoint: python3 /main.py
+    hostname: distance_calculator_1
+    volumes: &id019
+      - ./distance_calculator:/distance_calculator:rw
+    environment: &id017
+      - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=distance_calculation
+      - INPUT_EXCHANGE=airport_registers
+      - OUTPUT_QUEUE=output_2
+      - EXCHANGE_QUEUE=airports_queue
+    depends_on: &id018
+      - query_handler
+  distance_calculator_2:
+    container_name: distance_calculator_2
+    image: distance_calculator:latest
+    hostname: distance_calculator_2
+    entrypoint: python3 /main.py
+    volumes: *id019
+    environment: *id017
+    depends_on: *id018
+  distance_calculator_3:
+    container_name: distance_calculator_3
+    image: distance_calculator:latest
+    hostname: distance_calculator_3
+    entrypoint: python3 /main.py
+    volumes: *id019
+    environment: *id017
+    depends_on: *id018

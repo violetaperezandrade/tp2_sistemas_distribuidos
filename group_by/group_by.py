@@ -9,7 +9,7 @@ from util.file_manager import log_to_file
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
 from util.constants import (EOF_FLIGHTS_FILE, AIRPORT_REGISTER, BEGIN_EOF,
-                            EOF_SENT, EOF_CLIENT)
+                            EOF_SENT, EOF_CLIENT, FLIGHT_REGISTER)
 from util.recovery_logging import go_to_sleep, correct_last_line
 
 REDUCER_ID = 1
@@ -65,7 +65,7 @@ class GroupBy():
         message_id = flight.get("message_id")
         client_id = flight.get('client_id')
         op_code = flight.get("op_code")
-        if op_code == AIRPORT_REGISTER:
+        if op_code > FLIGHT_REGISTER:
             self.queue_middleware.manual_ack(method)
             return
         if op_code == EOF_FLIGHTS_FILE:
