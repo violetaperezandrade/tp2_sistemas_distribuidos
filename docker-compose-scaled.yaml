@@ -272,7 +272,6 @@ services:
       - INPUT_QUEUE=distance_calculation
       - INPUT_EXCHANGE=airport_registers
       - OUTPUT_QUEUE=output_2
-      - EXCHANGE_QUEUE=airports_queue
     depends_on: &id018
       - query_handler
   distance_calculator_2:

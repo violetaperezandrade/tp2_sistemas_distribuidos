@@ -2,11 +2,9 @@ import json
 from geopy.distance import geodesic
 import signal
 
-from util.constants import EOF_AIRPORTS_FILE, EOF_FLIGHTS_FILE
+from util.constants import EOF_AIRPORTS_FILE, EOF_FLIGHTS_FILE, NUMBER_CLIENTS
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
-
-NUMBER_CLIENTS = 3
 
 
 class DistanceCalculator:
@@ -19,7 +17,7 @@ class DistanceCalculator:
         self.__output_queue = output_queue
         self.__pipe = pipe
 
-    def run(self, exchange_queue):
+    def run(self):
         signal.signal(signal.SIGTERM, self.__middleware.handle_sigterm)
         initialize_exchanges([self.__input_exchange], self.__middleware)
         initialize_queues([self.__input_queue, self.__output_queue],
@@ -31,7 +29,7 @@ class DistanceCalculator:
         register = json.loads(body)
         client_id = register["client_id"]
         if register["op_code"] == EOF_FLIGHTS_FILE:
-            self.__middleware.send_message(self.__input_queue,
+            self.__middleware.send_message(self.__output_queue,
                                            json.dumps(register))
             self.__middleware.manual_ack(method)
             return

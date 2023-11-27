@@ -9,11 +9,10 @@ from util.queue_middleware import QueueMiddleware
 from util.utils_query_3 import handle_query_3_register
 from util.utils_query_4 import handle_query_4_register, handle_query_4
 from util.utils_query_5 import handle_query_5
-from util.constants import EOF_FLIGHTS_FILE
+from util.constants import EOF_FLIGHTS_FILE, NUMBER_CLIENTS
 from util.file_manager import log_to_file
 
 BATCH_SIZE = 10000
-CLIENT_NUMBER = 3
 
 
 class ReducerGroupBy:
@@ -23,7 +22,7 @@ class ReducerGroupBy:
         self.queue_middleware = QueueMiddleware()
         self.field_group_by = field_group_by
         self.output_queue = output_queue
-        self.grouped = [dict() for _ in range(CLIENT_NUMBER)]
+        self.grouped = [dict() for _ in range(NUMBER_CLIENTS)]
         self.files = []
         self.input_queue = input_queue
         self.query_number = query_number
@@ -33,7 +32,7 @@ class ReducerGroupBy:
                              4: handle_query_4_register}
         self.state_log_filename = "reducer_group_by/" + name + "_state_log.txt"
         self.result_log_filename = "reducer_group_by/" + name + "_result_log.txt"
-        self.n_clients = CLIENT_NUMBER
+        self.n_clients = NUMBER_CLIENTS
         self.__tmp_flights = []
         self.processed_clients = []
         self.name = name

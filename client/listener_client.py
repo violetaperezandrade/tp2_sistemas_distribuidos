@@ -1,8 +1,9 @@
 import logging
+import os
 
 from client import Client
 from util import protocol
-from util.constants import EOF_B, SIGTERM_B
+from util.constants import EOF_B, SIGTERM_B, NUMBER_CLIENTS
 
 
 class ListenerClient(Client):
@@ -12,14 +13,17 @@ class ListenerClient(Client):
 
     def run(self):
         self._start_connection()
+        file_list = []
+        for client_number in range(1, NUMBER_CLIENTS + 1):
+            os.makedirs(os.path.dirname(f"results/client_{client_number}/"), exist_ok=True)
+            for i in range(1, 6):
+                file_list.append(f"results/client_{client_number}/query_{i}.txt")
         try:
-            with (open("results/query1.txt", mode='w') as file1,
-                  open("results/query2.txt", mode='w') as file2,
-                  open("results/query3.txt", mode='w') as file3,
-                  open("results/query4.txt", mode='w') as file4,
-                  open("results/query5.txt", mode='w') as file5):
-                while not self._sigterm and not self._eof:
-                    self.__retrieve_result([file1, file2, file3, file4, file5])
+            files = [open(i, 'w') for i in file_list]
+            while not self._sigterm and not self._eof:
+                self.__retrieve_result(files)
+            for file in files:
+                file.close()
         except OSError:
             if self._sigterm:
                 logging.info('action: sigterm received')
@@ -45,10 +49,14 @@ class ListenerClient(Client):
                     return
             result = protocol.decode_query_result(payload)
             query_number = result.pop('query_number')
+            result_id = result.pop("result_id", None)
+            message_id = result.pop("message_id", None)
+            client_id = result.pop("client_id", None)
             # print(f"QUERY {query_number}:"
             #       f"{result}")
-            files[int(query_number) - 1].write(str(result) + '\n')
-            files[int(query_number) - 1].flush()
+            index = 5 * (client_id-1) + query_number
+            files[index-1].write(str(result) + '\n')
+            files[index-1].flush()
         except OSError as e:
             logging.info(
                 f"action: receive_result | result: fail | error: {e}")

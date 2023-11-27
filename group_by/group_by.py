@@ -9,13 +9,12 @@ from util.file_manager import log_to_file
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
 from util.constants import (EOF_FLIGHTS_FILE, AIRPORT_REGISTER, BEGIN_EOF,
-                            EOF_SENT, EOF_CLIENT, FLIGHT_REGISTER)
+                            EOF_SENT, EOF_CLIENT, FLIGHT_REGISTER, NUMBER_CLIENTS)
 from util.recovery_logging import go_to_sleep, correct_last_line
 
 REDUCER_ID = 1
 MESSAGES_SENT = 2
 CLIENT_ID = 3
-CLIENTS = 3
 
 
 class GroupBy():
@@ -185,12 +184,12 @@ class GroupBy():
                     else:
                         self.reducer_messages_per_client[client_id] = line_list
                         clients_recovered.append(client_id)
-        if len(clients_recovered) != CLIENTS:
-            for i in range(1, CLIENTS+1):
+        if len(clients_recovered) != NUMBER_CLIENTS:
+            for i in range(1, NUMBER_CLIENTS + 1):
                 if i not in clients_recovered:
                     self.reducer_messages_per_client[i] = [0] * self.reducers_amount
         if os.path.exists(self.state_log_filename):
             correct_last_line(self.state_log_filename)
-            for client in range(1, CLIENTS+1):
+            for client in range(1, NUMBER_CLIENTS + 1):
                 self.verify_all_eofs_received(client)
         return

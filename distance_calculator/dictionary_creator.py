@@ -2,13 +2,11 @@ import json
 import signal
 import os
 
-from util.constants import EOF_AIRPORTS_FILE, BEGIN_EOF
+from util.constants import EOF_AIRPORTS_FILE, BEGIN_EOF, NUMBER_CLIENTS
 from util.file_manager import log_to_file
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
-from util.recovery_logging import go_to_sleep
-
-NUMBER_CLIENTS = 3
+from util.recovery_logging import correct_last_line
 
 
 class DictionaryCreator:
@@ -58,8 +56,6 @@ class DictionaryCreator:
         longitude = register["Longitude"]
         client_id = register["client_id"]
         delimiter = ","
-        # Habria que verificar si esta completo el self.__airport_distances[client_id]
-        # al recibir este mensaje
         log_to_file(self._get_logging_file(client_id), str(delimiter.join([airport_code,
                                                                            latitude,
                                                                            longitude])))
@@ -73,27 +69,29 @@ class DictionaryCreator:
             return
         complete_dictionary = (required_length == len(self.__airports_distances[client_id]))
         if complete_dictionary:
-            go_to_sleep()
             self.__pipe.send((client_id, self.__airports_distances[client_id]))
 
     def __recover_state(self):
         for client_id in range(1, NUMBER_CLIENTS+1):
             if os.path.exists(self._get_logging_file(client_id)):
+                correct_last_line(self._get_logging_file(client_id))
                 with open(self._get_logging_file(client_id), 'r') as file:
                     for line in file:
+                        if line.endswith("#"):
+                            continue
                         airport_code, latitude, longitude = tuple(line.split(","))
                         self.__airports_distances[client_id][airport_code] = (latitude, longitude)
         if os.path.exists(self.airport_state_log):
+            correct_last_line(self.airport_state_log)
             with open(self.airport_state_log, 'r') as file:
                 for line in file:
+                    if line.endswith("#"):
+                        continue
                     _, total_len, client_id = tuple(line.split(","))
-                    self.total_lens[int(client_id) - 1] = total_len
+                    client_id = int(client_id) - 1
+                    self.total_lens[client_id] = total_len
                     for client_id in range(1, NUMBER_CLIENTS+1):
                         self.send_if_complete(client_id)
-        # Reconstruir estado y enviar los diccionarios ya construidos en caso de ser necesario
-        # Hay dos posiblidades: o el diccionario esta completo (y solo hay que enviarlo)
-        # O esta incompleto (y hay que seguir escuchando de la cola para completarlo). Este
-        # caso es medio trivial, en cualquier caso se sigue escuchando
         return
 
     def _get_logging_file(self, client_id):

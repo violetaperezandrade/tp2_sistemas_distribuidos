@@ -3,14 +3,11 @@ import signal
 import os
 
 from util.constants import (EOF_FLIGHTS_FILE, FLIGHT_REGISTER,
-                            EOF_SENT, FILTERED, ACCEPTED, BEGIN_EOF)
+                            EOF_SENT, FILTERED, ACCEPTED, BEGIN_EOF, NUMBER_CLIENTS)
 from util.file_manager import log_to_file
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
 from util.recovery_logging import (get_missing_flights, correct_last_line)
-
-NUMBER_CLIENTS = 3
-
 
 class FilterByThreeStopovers:
     def __init__(self, columns_to_filter, max_stopovers,

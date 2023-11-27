@@ -11,13 +11,12 @@ from dictionary_creator import DictionaryCreator
 def main():
     input_queue = os.getenv("INPUT_QUEUE", None)
     input_exchange = os.getenv("INPUT_EXCHANGE", None)
-    output_exchange = os.getenv("OUTPUT_QUEUE", None)
-    exchange_queue = os.getenv("EXCHANGE_QUEUE", None)
+    output_queue = os.getenv("OUTPUT_QUEUE", None)
     name = os.getenv("HOSTNAME", None)
     conn1, conn2 = multiprocessing.Pipe()
     distance_calculator = DistanceCalculator(input_exchange,
                                              input_queue,
-                                             output_exchange,
+                                             output_queue,
                                              conn2)
     dictionary_creator = DictionaryCreator(input_exchange,
                                            name, conn1)
@@ -26,7 +25,7 @@ def main():
     process.start()
     # processes.append(new_process)
     try:
-        distance_calculator.run(exchange_queue)
+        distance_calculator.run()
     except pika.exceptions.ChannelWrongStateError:
         pass
 
