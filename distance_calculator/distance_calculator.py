@@ -69,7 +69,7 @@ class DistanceCalculator:
             return
         while True:
             alt_client_id, airport_dictionary = self.__pipe.recv()
-            self.__airports_distances[client_id] = airport_dictionary
+            self.__airports_distances[alt_client_id] = airport_dictionary
             if alt_client_id != client_id:
                 continue
             break

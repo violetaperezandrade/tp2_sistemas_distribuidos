@@ -15,4 +15,4 @@ def log_to_file(filename, line):
 def log_batch_to_file(filename, batch):
     with open(filename, "a") as file:
         for element in batch:
-            file.write(element + '\n')
+            file.write(f'{element}\n')

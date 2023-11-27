@@ -45,8 +45,8 @@ class ListenerClient(Client):
                     return
             result = protocol.decode_query_result(payload)
             query_number = result.pop('query_number')
-            print(f"QUERY {query_number}:"
-                  f"{result}")
+            # print(f"QUERY {query_number}:"
+            #       f"{result}")
             files[int(query_number) - 1].write(str(result) + '\n')
             files[int(query_number) - 1].flush()
         except OSError as e:

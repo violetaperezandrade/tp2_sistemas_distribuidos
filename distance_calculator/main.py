@@ -18,9 +18,9 @@ def main():
     distance_calculator = DistanceCalculator(input_exchange,
                                              input_queue,
                                              output_exchange,
-                                             conn1)
+                                             conn2)
     dictionary_creator = DictionaryCreator(input_exchange,
-                                           name, conn2)
+                                           name, conn1)
     process = Process(target=dictionary_creator.run,
                       args=())
     process.start()

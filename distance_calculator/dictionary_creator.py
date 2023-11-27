@@ -1,10 +1,12 @@
 import json
 import signal
+import os
 
 from util.constants import EOF_AIRPORTS_FILE, BEGIN_EOF
 from util.file_manager import log_to_file
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
+from util.recovery_logging import go_to_sleep
 
 NUMBER_CLIENTS = 3
 
@@ -16,18 +18,16 @@ class DictionaryCreator:
         self.__exchange_queue = name + "_airports_queue"
         self.__pipe = pipe
         self.__input_exchange = input_exchange
-        self.airport_flights_log = "distance_calculator/" + name + "_airport_log.txt"
         self.airport_state_log = "distance_calculator/" + name + "_state_log.txt"
+        self.name = name
+        self.total_lens = [-1] * NUMBER_CLIENTS
 
     def run(self):
         signal.signal(signal.SIGTERM, self.__middleware.handle_sigterm)
         initialize_exchanges([self.__input_exchange], self.__middleware)
         initialize_queues([self.__exchange_queue],
                           self.__middleware)
-        # Reconstruir estado y enviar los diccionarios ya construidos en caso de ser necesario
-        # Hay dos posiblidades: o el diccionario esta completo (y solo hay que enviarlo)
-        # O esta incompleto (y hay que seguir escuchando de la cola para completarlo). Este
-        # caso es medio trivial, en cualquier caso se sigue escuchando
+        self.__recover_state()
         self.__middleware.subscribe(self.__input_exchange,
                                     self.__airport_callback,
                                     self.__exchange_queue)
@@ -39,10 +39,12 @@ class DictionaryCreator:
             required_length = register["message_id"] - 1
             log_to_file(self.airport_state_log, f"{BEGIN_EOF},{register.get('message_id')},"
                                                 f"{register.get('client_id')}")
+
+            self.total_lens[int(client_id) - 1] = required_length
             # Aca se esta enviando el diccionario como esta al momento de recibir el eof
             # Pero podria estar incompleto, asi que en realidad habria que logear el eof primero
             # y verificar para cada mensaje posterior si se completa el diccionario
-            self.send_if_complete(client_id, required_length)
+            self.send_if_complete(client_id)
             # log_to_file(self.log_file, f"{EOF_SENT},{register.get('message_id')},"
             #                            f"{register.get('client_id')}")
             self.__middleware.manual_ack(method)
@@ -58,16 +60,41 @@ class DictionaryCreator:
         delimiter = ","
         # Habria que verificar si esta completo el self.__airport_distances[client_id]
         # al recibir este mensaje
-        log_to_file(self.airport_flights_log, str(delimiter.join([airport_code, latitude, longitude])))
+        log_to_file(self._get_logging_file(client_id), str(delimiter.join([airport_code,
+                                                                           latitude,
+                                                                           longitude])))
         airport_dictionary = self.__airports_distances[client_id]
         airport_dictionary[airport_code] = (latitude, longitude)
+        self.send_if_complete(client_id)
 
-    def send_if_complete(self, client_id, required_length):
-        complete_dictionary = (required_length == self.__airports_distances[client_id])
+    def send_if_complete(self, client_id):
+        required_length = self.total_lens[client_id-1]
+        if required_length == -1:
+            return
+        complete_dictionary = (required_length == len(self.__airports_distances[client_id]))
         if complete_dictionary:
+            go_to_sleep()
             self.__pipe.send((client_id, self.__airports_distances[client_id]))
 
-    # def recover_dictionaries_from_log(self):
-    #     Habria que levantar los diccionarios completos e incompletos del log
-    #     Mandar los completos tambien
-    #     Despues seguir escuchando de la cola
+    def __recover_state(self):
+        for client_id in range(1, NUMBER_CLIENTS+1):
+            if os.path.exists(self._get_logging_file(client_id)):
+                with open(self._get_logging_file(client_id), 'r') as file:
+                    for line in file:
+                        airport_code, latitude, longitude = tuple(line.split(","))
+                        self.__airports_distances[client_id][airport_code] = (latitude, longitude)
+        if os.path.exists(self.airport_state_log):
+            with open(self.airport_state_log, 'r') as file:
+                for line in file:
+                    _, total_len, client_id = tuple(line.split(","))
+                    self.total_lens[int(client_id) - 1] = total_len
+                    for client_id in range(1, NUMBER_CLIENTS+1):
+                        self.send_if_complete(client_id)
+        # Reconstruir estado y enviar los diccionarios ya construidos en caso de ser necesario
+        # Hay dos posiblidades: o el diccionario esta completo (y solo hay que enviarlo)
+        # O esta incompleto (y hay que seguir escuchando de la cola para completarlo). Este
+        # caso es medio trivial, en cualquier caso se sigue escuchando
+        return
+
+    def _get_logging_file(self, client_id):
+        return f"distance_calculator/{self.name}_airport_log_{client_id}.txt"
