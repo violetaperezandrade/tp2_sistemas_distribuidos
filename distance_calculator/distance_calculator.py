@@ -11,32 +11,23 @@ NUMBER_CLIENTS = 3
 
 class DistanceCalculator:
 
-    def __init__(self, input_exchange, input_queue, output_queue):
+    def __init__(self, input_exchange, input_queue, output_queue, pipe):
         self.__middleware = QueueMiddleware()
         self.__airports_distances = {key: dict() for key in range(1, NUMBER_CLIENTS + 1)}
         self.__input_exchange = input_exchange
         self.__input_queue = input_queue
         self.__output_queue = output_queue
-        self.__airports_distances = {}
+        self.__pipe = pipe
 
-    def run(self):
+    def run(self, exchange_queue):
         signal.signal(signal.SIGTERM, self.__middleware.handle_sigterm)
         initialize_exchanges([self.__input_exchange], self.__middleware)
         initialize_queues([self.__input_queue, self.__output_queue],
                           self.__middleware)
-        self.__middleware.subscribe(self.__input_exchange,
-                                    self.__airport_callback)
         self.__middleware.listen_on(self.__input_queue,
                                     self.__flight_callback)
 
-    def __airport_callback(self, body):
-        register = json.loads(body)
-        if register["op_code"] == EOF_AIRPORTS_FILE:
-            self.__middleware.finish(True)
-            return
-        self.__store_value(register)
-
-    def __flight_callback(self, body):
+    def __flight_callback(self, body, method):
         register = json.loads(body)
         client_id = register["client_id"]
         if register["op_code"] == EOF_FLIGHTS_FILE:

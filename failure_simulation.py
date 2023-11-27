@@ -14,7 +14,7 @@ potentially_failing_single_nodes = ["group_by_route"]
 possible_failures = []
 for i in range(1, REPLICATED_NODES + 1):
     for node in potentially_failing_replicated_nodes:
-        possible_failures.append(f"{node}+_{str(i)}")
+        possible_failures.append(f"{node}_{str(i)}")
 possible_failures += potentially_failing_single_nodes
 
 
