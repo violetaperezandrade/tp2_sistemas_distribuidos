@@ -1,0 +1,30 @@
+version: '3.9'
+name: tp1
+services:
+  healthchecker_1:
+    container_name: healthchecker_1
+    image: healthchecker:latest
+    hostname: healthchecker_1
+    entrypoint: python3 /main.py
+    environment:
+      - ID=1
+      - TOTAL_AMOUNT=3
+      - LOGGING_LEVEL=INFO
+  healthchecker_2:
+    container_name: healthchecker_2
+    image: healthchecker:latest
+    hostname: healthchecker_2
+    entrypoint: python3 /main.py
+    environment:
+      - ID=2
+      - TOTAL_AMOUNT=3
+      - LOGGING_LEVEL=INFO
+  healthchecker_3:
+    container_name: healthchecker_3
+    image: healthchecker:latest
+    hostname: healthchecker_3
+    entrypoint: python3 /main.py
+    environment:
+      - ID=3
+      - TOTAL_AMOUNT=3
+      - LOGGING_LEVEL=INFO
