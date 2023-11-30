@@ -3,7 +3,6 @@ default: docker-compose-up
 all:
 
 # docker-image:
-# 	docker build -f ./avg_calculator/Dockerfile -t "avg_calculator:latest" .
 # 	docker build -f ./filter_by_average/Dockerfile -t "filter_by_average:latest" .
 # .PHONY: docker-image
 
@@ -28,7 +27,7 @@ docker-compose-hc-up: docker-image
 .PHONY: docker-compose-hc-up
 
 docker-compose-hc-down:
-	docker compose -f docker-compose-hc.yaml stop -t 20
+	docker compose -f docker-compose-hc.yaml stop -t 1
 	docker compose -f docker-compose-hc.yaml down --remove-orphans
 .PHONY: docker-compose-hc-down
 
