@@ -1,6 +1,6 @@
 import os
 import logging
-from healthchecker_v2 import HealthChecker
+from healthchecker import HealthChecker
 
 
 def main():
