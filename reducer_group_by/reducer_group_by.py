@@ -172,7 +172,7 @@ class ReducerGroupBy:
     def handle_unfinished_eof(self, data):
         for client_id in data.keys():
             if os.path.isdir(f"reducer_group_by/airports/client_{client_id}"):
-                airport_log_file = os.listdir(f"/airports/client_{client_id}")
+                airport_log_file = os.listdir(f"reducer_group_by/airports/client_{client_id}")
                 if len(airport_log_file) == len(data[client_id]):
                     log_to_file(self.state_log_filename, f"{client_id}")
                     continue
