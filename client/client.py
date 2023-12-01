@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import socket
 import logging
+from time import sleep
 
 
 class Client(ABC):
@@ -24,9 +25,7 @@ class Client(ABC):
         # logging.info(
         #     f"action: start_connection | host: {self._address[0]}"
         #     f"| port: {self._address[1]} | result: in_progress")
-        while True:
-            self._client_socket.connect(self._address)
-            break
+        self._client_socket.connect(self._address)
         # logging.info(
         #     f'action: start_connection | host: {self._address[0]} | '
         #     f'port: {self._address[1]} | result: success'
@@ -58,6 +57,6 @@ class Client(ABC):
         """
 
         # Connection arrived
-        logging.debug('action: close_connection | result: in_progress')
+        #logging.debug('action: close_connection | result: in_progress')
         self._client_socket.close()
-        logging.info('action: close_connection | result: success ')
+        #logging.info('action: close_connection | result: success ')

@@ -1,7 +1,6 @@
 import os
 import logging
-from health_checker import HealthChecker
-from healthchecker_v2 import HealthChecker2
+from healthchecker_v2 import HealthChecker
 
 
 def main():
@@ -10,7 +9,7 @@ def main():
     total_amount = int(os.environ['TOTAL_AMOUNT'])
     logging_level = os.environ["LOGGING_LEVEL"]
     initialize_log(logging_level)
-    health_checker = HealthChecker2(id, total_amount, name)
+    health_checker = HealthChecker(id, total_amount, name)
     health_checker.start()
 
 

@@ -11,6 +11,9 @@ services:
       - ID=3
       - TOTAL_AMOUNT=3
       - LOGGING_LEVEL=INFO
+    depends_on:
+      - healthchecker_1
+      - healthchecker_2
   healthchecker_2:
     container_name: healthchecker_2
     image: healthchecker:latest
@@ -22,7 +25,7 @@ services:
       - TOTAL_AMOUNT=3
       - LOGGING_LEVEL=INFO
     depends_on:
-      - healthchecker_3
+      - healthchecker_1
   healthchecker_1:
     container_name: healthchecker_1
     image: healthchecker:latest
@@ -33,6 +36,3 @@ services:
       - ID=1
       - TOTAL_AMOUNT=3
       - LOGGING_LEVEL=INFO
-    depends_on:
-      - healthchecker_2
-      - healthchecker_3

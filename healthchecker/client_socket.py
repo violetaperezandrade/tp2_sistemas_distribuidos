@@ -5,9 +5,8 @@ from client.client import Client
 
 
 class ClientSocket(Client):
-    def __init__(self, address, timeout=0):
+    def __init__(self, address):
         super().__init__(address)
-        self._client_socket.settimeout(timeout)
 
     def run(self):
         pass
