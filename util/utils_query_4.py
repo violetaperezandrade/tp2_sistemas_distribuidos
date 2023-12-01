@@ -1,3 +1,4 @@
+
 RESULT_FIELDS = ["legId", "route", "stopovers"]
 TOTAL_FARE_FIELD = "totalFare"
 

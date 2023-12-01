@@ -69,9 +69,13 @@ services:
       - group_by_id_1
       - group_by_id_2
       - group_by_id_3
+<<<<<<< HEAD
       - query_2_column_filter_1
       - query_2_column_filter_2
       - query_2_column_filter_3
+=======
+      - query_5_column_filter_1
+>>>>>>> recovery_query_5
   filter_by_three_stopovers_1:
     container_name: filter_by_three_stopovers_1
     image: filter_by_three_stopovers:latest
@@ -142,11 +146,11 @@ services:
       - PYTHONUNBUFFERED=1
       - REDUCERS_AMOUNT=3
       - FIELD_GROUP_BY=
-      - GROUP_BY_ID=True
       - INPUT_EXCHANGE=cleaned_flight_registers
       - LISTENING_QUEUE=filter_by_three_stopovers_groupby
       - QUEUE_GROUP_BY=filter_by_three_stopovers
       - INPUT_QUEUE=
+      - HANDLE_FLIGHTS_LOG=false
     depends_on: &id007
       - filter_by_three_stopovers_1
       - filter_by_three_stopovers_2
@@ -182,6 +186,7 @@ services:
       - LISTENING_QUEUE=group_by_route
       - INPUT_QUEUE=
       - SEVERAL_EOF=true
+      - HANDLE_FLIGHTS_LOG=true
     depends_on:
       - reducer_group_by_route_1
       - reducer_group_by_route_2
@@ -192,7 +197,7 @@ services:
     hostname: reducer_group_by_route_1
     entrypoint: python3 /main.py
     volumes: &id009
-      - ./reducer_group_by:/reducer_group_by:rw
+      - ./reducer_group_by/3:/reducer_group_by:rw
     environment:
       - PYTHONUNBUFFERED=1
       - FIELD_GROUP_BY=route
@@ -230,6 +235,7 @@ services:
       - QUERY_NUMBER=3
     depends_on:
       - query_handler
+<<<<<<< HEAD
   query_2_column_filter_1:
     container_name: query_2_column_filter_1
     image: column_cleaner:latest
@@ -290,3 +296,110 @@ services:
     volumes: *id019
     environment: *id017
     depends_on: *id018
+=======
+
+  query_5_column_filter_1:
+    container_name: query_5_column_filter_1
+    image: column_cleaner:latest
+    entrypoint: python3 /main.py
+    hostname: query_5_column_filter_1
+    volumes: *id004
+    environment:
+      - PYTHONUNBUFFERED=1
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - INPUT_QUEUE=query_5_filter_queue
+      - OUTPUT_QUEUE=mode_calculation
+      - REQUIRED_COLUMNS_FLIGHTS=op_code,client_id,startingAirport,baseFare,message_id
+      - CONNECTED_NODES=1
+      - ROUTING_KEY=flights
+    depends_on:
+      - group_by_airport
+
+  # group_by_route:
+  #   container_name: group_by_route
+  #   image: group_by:latest
+  #   entrypoint: python3 /main.py
+  #   hostname: group_by_route
+  #   volumes: *id008
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #     - REDUCERS_AMOUNT=3
+  #     - FIELD_GROUP_BY=startingAirport,destinationAirport
+  #     - INPUT_EXCHANGE=three_or_more_stopovers
+  #     - QUEUE_GROUP_BY=group_by_route_queue
+  #     - LISTENING_QUEUE=group_by_route
+  #     - INPUT_QUEUE=
+  #     - SEVERAL_EOF=true
+  #     - HANDLE_FLIGHTS_LOG=true
+  #   depends_on:
+  #     - reducer_group_by_route_1
+  #     - reducer_group_by_route_2
+  #     - reducer_group_by_route_3
+
+  group_by_airport:
+    container_name: group_by_airport
+    image: group_by:latest
+    entrypoint: python3 /main.py
+    hostname: group_by_airport
+    volumes: *id008
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
+      - FIELD_GROUP_BY=startingAirport
+      - INPUT_EXCHANGE=
+      - LISTENING_QUEUE=
+      - QUEUE_GROUP_BY=group_by_airport_queue
+      - INPUT_QUEUE=mode_calculation
+      - SEVERAL_EOF=false
+      - HANDLE_FLIGHTS_LOG=true
+    depends_on:
+      - reducer_group_by_airport_1
+      - reducer_group_by_airport_2
+      - reducer_group_by_airport_3
+
+  reducer_group_by_airport_1:
+    container_name: reducer_group_by_airport_1
+    image: reducer_group_by:latest
+    entrypoint: python3 /main.py
+    hostname: reducer_group_by_airport_1
+    volumes: &id010
+      - ./reducer_group_by/5:/reducer_group_by:rw
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=startingAirport
+      - INPUT_QUEUE=group_by_airport_queue_1
+      - OUTPUT_QUEUE=output_5
+      - QUERY_NUMBER=5
+    depends_on:
+      - query_handler
+
+  reducer_group_by_airport_2:
+    container_name: reducer_group_by_airport_2
+    image: reducer_group_by:latest
+    entrypoint: python3 /main.py
+    hostname: reducer_group_by_airport_2
+    volumes: *id010
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=startingAirport
+      - INPUT_QUEUE=group_by_airport_queue_2
+      - OUTPUT_QUEUE=output_5
+      - QUERY_NUMBER=5
+    depends_on:
+      - query_handler
+
+  reducer_group_by_airport_3:
+    container_name: reducer_group_by_airport_3
+    image: reducer_group_by:latest
+    entrypoint: python3 /main.py
+    hostname: reducer_group_by_airport_3
+    volumes: *id010
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=startingAirport
+      - INPUT_QUEUE=group_by_airport_queue_3
+      - OUTPUT_QUEUE=output_5
+      - QUERY_NUMBER=5
+    depends_on:
+      - query_handler
+>>>>>>> recovery_query_5
