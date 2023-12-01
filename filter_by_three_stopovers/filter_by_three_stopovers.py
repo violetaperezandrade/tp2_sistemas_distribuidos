@@ -7,7 +7,8 @@ from util.constants import (EOF_FLIGHTS_FILE, FLIGHT_REGISTER,
 from util.file_manager import log_to_file
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
-from util.recovery_logging import (get_missing_flights, correct_last_line)
+from util.recovery_logging import (get_missing_flights, correct_last_line, go_to_sleep)
+
 
 class FilterByThreeStopovers:
     def __init__(self, columns_to_filter, max_stopovers,
@@ -17,12 +18,11 @@ class FilterByThreeStopovers:
         self.__max_stopovers = max_stopovers
         self.__columns_to_filter = columns_to_filter
         self.__output_queue = output_queue
+        self.__name = name
         self.__input_queue = name
         self.__output_exchange = output_exchange
         self.__middleware = QueueMiddleware()
         self.reducers_amount = reducers_amount
-        self.state_log_file = "filter_by_three_stopovers/" + name + "_state_log.txt"
-        self.flights_log_file = "filter_by_three_stopovers/" + name + "_flights_log.txt"
         self.__missing_flights = [set() for _ in range(NUMBER_CLIENTS)]
         self.eof_status = [False] * NUMBER_CLIENTS
         self.__accepted_flights = [0] * NUMBER_CLIENTS
@@ -50,9 +50,9 @@ class FilterByThreeStopovers:
             self.__middleware.manual_ack(method)
             return
         if op_code == EOF_FLIGHTS_FILE:
-            log_to_file(self.state_log_file, f"{BEGIN_EOF},{message_id},{client_id},{self.__id}")
+            log_to_file(self.get_state_log_file(client_id), f"{BEGIN_EOF},{message_id},{client_id},{self.__id}")
             self.eof_status[index] = True
-            self.__accepted_flights[index] = get_missing_flights(self.flights_log_file,
+            self.__accepted_flights[index] = get_missing_flights(self.get_flights_log_file(client_id),
                                                                  self.__missing_flights[index],
                                                                  self.__id,
                                                                  self.reducers_amount,
@@ -69,7 +69,8 @@ class FilterByThreeStopovers:
                     self.__accepted_flights[index] += 1
                 self.__missing_flights[index].remove(message_id)
             self.send_and_log_eof(self.__accepted_flights[index], self.__id, client_id, message_id)
-        log_to_file(self.flights_log_file, f"{message_id},{client_id},{filtering_result}")
+        log_to_file(self.get_flights_log_file(client_id),
+                    f"{message_id},{client_id},{filtering_result}")
         self.__middleware.manual_ack(method)
 
     def filtering(self, flight):
@@ -102,34 +103,38 @@ class FilterByThreeStopovers:
 
     def recover_state_filters(self):
         processed_clients = []
-        if os.path.exists(self.state_log_file):
-            correct_last_line(self.state_log_file)
-            with open(self.state_log_file, 'r') as file:
-                try:
-                    for line in file.readlines():
-                        line = line.strip('\n')
-                        if line.endswith("#"):
-                            continue
-                        try:
-                            info, message_id, client_id, filter_id = tuple(line.split(","))
-                        except ValueError as e:
-                            continue
-                        if int(info) == BEGIN_EOF:
-                            client_id = int(client_id)
-                            if client_id in processed_clients:
+        for client in range(1, NUMBER_CLIENTS+1):
+            state_log_file = self.get_state_log_file(client)
+            if os.path.exists(state_log_file):
+                correct_last_line(state_log_file)
+                with open(state_log_file, 'r') as file:
+                    try:
+                        lines = file.readlines()
+                        for line in lines:
+                            if line.endswith("#\n"):
                                 continue
-                            processed_clients.append(client_id)
-                            index = client_id - 1
-                            self.eof_status[index] = True
-                            self.__accepted_flights[index] = get_missing_flights(self.flights_log_file,
-                                                                                 self.__missing_flights[index],
-                                                                                 self.__id,
-                                                                                 self.reducers_amount,
-                                                                                 int(message_id),
-                                                                                 client_id)
-                            self.send_and_log_eof(self.__accepted_flights[index], filter_id, client_id, message_id)
-                except IndexError as e:
-                    return
+                            try:
+                                info, message_id, client_id, filter_id = tuple(line.split(","))
+                            except ValueError as e:
+                                continue
+                            if int(info) == BEGIN_EOF:
+                                client_id = int(client_id)
+                                if client_id in processed_clients:
+                                    continue
+                                processed_clients.append(client_id)
+                                if f"{EOF_SENT},{client}\n" in lines:
+                                    continue
+                                index = client_id - 1
+                                self.eof_status[index] = True
+                                self.__accepted_flights[index] = get_missing_flights(self.get_flights_log_file(client_id),
+                                                                                     self.__missing_flights[index],
+                                                                                     self.__id,
+                                                                                     self.reducers_amount,
+                                                                                     int(message_id),
+                                                                                     client_id)
+                                self.send_and_log_eof(self.__accepted_flights[index], filter_id, client_id, message_id)
+                    except IndexError as e:
+                        return
 
     def send_and_log_eof(self, accepted_flights, filter_id, client_id, message_id):
         if len(self.__missing_flights[client_id - 1]) == 0:
@@ -138,4 +143,12 @@ class FilterByThreeStopovers:
             self.__middleware.publish(self.__output_exchange,
                                       json.dumps(eof))
             self.__middleware.send_message(self.__output_queue, json.dumps(eof))
-            log_to_file(self.state_log_file, f"{EOF_SENT},{eof.get('client_id')}")
+            log_to_file(self.get_state_log_file(client_id), f"{EOF_SENT},{eof.get('client_id')}")
+
+    def get_flights_log_file(self, client_id):
+        file = f"filter_by_three_stopovers/{self.__name}_client_{client_id}_flights_log.txt"
+        return file
+
+    def get_state_log_file(self, client_id):
+        file = f"filter_by_three_stopovers/{self.__name}_client_{client_id}_state_log.txt"
+        return file

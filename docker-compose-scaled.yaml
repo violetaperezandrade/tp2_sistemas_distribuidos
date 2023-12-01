@@ -300,16 +300,35 @@ services:
     entrypoint: python3 /main.py
     hostname: query_5_column_filter_1
     volumes: *id004
-    environment:
+    environment: &id020
       - PYTHONUNBUFFERED=1
       - INPUT_EXCHANGE=cleaned_flight_registers
       - INPUT_QUEUE=query_5_filter_queue
       - OUTPUT_QUEUE=mode_calculation
       - REQUIRED_COLUMNS_FLIGHTS=op_code,client_id,startingAirport,baseFare,message_id
-      - CONNECTED_NODES=1
+      - CONNECTED_NODES=3
       - ROUTING_KEY=flights
     depends_on:
       - group_by_airport
+  query_5_column_filter_2:
+    container_name: query_5_column_filter_2
+    image: column_cleaner:latest
+    entrypoint: python3 /main.py
+    hostname: query_5_column_filter_2
+    volumes: *id004
+    environment: *id020
+    depends_on:
+      - group_by_airport
+  query_5_column_filter_3:
+    container_name: query_5_column_filter_3
+    image: column_cleaner:latest
+    entrypoint: python3 /main.py
+    hostname: query_5_column_filter_3
+    volumes: *id004
+    environment: *id020
+    depends_on:
+      - group_by_airport
+
   group_by_airport:
     container_name: group_by_airport
     image: group_by:latest

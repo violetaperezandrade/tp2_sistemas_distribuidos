@@ -86,35 +86,7 @@ class ReducerGroupBy:
         self.save_in_airport_file(flight)
         self.handle_client_message(flight)
         self.queue_middleware.manual_ack(method)
-    
-    # def __read_file(self):
-    #     with open(self.__filename, "r") as file:
-    #         for line in file:
-    #             flight = json.loads(line)
-    #             flight_group_by_field = flight[self.field_group_by]
-    #             flights_list = self.grouped.pop(
-    #                 flight_group_by_field, [])
-    #             flights_list.append(flight)
-    #             self.grouped[flight_group_by_field] = flights_list
-    #
-    # def __read_file_and_send(self):
-    #     for flight_file in self.files:
-    #         all_flights = []
-    #         with open(flight_file, "r") as file:
-    #             for line in file:
-    #                 all_flights.append(json.loads(line))
-    #         msg = self.operations_map.get(self.query_number,
-    #                                       lambda _: None)(all_flights)
-    #         self.queue_middleware.send_message(self.output_queue,
-    #                                            json.dumps(msg))
-    #
-    # def save_flights_to_file(self, flight_list):
-    #     for flight in flight_list:
-    #         filename = flight[self.field_group_by] + ".txt"
-    #         if filename not in self.files:
-    #             self.files.append(filename)
-    #         with open(filename, "a") as file:
-    #             file.write(json.dumps(flight) + '\n')
+
 
     def generate_q3_result_message(self, client_id, method):
         with open(self.result_log_filename, "r") as file:
@@ -193,8 +165,14 @@ class ReducerGroupBy:
         if client_id not in self.flights_received.keys():
             self.flights_received[client_id] = set()
         for airport in airports_logs:
-            with open( f"reducer_group_by/airports/client_{client_id}/{airport}", 'r') as f:
+            filename = f"reducer_group_by/airports/client_{client_id}/{airport}"
+            correct_last_line(filename)
+            with open(filename, 'r') as f:
                 for line in f:
+                    if line.endswith("#\n"):
+                        print(line)
+                        print("skipeada")
+                        continue
                     self.flights_received[client_id].add(line.split(",")[0])
  
     def recover_process_state_file_q5(self):
@@ -250,6 +228,8 @@ class ReducerGroupBy:
         base_fares = []
         with open( f"reducer_group_by/airports/client_{client_id}/{airport}", 'r') as f:
             for line in f:
+                if line.endswith("#\n"):
+                    continue
                 base_fares.append(float(line.replace("\n", "").split(",")[1]))
         
         message = handle_query_5(airport.split(".")[0], base_fares)
