@@ -170,8 +170,6 @@ class ReducerGroupBy:
             with open(filename, 'r') as f:
                 for line in f:
                     if line.endswith("#\n"):
-                        print(line)
-                        print("skipeada")
                         continue
                     self.flights_received[client_id].add(line.split(",")[0])
  

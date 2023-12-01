@@ -38,11 +38,11 @@ class FilterByAverage:
             return
         self.__send_flights_over_average()
 
-    def __callback_avg(self, body):
+    def __callback_avg(self, body, method):
         self.__avg = json.loads(body)["avg"]
         self.__middleware.finish(True)
 
-    def __callback_filter(self, body):
+    def __callback_filter(self, body, method):
         flight = json.loads(body)
         op_code = flight.get("op_code")
         if op_code > FLIGHT_REGISTER:

@@ -78,9 +78,9 @@ services:
       - group_by_id_1_avg
       - group_by_id_2_avg
       - group_by_id_3_avg
-      - filter_by_avg_1
-      - filter_by_avg_2
-      - filter_by_avg_3
+      - filter_by_average_1
+      - filter_by_average_2
+      - filter_by_average_3
   filter_by_three_stopovers_1:
     container_name: filter_by_three_stopovers_1
     image: filter_by_three_stopovers:latest
@@ -476,7 +476,7 @@ services:
       - ID=2
     depends_on: *id031
 
-  filter_by_average_2:
+  filter_by_average_3:
     container_name: filter_by_average_3
     image: filter_by_average:latest
     entrypoint: python3 /main.py
@@ -491,7 +491,6 @@ services:
       - INPUT_EXCHANGE_2=cleaned_flight_registers
       - ID=3
     depends_on: *id031
-
 
   group_by_id_1_avg:
     container_name: group_by_id_1_avg

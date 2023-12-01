@@ -57,7 +57,6 @@ def correct_last_line(filename):
     with open(filename, 'a+') as file:
         line = file.read()
         if not line.endswith("\n") and line != "#":
-            print(line)
             file.write('#\n')
             file.flush()
 

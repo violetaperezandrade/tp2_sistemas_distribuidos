@@ -26,7 +26,7 @@ class AvgCalculator:
                                     self.__callback,
                                     self.__input_queue)
 
-    def __callback(self, body):
+    def __callback(self, body, method):
         flight = json.loads(body)
         op_code = flight.get("op_code")
         if op_code == AVG_READY:
