@@ -17,6 +17,8 @@ docker-image:
 	docker build -f ./group_by/Dockerfile -t "group_by:latest" .
 	docker build -f ./reducer_group_by/Dockerfile -t "reducer_group_by:latest" .
 	docker build -f ./distance_calculator/Dockerfile -t "distance_calculator:latest" .
+	docker build -f ./avg_calculator/Dockerfile -t "avg_calculator:latest" .
+	docker build -f ./filter_by_average/Dockerfile -t "filter_by_average:latest" .
 .PHONY: docker-image
 
 docker-compose-up: docker-image
@@ -41,6 +43,7 @@ docker-compose-scaled-up: docker-image
 	sudo rm -f filter_by_three_stopovers/*.txt
 	sudo rm -r reducer_group_by/3
 	sudo rm -r reducer_group_by/5
+	sudo rm -r reducer_group_by/4
 	docker compose -f docker-compose-scaled.yaml up -d --build
 .PHONY: docker-compose-up
 
