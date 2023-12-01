@@ -39,7 +39,7 @@ class QueueMiddleware:
     # Work queue methods
     def listen_on(self, queue_name, user_function):
         self.create_queue(queue_name)
-        self.__channel.basic_qos(prefetch_count=30)
+        self.__channel.basic_qos(prefetch_count=200)
         self.__setup_message_consumption(queue_name, user_function)
 
     def send_message(self, queue_name, message):

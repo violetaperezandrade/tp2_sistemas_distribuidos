@@ -39,12 +39,7 @@ class DictionaryCreator:
                                                 f"{register.get('client_id')}")
 
             self.total_lens[int(client_id) - 1] = required_length
-            # Aca se esta enviando el diccionario como esta al momento de recibir el eof
-            # Pero podria estar incompleto, asi que en realidad habria que logear el eof primero
-            # y verificar para cada mensaje posterior si se completa el diccionario
             self.send_if_complete(client_id)
-            # log_to_file(self.log_file, f"{EOF_SENT},{register.get('message_id')},"
-            #                            f"{register.get('client_id')}")
             self.__middleware.manual_ack(method)
             return
         self.__store_value(register)
@@ -77,7 +72,7 @@ class DictionaryCreator:
                 correct_last_line(self._get_logging_file(client_id))
                 with open(self._get_logging_file(client_id), 'r') as file:
                     for line in file:
-                        if line.endswith("#"):
+                        if line.endswith("#\n"):
                             continue
                         airport_code, latitude, longitude = tuple(line.split(","))
                         self.__airports_distances[client_id][airport_code] = (latitude, longitude)
@@ -85,7 +80,7 @@ class DictionaryCreator:
             correct_last_line(self.airport_state_log)
             with open(self.airport_state_log, 'r') as file:
                 for line in file:
-                    if line.endswith("#"):
+                    if line.endswith("#\n"):
                         continue
                     _, total_len, client_id = tuple(line.split(","))
                     client_id = int(client_id) - 1
