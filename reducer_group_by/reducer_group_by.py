@@ -134,6 +134,7 @@ class ReducerGroupBy:
             with open(self.result_log_filename, "w") as file:
                 for i in range(self.n_clients):
                     file.write('\n')
+                    file.flush()
 
     def spread_eof(self, client_id, method=None):
         if self.query_number == 3:
@@ -170,7 +171,7 @@ class ReducerGroupBy:
 
     def handle_unfinished_eof(self, data):
         for client_id in data.keys():
-            if os.path.isdir(f"/airports/client_{client_id}"):
+            if os.path.isdir(f"reducer_group_by/airports/client_{client_id}"):
                 airport_log_file = os.listdir(f"/airports/client_{client_id}")
                 if len(airport_log_file) == len(data[client_id]):
                     log_to_file(self.state_log_filename, f"{client_id}")
@@ -184,15 +185,15 @@ class ReducerGroupBy:
 
     def recover_processing_clients_data(self, data):
         for client_id in range(1, self.n_clients + 1):
-            if client_id not in data.keys() and int(client_id) not in self.processed_clients and os.path.isdir(f"/airports/client_{client_id}"):
-                airport_log_file = os.listdir(f"/airports/client_{client_id}")
+            if client_id not in data.keys() and int(client_id) not in self.processed_clients and os.path.isdir(f"reducer_group_by/airports/client_{client_id}"):
+                airport_log_file = os.listdir(f"reducer_group_by/airports/client_{client_id}")
                 self.recover_processed_client_airports_q5(client_id, airport_log_file)
     
     def recover_processed_client_airports_q5(self, client_id, airports_logs):
         if client_id not in self.flights_received.keys():
             self.flights_received[client_id] = set()
         for airport in airports_logs:
-            with open( f"/airports/client_{client_id}/{airport}", 'r') as f:
+            with open( f"reducer_group_by/airports/client_{client_id}/{airport}", 'r') as f:
                 for line in f:
                     self.flights_received[client_id].add(line.split(",")[0])
  
@@ -222,22 +223,20 @@ class ReducerGroupBy:
         return client_unfinished
     
     def save_in_airport_file(self, flight):
-        filename = f"/airports/client_{flight['client_id']}/{flight[self.field_group_by]}.txt"
+        filename = f"reducer_group_by/airports/client_{flight['client_id']}/{flight[self.field_group_by]}.txt"
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         with open(filename, "a+") as file:
             file.write(f"{flight['message_id']},{flight['baseFare']}\n")
 
     def generate_q5_result_message(self, client_id, method):
         sent_first_log = False
-        for airport in os.listdir(f"/airports/client_{client_id}"):
+        for airport in os.listdir(f"reducer_group_by/airports/client_{client_id}"):
             self.handle_airport_file(client_id, airport)
             # send ack after writing fist line in state log
             if method and not sent_first_log:
                 sent_first_log = True
                 self.queue_middleware.manual_ack(method)
         log_to_file(self.state_log_filename, f"{client_id}")
-        print("go to sleep")
-        time.sleep(60)
     
 
     def handle_client_message(self, flight):
@@ -249,7 +248,7 @@ class ReducerGroupBy:
 
     def handle_airport_file(self, client_id, airport):
         base_fares = []
-        with open( f"/airports/client_{client_id}/{airport}", 'r') as f:
+        with open( f"reducer_group_by/airports/client_{client_id}/{airport}", 'r') as f:
             for line in f:
                 base_fares.append(float(line.replace("\n", "").split(",")[1]))
         

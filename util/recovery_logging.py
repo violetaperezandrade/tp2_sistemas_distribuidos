@@ -58,6 +58,7 @@ def correct_last_line(filename):
         line = file.read()
         if not line.endswith("\n") and line != "#":
             file.write('#\n')
+            file.flush()
 
 
 def recover_broken_line(lines, temp_file, old_file, log_file):
