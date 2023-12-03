@@ -82,6 +82,10 @@ class ReducerGroupBy:
         if int(client_id) in self.processed_clients:
             self.queue_middleware.manual_ack(method)
             return
+        if self.processed_flight(flight):
+            print(f"procesado {flight['message_id']}")
+            self.queue_middleware.manual_ack(method)
+            return
         if op_code == EOF_FLIGHTS_FILE:
             self.spread_eof(client_id, method)
             return
@@ -225,8 +229,6 @@ class ReducerGroupBy:
     def handle_client_message(self, flight):
         message_id = flight["message_id"]
         client_id = flight["client_id"]
-        if client_id not in self.flights_received.keys():
-            self.flights_received[client_id] = set()
         self.flights_received[client_id].add(message_id)
 
     def handle_airport_file(self, client_id, airport):
@@ -252,51 +254,63 @@ class ReducerGroupBy:
         if int(client_id) in self.processed_clients:
             self.queue_middleware.manual_ack(method)
             return
+        if self.processed_flight(flight):
+            print(f"procesado {flight['message_id']}")
+            self.queue_middleware.manual_ack(method)
+            return
         if op_code == EOF_FLIGHTS_FILE:
             self.spread_eof(client_id, method)
             return
         self.handle_flight_avg(flight)
         self.save_in_route_file_q4(flight)
         if self.n == 150:
-            pass
-            # print(flight)
-            # print("go to sleep")
-            #time.sleep(60)
+            print(flight)
+            print("go to sleep")
+            time.sleep(60)
         self.queue_middleware.manual_ack(method)
         self.n = self.n + 1
+    
+    def processed_flight(self, flight):
+        client_id = flight.get("client_id")
+        message_id = flight.get("message_id")
+        if client_id not in self.flights_received.keys():
+            self.flights_received[client_id] = set()
 
+        return message_id in self.flights_received[client_id]
 
     def save_in_route_file_q4(self, flight):
         filename = f"reducer_group_by/{self.name}/client_{flight['client_id']}/{flight['route']}.txt"
         client_id = flight.get("client_id")
         message_id = flight["message_id"]
         route = flight.get("route")
-        line = f"{message_id},{self.query_4_results[client_id][route]['sum']},{self.query_4_results[client_id][route]['count']}"
+        line = f"{message_id},{self.query_4_results[client_id][route]['sum']},{self.query_4_results[client_id][route]['max']},{self.query_4_results[client_id][route]['count']}"
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         with open(filename, "a+") as file:
             file.write(f"{line}\n")
             file.flush()
-
     def handle_flight_avg(self, flight):
         client_id = flight.get("client_id")
         message_id = flight.get("message_id")
         route = flight.get("route")
-        if client_id not in self.flights_received.keys():
-            self.flights_received[client_id] = set()
         self.handle_avg_results(client_id, route, float(flight["totalFare"]))
         self.flights_received[client_id].add(message_id)
     
     def handle_avg_results(self, client_id, route, totalFare):
+        print(2)
+        print(self.query_4_results)
         if client_id not in self.query_4_results.keys():
             self.query_4_results[client_id] = dict()
-        
+        print(3)
+        print(self.query_4_results)
         if route not in self.query_4_results[client_id].keys():
             self.query_4_results[client_id][route] = dict()
             self.query_4_results[client_id][route]["sum"] = 0
             self.query_4_results[client_id][route]["count"] = 0
+            self.query_4_results[client_id][route]["max"] = 0
         
         self.query_4_results[client_id][route]["sum"] += totalFare 
         self.query_4_results[client_id][route]["count"] += 1
+        self.query_4_results[client_id][route]["max"] = max(totalFare, self.query_4_results[client_id][route]["max"])
 
 
     def generate_q4_result_message(self, client_id, method):
@@ -313,20 +327,22 @@ class ReducerGroupBy:
         sum = 0
         count = 1
         avg = 0
+        max_tFare = 0
         filename = f"reducer_group_by/{self.name}/client_{client_id}/{route}"
         with FileReadBackwards(filename, encoding="utf-8") as f:
             for line in f:
-                if line.endswith("#\n"):
-                    continue
-                values = line.split(",")
-                sum = float(values[1])
-                count = int(values[2])
-                if count > 0:
-                    avg = sum / count
-                break
+                if "#\n" not in line:
+                    values = line.split(",")
+                    sum = float(values[1])
+                    max_tFare = float(values[2])
+                    count = int(values[3])
+                    if count > 0:
+                        avg = sum / count
+                    break
 
         message = dict()
         message["avg"] = avg
+        message["max"] = max_tFare
         message["client_id"] = client_id
         message["route"] = route.split(".")[0]
         message["query_number"] = self.query_number
@@ -360,9 +376,10 @@ class ReducerGroupBy:
 
     def recover_processing_clients_data_q4(self, data):
         for client_id in range(1, self.n_clients + 1):
-            if client_id not in data.keys() and int(client_id) not in self.processed_clients and os.path.isdir(f"reducer_group_by/logs"):
+            if client_id not in data.keys() and int(client_id) not in self.processed_clients and os.path.isdir(f"reducer_group_by/{self.name}/client_{client_id}"):
                 #print("here 1")
-                self.recover_processed_client_avg_q4(client_id)
+                log_files = os.listdir(f"reducer_group_by/{self.name}/client_{client_id}")
+                self.recover_processed_client_avg_q4(client_id,log_files)
         #print(self.flights_received)
 
     def recover_processed_client_avg_q4(self, client_id, route_logs):
@@ -384,7 +401,11 @@ class ReducerGroupBy:
                         self.query_4_results[client_id][route] = dict()
                         self.query_4_results[client_id][route]["sum"] = 0
                         self.query_4_results[client_id][route]["count"] = 0
+                        self.query_4_results[client_id][route]["max"] = 0
                     
                     self.query_4_results[client_id][route]["sum"] = float(values[1])
-                    self.query_4_results[client_id][route]["count"] = int(values[2])
+                    self.query_4_results[client_id][route]["max"] = float(values[2])
+                    self.query_4_results[client_id][route]["count"] += 1
                     self.flights_received[client_id].add(values[0])
+        print(1)
+        print(self.query_4_results)
