@@ -39,6 +39,9 @@ class ResultHandler:
         client_id = result.get('client_id')
         client_id = int(client_id)
         result_id = result.get('result_id', message_id)
+        result.pop('result_id', None)
+        result.pop('client_id', None)
+        result.pop('message_id', None)
         query_number = result.get('query_number')
         if result_id in self.results[client_id]:
             self.__middleware.manual_ack(method)

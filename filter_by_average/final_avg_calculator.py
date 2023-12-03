@@ -5,7 +5,7 @@ from util.constants import NUMBER_CLIENTS, AVG_READY
 from util.file_manager import log_to_file
 from util.initialization import initialize_queues, initialize_exchanges
 from util.queue_middleware import QueueMiddleware
-from util.recovery_logging import create_if_necessary, correct_last_line
+from util.recovery_logging import create_if_necessary, correct_last_line, delete_client_data
 
 
 class FinalAvgCalculator:
@@ -17,12 +17,14 @@ class FinalAvgCalculator:
         self.__pipe = pipe
         self.__name = name
         self.__exchange_queue = f"{exchange_queue}_{id}"
+        self.main_path = f"filter_by_average/{self.__name}"
         self.__sent_eof = {i: False for i in range(1, NUMBER_CLIENTS + 1)}
 
     def run(self):
         initialize_queues([self.__exchange_queue], self.__middleware)
         initialize_exchanges([self.__avg_exchange], self.__middleware)
         self.recover_state()
+        os.makedirs(self.main_path, exist_ok=True)
         self.__middleware.subscribe(self.__avg_exchange, self.callback_avg, self.__exchange_queue)
 
     def callback_avg(self, body, method):
@@ -44,7 +46,7 @@ class FinalAvgCalculator:
         sum = 0
         count = 0
         valid_lines = 0
-        if os.path.exists(f"filter_by_average/{self.__name}/client_{client_id}_avg_log.txt"):
+        if os.path.exists(filepath):
             correct_last_line(filepath)
             with open(filepath, 'r') as file:
                 for line in file:
@@ -74,6 +76,5 @@ class FinalAvgCalculator:
         return total_avg
 
     def get_avg_file(self, client_id):
-        create_if_necessary(f"filter_by_average/{self.__name}")
-        file = f"filter_by_average/{self.__name}/client_{client_id}_avg_log.txt"
+        file = f"{self.main_path}/client_{client_id}_avg_log.txt"
         return file

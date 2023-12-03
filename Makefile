@@ -44,7 +44,9 @@ docker-compose-scaled-up: docker-image
 	sudo rm -r filter_by_average/filter_by_average_1 || true
 	sudo rm -r filter_by_average/filter_by_average_2 || true
 	sudo rm -r filter_by_average/filter_by_average_3 || true
-	sudo rm -f filter_by_three_stopovers/*.txt
+	sudo rm -r filter_by_three_stopovers/filter_by_three_stopovers_1 || true
+	sudo rm -r filter_by_three_stopovers/filter_by_three_stopovers_2 || true
+	sudo rm -r filter_by_three_stopovers/filter_by_three_stopovers_3 || true
 	docker compose -f docker-compose-scaled.yaml up -d --build
 .PHONY: docker-compose-up
 

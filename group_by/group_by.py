@@ -76,6 +76,7 @@ class GroupBy():
         if op_code == EOF_FLIGHTS_FILE:
             if self.requires_several_eof:
                 self.handle_several_eofs(flight)
+
             else:
                 self.handle_eof(flight)
             self.queue_middleware.manual_ack(method)

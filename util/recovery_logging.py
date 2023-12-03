@@ -87,11 +87,26 @@ def correct_last_line(filename):
             file.flush()
 
 
-def delete_client_data(client_id, folder_path=None, file_path=None):
+def get_flights_log_file(path, client_id):
+    file = f"{path}/client_{client_id}_flights_log.txt"
+    return file
+
+
+def get_state_log_file(path):
+    file = f"{path}/state_log.txt"
+    return file
+
+
+def delete_client_data(folder_path=None, file_path=None):
     if folder_path is not None:
-        shutil.rmtree(file_path, ignore_errors=True)
-    elif file_path is not None and os.path.exists(file_path):
-        os.remove(file_path)
+        shutil.rmtree(folder_path, ignore_errors=True)
+        return
+    if file_path is not None:
+        try:
+            print(f"Deleting {file_path}")
+            os.remove(file_path)
+        except FileNotFoundError:
+            pass
 
 
 def recover_broken_line(lines, temp_file, old_file, log_file):
@@ -143,6 +158,6 @@ def create_if_necessary(path):
 
 
 def go_to_sleep():
-    sleepytime = randint(2, 5)
+    sleepytime = randint(10, 15)
     print(f"Going to sleep for {sleepytime}")
     sleep(sleepytime)
