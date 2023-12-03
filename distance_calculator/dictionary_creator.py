@@ -37,7 +37,6 @@ class DictionaryCreator:
             required_length = register["message_id"] - 1
             log_to_file(self.airport_state_log, f"{BEGIN_EOF},{register.get('message_id')},"
                                                 f"{register.get('client_id')}")
-
             self.total_lens[int(client_id) - 1] = required_length
             self.send_if_complete(client_id)
             self.__middleware.manual_ack(method)
@@ -83,8 +82,9 @@ class DictionaryCreator:
                     if line.endswith("#\n"):
                         continue
                     _, total_len, client_id = tuple(line.split(","))
-                    client_id = int(client_id) - 1
-                    self.total_lens[client_id] = total_len
+                    client_id = int(client_id)
+                    index = client_id-1
+                    self.total_lens[index] = int(total_len)-1
                     for client_id in range(1, NUMBER_CLIENTS+1):
                         self.send_if_complete(client_id)
         return

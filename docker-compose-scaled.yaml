@@ -75,12 +75,10 @@ services:
       - query_5_column_filter_1
       - query_5_column_filter_2
       - query_5_column_filter_3
-      # - group_by_id_1_avg
-      # - group_by_id_2_avg
-      # - group_by_id_3_avg
-      # - filter_by_average_1
-      # - filter_by_average_2
-      # - filter_by_average_3
+      - group_by_id_avg_1
+      - group_by_id_avg_2
+      - group_by_id_avg_3
+
   filter_by_three_stopovers_1:
     container_name: filter_by_three_stopovers_1
     image: filter_by_three_stopovers:latest
@@ -407,195 +405,212 @@ services:
       - query_handler
 
 
-  # avg_calculator_1:
-  #   container_name: avg_calculator_1
-  #   image: avg_calculator:latest
-  #   entrypoint: python3 /main.py
-  #   hostname: avg_calculator_1
-  #   volumes: &id020
-  #     - ./avg_calculator:/avg_calculator:rw
-  #   environment: &id021
-  #     - PYTHONUNBUFFERED=1
-  #     - INPUT_QUEUE=avg_queue
-  #     - OUTPUT_EXCHANGE=flights_avg
-  #     - INPUT_EXCHANGE=cleaned_flight_registers
-  #   depends_on: &id022
-  #     - filter_by_average_1
-  #     - filter_by_average_2
-  #     - filter_by_average_3
+  avg_calculator_1:
+    container_name: avg_calculator_1
+    image: avg_calculator:latest
+    entrypoint: python3 /main.py
+    hostname: avg_calculator_1
+    volumes: &id020
+      - ./avg_calculator:/avg_calculator:rw
+    environment:
+      - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=avg_queue
+      - ID=1
+      - OUTPUT_EXCHANGE=partial_avg_results
+      - EXCHANGE_QUEUE=partial_results_queue
+      - REDUCERS_AMOUNT=3
+    depends_on: &id022
+      - filter_by_average_1
+      - filter_by_average_2
+      - filter_by_average_3
 
-  # avg_calculator_2:
-  #   container_name: avg_calculator_2
-  #   image: avg_calculator:latest
-  #   entrypoint: python3 /main.py
-  #   hostname: avg_calculator_2
-  #   volumes: *id020
-  #   environment: *id021
-  #   depends_on: *id022
+  avg_calculator_2:
+    container_name: avg_calculator_2
+    image: avg_calculator:latest
+    entrypoint: python3 /main.py
+    hostname: avg_calculator_2
+    volumes: *id020
+    environment:
+      - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=avg_queue
+      - ID=2
+      - OUTPUT_EXCHANGE=partial_avg_results
+      - EXCHANGE_QUEUE=partial_results_queue
+      - REDUCERS_AMOUNT=3
+    depends_on: *id022
 
-  # avg_calculator_3:
-  #   container_name: avg_calculator_3
-  #   image: avg_calculator:latest
-  #   entrypoint: python3 /main.py
-  #   hostname: avg_calculator_3
-  #   volumes: *id020
-  #   environment: *id021
-  #   depends_on: *id022
+  avg_calculator_3:
+    container_name: avg_calculator_3
+    image: avg_calculator:latest
+    entrypoint: python3 /main.py
+    hostname: avg_calculator_3
+    volumes: *id020
+    environment:
+      - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=avg_queue
+      - ID=3
+      - OUTPUT_EXCHANGE=partial_avg_results
+      - EXCHANGE_QUEUE=partial_results_queue
+      - REDUCERS_AMOUNT=3
+    depends_on: *id022
 
-  # filter_by_average_1:
-  #   container_name: filter_by_average_1
-  #   image: filter_by_average:latest
-  #   entrypoint: python3 /main.py
-  #   hostname: filter_by_average_1
-  #   volumes: &id030
-  #     - ./filter_by_average:/filter_by_average:rw
-  #   environment:
-  #     - PYTHONUNBUFFERED=1
-  #     - REDUCERS_AMOUNT=3
-  #     - INPUT_QUEUE=cleaned_column_queue
-  #     - OUTPUT_QUEUE=filtered_by_average
-  #     - INPUT_EXCHANGE_1=flights_avg
-  #     - INPUT_EXCHANGE_2=cleaned_flight_registers
-  #     - ID=1
-  #   depends_on: &id031
-  #     - group_by_route_query_4
-  
-  # filter_by_average_2:
-  #   container_name: filter_by_average_2
-  #   image: filter_by_average:latest
-  #   entrypoint: python3 /main.py
-  #   hostname: filter_by_average_2
-  #   volumes: *id030
-  #   environment:
-  #     - PYTHONUNBUFFERED=1
-  #     - REDUCERS_AMOUNT=3
-  #     - INPUT_QUEUE=cleaned_column_queue
-  #     - OUTPUT_QUEUE=filtered_by_average
-  #     - INPUT_EXCHANGE_1=flights_avg
-  #     - INPUT_EXCHANGE_2=cleaned_flight_registers
-  #     - ID=2
-  #   depends_on: *id031
+  filter_by_average_1:
+    container_name: filter_by_average_1
+    image: filter_by_average:latest
+    entrypoint: python3 /main.py
+    hostname: filter_by_average_1
+    volumes: &id030
+      - ./filter_by_average:/filter_by_average:rw
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
+      - INPUT_QUEUE=filter_queue
+      - OUTPUT_QUEUE=filtered_by_average
+      - INPUT_EXCHANGE=partial_avg_results
+      - EXCHANGE_QUEUE=partial_avg_final_calculator
+      - ID=1
+    depends_on: &id031
+      - query_handler
 
-  # filter_by_average_3:
-  #   container_name: filter_by_average_3
-  #   image: filter_by_average:latest
-  #   entrypoint: python3 /main.py
-  #   hostname: filter_by_average_3
-  #   volumes: *id030
-  #   environment:
-  #     - PYTHONUNBUFFERED=1
-  #     - REDUCERS_AMOUNT=3
-  #     - INPUT_QUEUE=cleaned_column_queue
-  #     - OUTPUT_QUEUE=filtered_by_average
-  #     - INPUT_EXCHANGE_1=flights_avg
-  #     - INPUT_EXCHANGE_2=cleaned_flight_registers
-  #     - ID=3
-  #   depends_on: *id031
+  filter_by_average_2:
+    container_name: filter_by_average_2
+    image: filter_by_average:latest
+    entrypoint: python3 /main.py
+    hostname: filter_by_average_2
+    volumes: *id030
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
+      - INPUT_QUEUE=filter_queue
+      - OUTPUT_QUEUE=filtered_by_average
+      - INPUT_EXCHANGE=partial_avg_results
+      - EXCHANGE_QUEUE=partial_avg_final_calculator
+      - ID=2
+    depends_on: *id031
 
-  # group_by_id_1_avg:
-  #   container_name: group_by_id_1_avg
-  #   image: group_by:latest
-  #   entrypoint: python3 /main.py
-  #   hostname: group_by_id_1_avg
-  #   volumes: *id008
-  #   environment: &id041
-  #     - PYTHONUNBUFFERED=1
-  #     - REDUCERS_AMOUNT=3
-  #     - FIELD_GROUP_BY=
-  #     - INPUT_EXCHANGE=cleaned_flight_registers
-  #     - LISTENING_QUEUE=avg_calculator_groupby
-  #     - QUEUE_GROUP_BY=avg_queue
-  #     - INPUT_QUEUE=
-  #     - HANDLE_FLIGHTS_LOG=false
-  #   depends_on: &id040
-  #     - avg_calculator_1
-  #     - avg_calculator_2
-  #     - avg_calculator_3
+  filter_by_average_3:
+    container_name: filter_by_average_3
+    image: filter_by_average:latest
+    entrypoint: python3 /main.py
+    hostname: filter_by_average_3
+    volumes: *id030
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
+      - INPUT_QUEUE=filter_queue
+      - OUTPUT_QUEUE=filtered_by_average
+      - INPUT_EXCHANGE=partial_avg_results
+      - EXCHANGE_QUEUE=partial_avg_final_calculator
+      - ID=3
+    depends_on: *id031
 
-  # group_by_id_2_avg:
-  #   container_name: group_by_id_2_avg
-  #   image: group_by:latest
-  #   entrypoint: python3 /main.py
-  #   hostname: group_by_id_2_avg
-  #   volumes: *id008
-  #   environment: *id041
-  #   depends_on: *id040
+  group_by_id_avg_1:
+    container_name: group_by_id_avg_1
+    image: group_by:latest
+    entrypoint: python3 /main.py
+    hostname: group_by_id_avg_1
+    volumes: *id008
+    environment: &id041
+      - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
+      - FIELD_GROUP_BY=
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - LISTENING_QUEUE=avg_calculator_groupby
+      - QUEUE_GROUP_BY=avg_queue
+      - QUEUE_GROUP_BY_SECONDARY=filter_queue
+      - INPUT_QUEUE=
+      - HANDLE_FLIGHTS_LOG=false
+    depends_on: &id040
+      - avg_calculator_1
+      - avg_calculator_2
+      - avg_calculator_3
+      - filter_by_average_1
+      - filter_by_average_2
+      - filter_by_average_3
 
-  # group_by_id_3_avg:
-  #   container_name: group_by_id_3_avg
-  #   image: group_by:latest
-  #   entrypoint: python3 /main.py
-  #   hostname: group_by_id_3_avg
-  #   volumes: *id008
-  #   environment: *id041
-  #   depends_on: *id040
+  group_by_id_avg_2:
+    container_name: group_by_id_avg_2
+    image: group_by:latest
+    entrypoint: python3 /main.py
+    hostname: group_by_id_avg_2
+    volumes: *id008
+    environment: *id041
+    depends_on: *id040
 
-  # group_by_route_query_4:
-  #   container_name: group_by_route_query_4
-  #   image: group_by:latest
-  #   entrypoint: python3 /main.py
-  #   hostname: group_by_route_query_4
-  #   volumes:
-  #     - ./group_by_route_query_4:/group_by_route_query_4:rw
-  #   environment:
-  #     - PYTHONUNBUFFERED=1
-  #     - REDUCERS_AMOUNT=3
-  #     - EOF_REQUIRED=1
-  #     - FIELD_GROUP_BY=startingAirport,destinationAirport
-  #     - LISTENING_QUEUE=
-  #     - INPUT_EXCHANGE=
-  #     - QUEUE_GROUP_BY=group_by_route_queue_q4
-  #     - INPUT_QUEUE=filtered_by_average
-  #     - SEVERAL_EOF=true
-  #     - HANDLE_FLIGHTS_LOG=true
-  #   depends_on:
-  #     - reducer_group_by_route_q4_1
-  #     - reducer_group_by_route_q4_2
-  #     - reducer_group_by_route_q4_3
+  group_by_id_avg_3:
+    container_name: group_by_id_avg_3
+    image: group_by:latest
+    entrypoint: python3 /main.py
+    hostname: group_by_id_avg_3
+    volumes: *id008
+    environment: *id041
+    depends_on: *id040
 
-  # reducer_group_by_route_q4_1:
-  #   container_name: reducer_group_by_route_q4_1
-  #   image: reducer_group_by:latest
-  #   entrypoint: python3 /main.py
-  #   hostname: reducer_group_by_route_q4_1
-  #   volumes: &id050
-  #     - ./reducer_group_by/4:/reducer_group_by_route:rw
-  #   environment:
-  #     - PYTHONUNBUFFERED=1
-  #     - FIELD_GROUP_BY=route
-  #     - INPUT_QUEUE=group_by_route_queue_q4_1
-  #     - OUTPUT_QUEUE=output_4
-  #     - QUERY_NUMBER=4
-  #   depends_on:
-  #     - query_handler
+  group_by_route_query_4:
+     container_name: group_by_route_query_4
+     image: group_by:latest
+     entrypoint: python3 /main.py
+     hostname: group_by_route_query_4
+     volumes: *id008
+     environment:
+       - PYTHONUNBUFFERED=1
+       - REDUCERS_AMOUNT=3
+       - EOF_REQUIRED=1
+       - FIELD_GROUP_BY=startingAirport,destinationAirport
+       - LISTENING_QUEUE=
+       - INPUT_EXCHANGE=
+       - QUEUE_GROUP_BY=group_by_route_queue_q4
+       - INPUT_QUEUE=filtered_by_average
+       - SEVERAL_EOF=true
+       - HANDLE_FLIGHTS_LOG=true
+     depends_on:
+       - reducer_group_by_route_q4_1
+       - reducer_group_by_route_q4_2
+       - reducer_group_by_route_q4_3
+
+  reducer_group_by_route_q4_1:
+     container_name: reducer_group_by_route_q4_1
+     image: reducer_group_by:latest
+     entrypoint: python3 /main.py
+     hostname: reducer_group_by_route_q4_1
+     volumes: &id050
+       - ./reducer_group_by/4:/reducer_group_by:rw
+     environment:
+       - PYTHONUNBUFFERED=1
+       - FIELD_GROUP_BY=route
+       - INPUT_QUEUE=group_by_route_queue_q4_1
+       - OUTPUT_QUEUE=output_4
+       - QUERY_NUMBER=4
+     depends_on:
+       - query_handler
 
 
-  # reducer_group_by_route_q4_2:
-  #   container_name: reducer_group_by_route_q4_2
-  #   image: reducer_group_by:latest
-  #   entrypoint: python3 /main.py
-  #   hostname: reducer_group_by_route_q4_2
-  #   volumes: *id050
-  #   environment: 
-  #     - PYTHONUNBUFFERED=1
-  #     - FIELD_GROUP_BY=route
-  #     - INPUT_QUEUE=group_by_route_queue_q4_2
-  #     - OUTPUT_QUEUE=output_4
-  #     - QUERY_NUMBER=4
-  #   depends_on: 
-  #     - query_handler
+  reducer_group_by_route_q4_2:
+     container_name: reducer_group_by_route_q4_2
+     image: reducer_group_by:latest
+     entrypoint: python3 /main.py
+     hostname: reducer_group_by_route_q4_2
+     volumes: *id050
+     environment:
+       - PYTHONUNBUFFERED=1
+       - FIELD_GROUP_BY=route
+       - INPUT_QUEUE=group_by_route_queue_q4_2
+       - OUTPUT_QUEUE=output_4
+       - QUERY_NUMBER=4
+     depends_on:
+       - query_handler
 
-  # reducer_group_by_route_q4_3:
-  #   container_name: reducer_group_by_route_q4_3
-  #   image: reducer_group_by:latest
-  #   entrypoint: python3 /main.py
-  #   hostname: reducer_group_by_route_q4_3
-  #   volumes: *id050
-  #   environment: 
-  #     - PYTHONUNBUFFERED=1
-  #     - FIELD_GROUP_BY=route
-  #     - INPUT_QUEUE=group_by_route_queue_q4_3
-  #     - OUTPUT_QUEUE=output_4
-  #     - QUERY_NUMBER=4
-  #   depends_on: 
-  #     - query_handler
+  reducer_group_by_route_q4_3:
+     container_name: reducer_group_by_route_q4_3
+     image: reducer_group_by:latest
+     entrypoint: python3 /main.py
+     hostname: reducer_group_by_route_q4_3
+     volumes: *id050
+     environment:
+       - PYTHONUNBUFFERED=1
+       - FIELD_GROUP_BY=route
+       - INPUT_QUEUE=group_by_route_queue_q4_3
+       - OUTPUT_QUEUE=output_4
+       - QUERY_NUMBER=4
+     depends_on:
+       - query_handler

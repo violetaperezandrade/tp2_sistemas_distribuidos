@@ -6,10 +6,12 @@ import pika
 def main():
 
     input_queue = os.getenv("INPUT_QUEUE", None)
-    input_exchange = os.getenv("INPUT_EXCHANGE", None)
     output_exchange = os.getenv("OUTPUT_EXCHANGE", None)
-    avg_calculator = AvgCalculator("totalFare", output_exchange,
-                                   input_exchange, input_queue)
+    node_id = int(os.getenv("ID", None))
+    name = os.getenv("HOSTNAME", None)
+    total_reducers = int(os.getenv("TOTAL_REDUCERS", 3))
+    avg_calculator = AvgCalculator("totalFare", output_exchange, input_queue,
+                                   node_id, name, total_reducers)
     try:
         avg_calculator.run()
     except pika.exceptions.ChannelWrongStateError:

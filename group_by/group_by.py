@@ -20,13 +20,18 @@ CLIENT_ID = 3
 class GroupBy():
     def __init__(self, fields_group_by, input_exchange,
                  reducers_amount, queue_group_by, listening_queue,
-                 input_queue, name, requires_several_eof, handle_flights_logs):
+                 input_queue, name, requires_several_eof, handle_flights_logs,
+                 queue_group_by_secondary):
         self.queue_middleware = QueueMiddleware()
         self.input_exchange = input_exchange
         self.input_queue = input_queue
         self.reducers_amount = reducers_amount
         self.reducers = [
             f"{queue_group_by}_{i}" for i in range(1, reducers_amount + 1)]
+        self.reducers_secondary = []
+        if queue_group_by_secondary is not None:
+            self.reducers_secondary = [
+                f"{queue_group_by_secondary}_{i}" for i in range(1, reducers_amount + 1)]
         self.listening_queue = listening_queue
         self.group_by_id = (fields_group_by == [""])
         self.handle_group_by_fields(fields_group_by)
@@ -84,6 +89,9 @@ class GroupBy():
             output_queue = self.__get_output_queue(flight, self.field_group_by)
         self.queue_middleware.send_message(self.reducers[output_queue],
                                            json.dumps(flight))
+        if len(self.reducers_secondary) > 0:
+            self.queue_middleware.send_message(self.reducers_secondary[output_queue],
+                                               json.dumps(flight))
         if self.requires_several_eof or self.handle_flights_logs:
             self.handle_reducer_message_per_client(client_id, output_queue, flight, message_id)
         self.queue_middleware.manual_ack(method)
@@ -97,7 +105,7 @@ class GroupBy():
         log_to_file(self.state_log_filename, f"{BEGIN_EOF},{message_id},{client_id}")
         messages_sent = floor((flight["message_id"] - 1) / self.reducers_amount)
         module = (flight["message_id"] - 1) % self.reducers_amount
-        for reducer in self.reducers:
+        for reducer in self.reducers + self.reducers_secondary:
             flight["messages_sent"] = messages_sent
             if (int(reducer[-1])) <= module:
                 flight["messages_sent"] = messages_sent + 1

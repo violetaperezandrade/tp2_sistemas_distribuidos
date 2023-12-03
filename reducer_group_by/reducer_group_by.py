@@ -3,7 +3,6 @@ import json
 import signal
 import os
 import time
-import pika
 from file_read_backwards import FileReadBackwards
 
 from util.recovery_logging import correct_last_line, check_files
@@ -52,14 +51,14 @@ class ReducerGroupBy:
 
     def __callback(self, body, method):
         flight = json.loads(body)
-        if self.query_number == 4:
-            self.callback_query_5(flight, method)
-        
-        elif self.query_number == 3:
+        if self.query_number == 3:
             self.callback_query_3(flight, method)
         
-        elif self.query_number == 5:
+        elif self.query_number == 4:
             self.callback_query_4(flight, method)
+        
+        elif self.query_number == 5:
+            self.callback_query_5(flight, method)
 
 
     def callback_query_3(self, flight, method):
@@ -116,19 +115,19 @@ class ReducerGroupBy:
         if self.query_number == 3:
             self.generate_q3_result_message(client_id, method)
         elif self.query_number == 4:
-            self.generate_q5_result_message(client_id, method)
-        elif self.query_number == 5:
             self.generate_q4_result_message(client_id, method)
+        elif self.query_number == 5:
+            self.generate_q5_result_message(client_id, method)
 
 
     def recover_state(self):
         if self.query_number == 3:
             self.recover_state_q3()
         
-        elif self.query_number == 5:
+        elif self.query_number == 4:
             self.recover_state_q4()
 
-        elif self.query_number == 4:
+        elif self.query_number == 5:
             self.recover_state_q5()
 
 
@@ -146,7 +145,6 @@ class ReducerGroupBy:
     def recover_state_q5(self):
         self.flights_received = dict()
         data = self.recover_process_state_file()
-        print(data)
         self.handle_unfinished_eof(data)
         self.recover_processing_clients_data(data)
 
@@ -260,9 +258,10 @@ class ReducerGroupBy:
         self.handle_flight_avg(flight)
         self.save_in_route_file_q4(flight)
         if self.n == 150:
-            print(flight)
-            print("go to sleep")
-            time.sleep(60)
+            pass
+            # print(flight)
+            # print("go to sleep")
+            #time.sleep(60)
         self.queue_middleware.manual_ack(method)
         self.n = self.n + 1
 
@@ -282,6 +281,8 @@ class ReducerGroupBy:
         client_id = flight.get("client_id")
         message_id = flight.get("message_id")
         route = flight.get("route")
+        if client_id not in self.flights_received.keys():
+            self.flights_received[client_id] = set()
         self.handle_avg_results(client_id, route, float(flight["totalFare"]))
         self.flights_received[client_id].add(message_id)
     
@@ -338,7 +339,7 @@ class ReducerGroupBy:
     def recover_state_q4(self):
         self.flights_received = dict()
         data = self.recover_process_state_file()
-        print(data)
+        #print(data)
         self.handle_unfinished_eof_q4(data)
         self.recover_processing_clients_data_q4(data)
 
@@ -349,7 +350,7 @@ class ReducerGroupBy:
                 if len(route_log_file) == len(data[client_id]):
                     log_to_file(self.state_log_filename, f"{client_id}")
                     continue
-                print(route_log_file)
+                #print(route_log_file)
                 for route in route_log_file:
                     route_code = route.split(".")[0]
                     if route_code not in data[client_id]:
@@ -360,9 +361,9 @@ class ReducerGroupBy:
     def recover_processing_clients_data_q4(self, data):
         for client_id in range(1, self.n_clients + 1):
             if client_id not in data.keys() and int(client_id) not in self.processed_clients and os.path.isdir(f"reducer_group_by/logs"):
-                print("here 1")
+                #print("here 1")
                 self.recover_processed_client_avg_q4(client_id)
-        print(self.flights_received)
+        #print(self.flights_received)
 
     def recover_processed_client_avg_q4(self, client_id, route_logs):
         if client_id not in self.flights_received.keys():

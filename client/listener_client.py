@@ -48,10 +48,10 @@ class ListenerClient(Client):
                     self._eof = True
                     return
             result = protocol.decode_query_result(payload)
-            query_number = result.pop('query_number')
-            result_id = result.pop("result_id", None)
-            message_id = result.pop("message_id", None)
-            client_id = result.pop("client_id", None)
+            query_number = result.get('query_number')
+            # result_id = result.pop("result_id", None)
+            # message_id = result.pop("message_id", None)
+            client_id = result.get("client_id", None)
             # print(f"QUERY {query_number}:"
             #       f"{result}")
             index = 5 * (client_id-1) + query_number

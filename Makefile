@@ -2,11 +2,6 @@ default: docker-compose-up
 
 all:
 
-# docker-image:
-# 	docker build -f ./avg_calculator/Dockerfile -t "avg_calculator:latest" .
-# 	docker build -f ./filter_by_average/Dockerfile -t "filter_by_average:latest" .
-# .PHONY: docker-image
-
 docker-image:
 	docker build -f ./server/Dockerfile -t "server:latest" .
 	docker build -f ./client/Dockerfile -t "client:latest" .
@@ -43,6 +38,12 @@ docker-compose-scaled-up: docker-image
 	sudo rm -r reducer_group_by/3 || true
 	sudo rm -r reducer_group_by/5 || true
 	sudo rm -r reducer_group_by/4 || true
+	sudo rm -r avg_calculator/avg_calculator_1 || true
+	sudo rm -r avg_calculator/avg_calculator_2 || true
+	sudo rm -r avg_calculator/avg_calculator_3 || true
+	sudo rm -r filter_by_average/filter_by_average_1 || true
+	sudo rm -r filter_by_average/filter_by_average_2 || true
+	sudo rm -r filter_by_average/filter_by_average_3 || true
 	sudo rm -f filter_by_three_stopovers/*.txt
 	docker compose -f docker-compose-scaled.yaml up -d --build
 .PHONY: docker-compose-up

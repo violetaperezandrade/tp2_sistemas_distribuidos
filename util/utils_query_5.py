@@ -7,20 +7,6 @@ def get_max_values(list_frequencies):
     return max_baseFare_flights
 
 
-# def handle_query_5(flights_list):
-#     price_frequency = {}
-#     result = {"startingAirport": flights_list[0]["startingAirport"]}
-#     for flight in flights_list:
-#         baseFare = flight["baseFare"]
-#         if baseFare in price_frequency:
-#             price_frequency[baseFare] += 1
-#         else:
-#             price_frequency[baseFare] = 1
-#     list_frequencies = list(price_frequency.items())
-#     list_frequencies.sort(key=lambda x: x[1], reverse=True)
-#     result["price_mode"] = get_max_values(list_frequencies)
-#     return result
-
 def handle_query_5(airport, base_fare_list):
     price_frequency = {}
     result = {"startingAirport": airport}

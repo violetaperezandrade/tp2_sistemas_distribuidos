@@ -1,12 +1,15 @@
 import os
 from random import randint
 from time import sleep
+import shutil
 
-from util.constants import EOF_SENT, ACCEPTED
+from util.constants import EOF_SENT, ACCEPTED, EOF_FLIGHTS_FILE
 
 MESSAGE_ID = 0
 CLIENT_ID = 1
 FILTERING_RESULT = 2
+SUM = 1
+COUNT = 2
 
 
 def recover_state(filename):
@@ -53,6 +56,29 @@ def get_missing_flights(filename, missing_flight_set, first_message,
     return len(accepted_flights)
 
 
+def get_missing_flights_for_avg_calculation(filename, missing_flight_set, first_message,
+                                            total_reducers, eof_message_id):
+    for i in range(first_message, eof_message_id, total_reducers):
+        missing_flight_set.add(i)
+    return get_updated_sum_and_count(filename, missing_flight_set)
+
+
+def get_updated_sum_and_count(filename, missing_flight_set=None):
+    correct_last_line(filename)
+    with open(filename, 'r') as file:
+        for line in file:
+            if line.endswith("#\n"):
+                continue
+            line = line.split(",")
+            message_id = int(line[MESSAGE_ID])
+            sum = float(line[SUM])
+            count = int(line[COUNT])
+            if missing_flight_set is not None:
+                if message_id in missing_flight_set:
+                    missing_flight_set.remove(message_id)
+    return sum, count
+
+
 def correct_last_line(filename):
     with open(filename, 'a+') as file:
         line = file.read()
@@ -60,13 +86,18 @@ def correct_last_line(filename):
             file.write('#\n')
             file.flush()
 
+
+def delete_client_data(client_id, folder_path=None, file_path=None):
+    if folder_path is not None:
+        shutil.rmtree(file_path, ignore_errors=True)
+    elif file_path is not None and os.path.exists(file_path):
+        os.remove(file_path)
+
+
 def recover_broken_line(lines, temp_file, old_file, log_file):
-    # escribir nuevo archivo valido
     with open(temp_file, 'w+') as file:
         file.writelines(lines)
-    # renombrar archivo viejo
     os.rename(log_file, old_file)
-    # borrar archivo viejo
     os.remove(old_file)
     os.rename(temp_file, log_file)
 
@@ -88,6 +119,15 @@ def check_files(directory, log_file):
     return
 
 
+def create_eof_flights_message_filters(accepted_flights, filter_id, client_id):
+    register = dict()
+    register["op_code"] = EOF_FLIGHTS_FILE
+    register["messages_sent"] = int(accepted_flights)
+    register["client_id"] = int(client_id)
+    register["filter_id"] = int(filter_id)
+    return register
+
+
 def duplicated_message(filename, result_id):
     if os.path.exists(filename):
         with open(filename, 'r') as file:
@@ -98,7 +138,14 @@ def duplicated_message(filename, result_id):
     return False
 
 
+def create_if_necessary(path):
+    try:
+        os.makedirs(path)
+    except FileExistsError:
+        pass
+
+
 def go_to_sleep():
-    sleepytime = randint(10, 20)
+    sleepytime = randint(2, 5)
     print(f"Going to sleep for {sleepytime}")
     sleep(sleepytime)
