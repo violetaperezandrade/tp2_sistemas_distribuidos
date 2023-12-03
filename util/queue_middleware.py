@@ -76,4 +76,5 @@ class QueueMiddleware:
         self.__channel.stop_consuming()
 
     def __del__(self):
-        self.__connection.close()
+        pass
+        #self.__connection.close()

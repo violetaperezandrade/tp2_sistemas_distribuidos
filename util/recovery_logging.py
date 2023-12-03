@@ -139,10 +139,7 @@ def duplicated_message(filename, result_id):
 
 
 def create_if_necessary(path):
-    try:
-        os.makedirs(path)
-    except FileExistsError:
-        pass
+    os.makedirs(path, exist_ok=True)
 
 
 def go_to_sleep():

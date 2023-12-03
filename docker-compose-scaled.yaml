@@ -23,7 +23,8 @@ services:
       - ./result_handler:/result_handler:rw
     environment:
       - PYTHONUNBUFFERED=1
-      - LISTEN_BACKLOG=1
+      - LISTEN_BACKLOG=5
+      - TOTAL_CLIENTS=3
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -39,17 +40,58 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
-  client:
-    container_name: client
+  client_1:
+    container_name: client_1
     image: client:latest
     entrypoint: python3 /main.py
+    hostname: client_1
     volumes:
       - ./results:/results:rw
       - type: bind
         source: ./client/itineraries_random_demo.csv
         target: /itineraries.csv
+      - type: bind
+        source: ./client/airports-codepublic.csv
+        target: /airports-codepublic.csv
     environment:
       - PYTHONUNBUFFERED=1
+      - ID=1
+    depends_on:
+      - server
+  client_2:
+    container_name: client_2
+    image: client:latest
+    entrypoint: python3 /main.py
+    hostname: client_2
+    volumes:
+      - ./results:/results:rw
+      - type: bind
+        source: ./client/itineraries_random_demo.csv
+        target: /itineraries.csv
+      - type: bind
+        source: ./client/airports-codepublic.csv
+        target: /airports-codepublic.csv
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ID=2
+    depends_on:
+      - server
+  client_3:
+    container_name: client_3
+    image: client:latest
+    entrypoint: python3 /main.py
+    hostname: client_3
+    volumes:
+      - ./results:/results:rw
+      - type: bind
+        source: ./client/itineraries_random_demo.csv
+        target: /itineraries.csv
+      - type: bind
+        source: ./client/airports-codepublic.csv
+        target: /airports-codepublic.csv
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ID=3
     depends_on:
       - server
   initial_column_cleaner_1:

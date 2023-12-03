@@ -32,7 +32,7 @@ docker-compose-logs:
 docker-compose-scaled-up: docker-image
 	sudo rm -f distance_calculator/*.txt
 	sudo rm -f group_by/*.txt
-	sudo rm -f results/*.txt
+	sudo rm -r results || true
 	sudo rm -f column_cleaner/*.txt
 	sudo rm -f result_handler/*.txt
 	sudo rm -r reducer_group_by/3 || true
