@@ -150,8 +150,8 @@ class ReducerGroupBy:
 
     def handle_unfinished_eof(self, data):
         for client_id in data.keys():
-            if os.path.isdir(f"reducer_group_by/airports/client_{client_id}"):
-                airport_log_file = os.listdir(f"reducer_group_by/airports/client_{client_id}")
+            if os.path.isdir(f"reducer_group_by/{self.name}/client_{client_id}"):
+                airport_log_file = os.listdir(f"reducer_group_by/{self.name}/client_{client_id}")
                 if len(airport_log_file) == len(data[client_id]):
                     log_to_file(self.state_log_filename, f"{client_id}")
                     continue
@@ -164,15 +164,15 @@ class ReducerGroupBy:
 
     def recover_processing_clients_data(self, data):
         for client_id in range(1, self.n_clients + 1):
-            if client_id not in data.keys() and int(client_id) not in self.processed_clients and os.path.isdir(f"reducer_group_by/airports/client_{client_id}"):
-                airport_log_file = os.listdir(f"reducer_group_by/airports/client_{client_id}")
+            if client_id not in data.keys() and int(client_id) not in self.processed_clients and os.path.isdir(f"reducer_group_by/{self.name}/client_{client_id}"):
+                airport_log_file = os.listdir(f"reducer_group_by/{self.name}/client_{client_id}")
                 self.recover_processed_client_airports_q5(client_id, airport_log_file)
     
     def recover_processed_client_airports_q5(self, client_id, airports_logs):
         if client_id not in self.flights_received.keys():
             self.flights_received[client_id] = set()
         for airport in airports_logs:
-            filename = f"reducer_group_by/airports/client_{client_id}/{airport}"
+            filename = f"reducer_group_by/{self.name}/client_{client_id}/{airport}"
             correct_last_line(filename)
             with open(filename, 'r') as f:
                 for line in f:
@@ -206,14 +206,14 @@ class ReducerGroupBy:
         return client_unfinished
     
     def save_in_airport_file(self, flight):
-        filename = f"reducer_group_by/airports/client_{flight['client_id']}/{flight[self.field_group_by]}.txt"
+        filename = f"reducer_group_by/{self.name}/client_{flight['client_id']}/{flight[self.field_group_by]}.txt"
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         with open(filename, "a+") as file:
             file.write(f"{flight['message_id']},{flight['baseFare']}\n")
 
     def generate_q5_result_message(self, client_id, method):
         sent_first_log = False
-        for airport in os.listdir(f"reducer_group_by/airports/client_{client_id}"):
+        for airport in os.listdir(f"reducer_group_by/{self.name}/client_{client_id}"):
             self.handle_airport_file(client_id, airport)
             # send ack after writing fist line in state log   
             if method and not sent_first_log:
@@ -231,7 +231,7 @@ class ReducerGroupBy:
 
     def handle_airport_file(self, client_id, airport):
         base_fares = []
-        with open( f"reducer_group_by/airports/client_{client_id}/{airport}", 'r') as f:
+        with open( f"reducer_group_by/{self.name}/client_{client_id}/{airport}", 'r') as f:
             for line in f:
                 if line.endswith("#\n"):
                     continue
@@ -267,7 +267,7 @@ class ReducerGroupBy:
 
 
     def save_in_route_file_q4(self, flight):
-        filename = f"reducer_group_by/avgs/client_{flight['client_id']}/{flight['route']}.txt"
+        filename = f"reducer_group_by/{self.name}/client_{flight['client_id']}/{flight['route']}.txt"
         client_id = flight.get("client_id")
         message_id = flight["message_id"]
         route = flight.get("route")
@@ -301,7 +301,7 @@ class ReducerGroupBy:
 
     def generate_q4_result_message(self, client_id, method):
         sent_first_log = False
-        for route in os.listdir(f"reducer_group_by/avgs/client_{client_id}"):
+        for route in os.listdir(f"reducer_group_by/{self.name}/client_{client_id}"):
             self.handle_route_file(client_id, route)
             # send ack after writing fist line in state log
             if method and not sent_first_log:
@@ -313,7 +313,7 @@ class ReducerGroupBy:
         sum = 0
         count = 1
         avg = 0
-        filename = f"reducer_group_by/avgs/client_{client_id}/{route}"
+        filename = f"reducer_group_by/{self.name}/client_{client_id}/{route}"
         with FileReadBackwards(filename, encoding="utf-8") as f:
             for line in f:
                 if line.endswith("#\n"):
@@ -345,8 +345,8 @@ class ReducerGroupBy:
 
     def handle_unfinished_eof_q4(self, data):
         for client_id in data.keys():
-            if os.path.isdir(f"reducer_group_by/avgs/client_{client_id}"):
-                route_log_file = os.listdir(f"reducer_group_by/avgs/client_{client_id}")
+            if os.path.isdir(f"reducer_group_by/{self.name}/client_{client_id}"):
+                route_log_file = os.listdir(f"reducer_group_by/{self.name}/client_{client_id}")
                 if len(route_log_file) == len(data[client_id]):
                     log_to_file(self.state_log_filename, f"{client_id}")
                     continue
@@ -369,7 +369,7 @@ class ReducerGroupBy:
         if client_id not in self.flights_received.keys():
             self.flights_received[client_id] = set()
         for file in route_logs:
-            filename = f"reducer_group_by/avgs/client_{client_id}/{file}"
+            filename = f"reducer_group_by/{self.name}/client_{client_id}/{file}"
             correct_last_line(filename)
             with open(filename, 'r') as f:
                 for line in f:
