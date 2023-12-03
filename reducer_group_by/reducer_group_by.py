@@ -83,7 +83,6 @@ class ReducerGroupBy:
             self.queue_middleware.manual_ack(method)
             return
         if self.processed_flight(flight):
-            print(f"procesado {flight['message_id']}")
             self.queue_middleware.manual_ack(method)
             return
         if op_code == EOF_FLIGHTS_FILE:
@@ -255,7 +254,6 @@ class ReducerGroupBy:
             self.queue_middleware.manual_ack(method)
             return
         if self.processed_flight(flight):
-            print(f"procesado {flight['message_id']}")
             self.queue_middleware.manual_ack(method)
             return
         if op_code == EOF_FLIGHTS_FILE:
@@ -263,10 +261,6 @@ class ReducerGroupBy:
             return
         self.handle_flight_avg(flight)
         self.save_in_route_file_q4(flight)
-        if self.n == 150:
-            print(flight)
-            print("go to sleep")
-            time.sleep(60)
         self.queue_middleware.manual_ack(method)
         self.n = self.n + 1
     
@@ -296,12 +290,8 @@ class ReducerGroupBy:
         self.flights_received[client_id].add(message_id)
     
     def handle_avg_results(self, client_id, route, totalFare):
-        print(2)
-        print(self.query_4_results)
         if client_id not in self.query_4_results.keys():
             self.query_4_results[client_id] = dict()
-        print(3)
-        print(self.query_4_results)
         if route not in self.query_4_results[client_id].keys():
             self.query_4_results[client_id][route] = dict()
             self.query_4_results[client_id][route]["sum"] = 0
@@ -355,7 +345,6 @@ class ReducerGroupBy:
     def recover_state_q4(self):
         self.flights_received = dict()
         data = self.recover_process_state_file()
-        #print(data)
         self.handle_unfinished_eof_q4(data)
         self.recover_processing_clients_data_q4(data)
 
@@ -366,7 +355,6 @@ class ReducerGroupBy:
                 if len(route_log_file) == len(data[client_id]):
                     log_to_file(self.state_log_filename, f"{client_id}")
                     continue
-                #print(route_log_file)
                 for route in route_log_file:
                     route_code = route.split(".")[0]
                     if route_code not in data[client_id]:
@@ -377,10 +365,8 @@ class ReducerGroupBy:
     def recover_processing_clients_data_q4(self, data):
         for client_id in range(1, self.n_clients + 1):
             if client_id not in data.keys() and int(client_id) not in self.processed_clients and os.path.isdir(f"reducer_group_by/{self.name}/client_{client_id}"):
-                #print("here 1")
                 log_files = os.listdir(f"reducer_group_by/{self.name}/client_{client_id}")
                 self.recover_processed_client_avg_q4(client_id,log_files)
-        #print(self.flights_received)
 
     def recover_processed_client_avg_q4(self, client_id, route_logs):
         if client_id not in self.flights_received.keys():
@@ -407,5 +393,3 @@ class ReducerGroupBy:
                     self.query_4_results[client_id][route]["max"] = float(values[2])
                     self.query_4_results[client_id][route]["count"] += 1
                     self.flights_received[client_id].add(values[0])
-        print(1)
-        print(self.query_4_results)
