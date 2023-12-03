@@ -4,6 +4,7 @@ import signal
 import os
 import time
 import pika
+from file_read_backwards import FileReadBackwards
 
 from util.recovery_logging import correct_last_line, check_files
 from util.initialization import initialize_queues
@@ -38,6 +39,8 @@ class ReducerGroupBy:
         self.flights_log_filename = "reducer_group_by/" + name + "_flights_log.txt"
         self.processed_clients = []
         self.name = name
+        self.query_4_results = dict()
+        self.n = 0
 
     def run(self):
         signal.signal(signal.SIGTERM, self.queue_middleware.handle_sigterm)
@@ -49,14 +52,14 @@ class ReducerGroupBy:
 
     def __callback(self, body, method):
         flight = json.loads(body)
-        if self.query_number == 5:
+        if self.query_number == 4:
             self.callback_query_5(flight, method)
         
         elif self.query_number == 3:
             self.callback_query_3(flight, method)
         
-        elif self.query_number == 4:
-            pass
+        elif self.query_number == 5:
+            self.callback_query_4(flight, method)
 
 
     def callback_query_3(self, flight, method):
@@ -102,17 +105,20 @@ class ReducerGroupBy:
             self.queue_middleware.manual_ack(method)
 
     def initialize_result_log(self):
-        if not os.path.exists(self.result_log_filename):
-            with open(self.result_log_filename, "w") as file:
-                for i in range(self.n_clients):
-                    file.write('\n')
-                    file.flush()
+        if self.query_number == 3:
+            if not os.path.exists(self.result_log_filename):
+                with open(self.result_log_filename, "w") as file:
+                    for i in range(self.n_clients):
+                        file.write('\n')
+                        file.flush()
 
     def spread_eof(self, client_id, method=None):
         if self.query_number == 3:
             self.generate_q3_result_message(client_id, method)
-        else:
+        elif self.query_number == 4:
             self.generate_q5_result_message(client_id, method)
+        elif self.query_number == 5:
+            self.generate_q4_result_message(client_id, method)
 
 
     def recover_state(self):
@@ -120,8 +126,10 @@ class ReducerGroupBy:
             self.recover_state_q3()
         
         elif self.query_number == 5:
-            self.recover_state_q5()
+            self.recover_state_q4()
 
+        elif self.query_number == 4:
+            self.recover_state_q5()
 
 
     def recover_state_q3(self):
@@ -137,7 +145,8 @@ class ReducerGroupBy:
 
     def recover_state_q5(self):
         self.flights_received = dict()
-        data = self.recover_process_state_file_q5()
+        data = self.recover_process_state_file()
+        print(data)
         self.handle_unfinished_eof(data)
         self.recover_processing_clients_data(data)
 
@@ -173,7 +182,7 @@ class ReducerGroupBy:
                         continue
                     self.flights_received[client_id].add(line.split(",")[0])
  
-    def recover_process_state_file_q5(self):
+    def recover_process_state_file(self):
         client_finished = set()
         client_unfinished = dict()
         if os.path.exists(self.state_log_filename):
@@ -208,7 +217,7 @@ class ReducerGroupBy:
         sent_first_log = False
         for airport in os.listdir(f"reducer_group_by/airports/client_{client_id}"):
             self.handle_airport_file(client_id, airport)
-            # send ack after writing fist line in state log
+            # send ack after writing fist line in state log   
             if method and not sent_first_log:
                 sent_first_log = True
                 self.queue_middleware.manual_ack(method)
@@ -237,3 +246,144 @@ class ReducerGroupBy:
         self.queue_middleware.send_message(self.output_queue,
                                         json.dumps(message))
         log_to_file(self.state_log_filename, f"{client_id},{airport.split('.')[0]}")
+
+
+    def callback_query_4(self, flight, method):
+        op_code = flight.get("op_code")
+        client_id = flight.get("client_id")
+        if int(client_id) in self.processed_clients:
+            self.queue_middleware.manual_ack(method)
+            return
+        if op_code == EOF_FLIGHTS_FILE:
+            self.spread_eof(client_id, method)
+            return
+        self.handle_flight_avg(flight)
+        self.save_in_route_file_q4(flight)
+        if self.n == 150:
+            print(flight)
+            print("go to sleep")
+            time.sleep(60)
+        self.queue_middleware.manual_ack(method)
+        self.n = self.n + 1
+
+
+    def save_in_route_file_q4(self, flight):
+        filename = f"reducer_group_by/avgs/client_{flight['client_id']}/{flight['route']}.txt"
+        client_id = flight.get("client_id")
+        message_id = flight["message_id"]
+        route = flight.get("route")
+        line = f"{message_id},{self.query_4_results[client_id][route]['sum']},{self.query_4_results[client_id][route]['count']}"
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        with open(filename, "a+") as file:
+            file.write(f"{line}\n")
+            file.flush()
+
+    def handle_flight_avg(self, flight):
+        client_id = flight.get("client_id")
+        message_id = flight.get("message_id")
+        route = flight.get("route")
+        self.handle_avg_results(client_id, route, float(flight["totalFare"]))
+        self.flights_received[client_id].add(message_id)
+    
+    def handle_avg_results(self, client_id, route, totalFare):
+        if client_id not in self.query_4_results.keys():
+            self.query_4_results[client_id] = dict()
+        
+        if route not in self.query_4_results[client_id].keys():
+            self.query_4_results[client_id][route] = dict()
+            self.query_4_results[client_id][route]["sum"] = 0
+            self.query_4_results[client_id][route]["count"] = 0
+        
+        self.query_4_results[client_id][route]["sum"] += totalFare 
+        self.query_4_results[client_id][route]["count"] += 1
+
+
+    def generate_q4_result_message(self, client_id, method):
+        sent_first_log = False
+        for route in os.listdir(f"reducer_group_by/avgs/client_{client_id}"):
+            self.handle_route_file(client_id, route)
+            # send ack after writing fist line in state log
+            if method and not sent_first_log:
+                sent_first_log = True
+                self.queue_middleware.manual_ack(method)
+        log_to_file(self.state_log_filename, f"{client_id}")
+
+    def handle_route_file(self, client_id, route):
+        sum = 0
+        count = 1
+        avg = 0
+        filename = f"reducer_group_by/avgs/client_{client_id}/{route}"
+        with FileReadBackwards(filename, encoding="utf-8") as f:
+            for line in f:
+                if line.endswith("#\n"):
+                    continue
+                values = line.split(",")
+                sum = float(values[1])
+                count = int(values[2])
+                if count > 0:
+                    avg = sum / count
+                break
+
+        message = dict()
+        message["avg"] = avg
+        message["client_id"] = client_id
+        message["route"] = route.split(".")[0]
+        message["query_number"] = self.query_number
+        message["result_id"] = f"{self.name}_{client_id}_{route}"
+        self.queue_middleware.send_message(self.output_queue,
+                                        json.dumps(message))
+        log_to_file(self.state_log_filename, f"{client_id},{route.split('.')[0]}")
+
+
+    def recover_state_q4(self):
+        self.flights_received = dict()
+        data = self.recover_process_state_file()
+        print(data)
+        self.handle_unfinished_eof_q4(data)
+        self.recover_processing_clients_data_q4(data)
+
+    def handle_unfinished_eof_q4(self, data):
+        for client_id in data.keys():
+            if os.path.isdir(f"reducer_group_by/avgs/client_{client_id}"):
+                route_log_file = os.listdir(f"reducer_group_by/avgs/client_{client_id}")
+                if len(route_log_file) == len(data[client_id]):
+                    log_to_file(self.state_log_filename, f"{client_id}")
+                    continue
+                print(route_log_file)
+                for route in route_log_file:
+                    route_code = route.split(".")[0]
+                    if route_code not in data[client_id]:
+                        self.handle_route_file(client_id, route)
+                log_to_file(self.state_log_filename, f"{client_id}")
+                self.processed_clients.append(int(client_id))
+
+    def recover_processing_clients_data_q4(self, data):
+        for client_id in range(1, self.n_clients + 1):
+            if client_id not in data.keys() and int(client_id) not in self.processed_clients and os.path.isdir(f"reducer_group_by/logs"):
+                print("here 1")
+                self.recover_processed_client_avg_q4(client_id)
+        print(self.flights_received)
+
+    def recover_processed_client_avg_q4(self, client_id, route_logs):
+        if client_id not in self.flights_received.keys():
+            self.flights_received[client_id] = set()
+        for file in route_logs:
+            filename = f"reducer_group_by/avgs/client_{client_id}/{file}"
+            correct_last_line(filename)
+            with open(filename, 'r') as f:
+                for line in f:
+                    if line.endswith("#\n"):
+                        continue
+                    route = file.split(".")[0]
+                    values = line.split(",")
+                    if client_id not in self.query_4_results.keys():
+                        self.query_4_results[client_id] = dict()
+                    
+                    if route not in self.query_4_results[client_id].keys():
+                        self.query_4_results[client_id][route] = dict()
+                        self.query_4_results[client_id][route]["sum"] = 0
+                        self.query_4_results[client_id][route]["count"] = 0
+                    
+                    self.query_4_results[client_id][route]["sum"] = float(values[1])
+                    self.query_4_results[client_id][route]["count"] = int(values[2])
+                    self.flights_received[client_id].add(values[0])
