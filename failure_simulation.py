@@ -5,7 +5,8 @@ from time import sleep
 TIME_BETWEEN_DROPS = 10
 REPLICATED_NODES = 3
 
-potentially_failing_replicated_nodes = ["group_by_id", "initial_column_cleaner",
+potentially_failing_replicated_nodes = ["group_by_id",
+                                        "initial_column_cleaner",
                                         "filter_by_three_stopovers",
                                         "reducer_group_by_route"]
 

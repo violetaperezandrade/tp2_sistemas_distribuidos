@@ -6,6 +6,8 @@ services:
     image: healthchecker:latest
     hostname: healthchecker_3
     entrypoint: python3 /main.py
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - PYTHONUNBUFFERED=1
       - ID=3
@@ -19,6 +21,8 @@ services:
     image: healthchecker:latest
     hostname: healthchecker_2
     entrypoint: python3 /main.py
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - PYTHONUNBUFFERED=1
       - ID=2
@@ -31,6 +35,8 @@ services:
     image: healthchecker:latest
     hostname: healthchecker_1
     entrypoint: python3 /main.py
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - PYTHONUNBUFFERED=1
       - ID=1

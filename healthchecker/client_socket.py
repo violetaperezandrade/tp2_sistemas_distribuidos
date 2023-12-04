@@ -1,6 +1,4 @@
 import socket
-import time
-
 from client.client import Client
 
 
@@ -10,3 +8,10 @@ class ClientSocket(Client):
 
     def run(self):
         pass
+
+    def _close(self):
+        try:
+            self._client_socket.shutdown(socket.SHUT_RDWR)
+        except Exception:
+            pass
+        self._client_socket.close()

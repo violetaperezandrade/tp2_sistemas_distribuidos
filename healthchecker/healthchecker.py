@@ -5,8 +5,14 @@ from client_socket import ClientSocket
 from constants import PORT, LEADER, HEARTBEAT, ELECTION, COORDINATOR
 from process_utils import leader_validation
 from server_utils import read_exact
+from heartbeat_listener import HeartbeatListener
+from heartbeat_sender import HeartbeatSender
+from util.nodes_utils import get_nodes_list
 
 INVALID_LEADER_ID = -1
+PORT_HB = 5000
+
+
 class HealthChecker:
     def __init__(self, id, total_amount, name):
         self.__id = id
@@ -35,7 +41,7 @@ class HealthChecker:
                 try:
                     self._minor_socket.settimeout(10.0)
                     socket = self.__accept_new_connection()
-                except TimeoutError as e:
+                except TimeoutError:
                     self.current_operation = ELECTION
                     continue
                 self.await_leader_heartbeats(socket)
@@ -49,16 +55,24 @@ class HealthChecker:
     def await_leader_heartbeats(self, socket):
         if self.__leader_id != INVALID_LEADER_ID:
             print(f"El lider es {self.__leader_id}")
+        hosts = [f"{self.__name[:-1]}{i}" for i in range(1,
+                                                            self.__total_amount + 1) if i != self.__id]
+        print(f"Sending hosts: {hosts}")
+        heartbeat_sender = HeartbeatSender(self.__id-1, hosts, PORT_HB, 0)
+        sender_process = Process(target=heartbeat_sender.start, args=())
+        sender_process.start()
         while True:
             try:
                 msg = list(read_exact(socket, 2))
                 self.__leader_id = msg[1]
-            except (TimeoutError, BrokenPipeError) as e:
-                print(f"Lanzando eleccion")
+            except (TimeoutError, BrokenPipeError):
+                print("Lanzando eleccion")
                 self.current_operation = ELECTION
                 break
-            # Es un busy wait el resto de esta funcion, no esta muy bueno la verdad.
-            # Escucha por un ratito en un socket nuevo para ver si tiene que cambiar de lider.
+            # Es un busy wait el resto de esta funcion,
+            # no esta muy bueno la verdad.
+            # Escucha por un ratito en un socket nuevo para ver
+            # si tiene que cambiar de lider.
             self._minor_socket.settimeout(0.5)
             try:
                 socket2 = self.__accept_new_connection()
@@ -68,16 +82,34 @@ class HealthChecker:
             if msg[1] > self.__leader_id:
                 self.__is_leader = False
                 self.__leader_id = msg[1]
+                sender_process.terminate()
+                sender_process.join()
                 break
 
     def act_as_leader(self):
         for idx, value in enumerate(self.__minors.items()):
-            process = Process(target=leader_validation, args=(value[0], value[1], self.__id))
+            process = Process(target=leader_validation, args=(value[0],
+                                                              value[1],
+                                                              self.__id))
             process.start()
+
+        nodes_list = [i for i in range(0, self.__total_amount)]
+        nodes_list.remove(int(self.__name[-1]) - 1)
+        print()
+        processes = []
+        for i in nodes_list:
+            heartbeat_listener = HeartbeatListener(PORT_HB+i, i, 5)
+            print(f"Launching process{i}, port: {PORT_HB+i}, node_id: {i}")
+            process = Process(target=heartbeat_listener.start, args=())
+            process.start()
+            processes.append(process)
+
         while True:
-            # Parte de la accion del lider seria levantar a los nodos caidos en alguna linea por aca
+            # Parte de la accion del lider seria levantar a los nodos
+            # caidos en alguna linea por aca
             self._minor_socket.settimeout(0.5)
-            # Tengo que escuchar a ver si viene alguien a sacarme cada tanto (por ejemplo si soy el 1 o el 2 y se
+            # Tengo que escuchar a ver si viene alguien a sacarme cada tanto
+            # (por ejemplo si soy el 1 o el 2 y se
             # levanta el 3)
             try:
                 socket = self.__accept_new_connection()
@@ -88,20 +120,22 @@ class HealthChecker:
                 self.__is_leader = False
                 self.current_operation = HEARTBEAT
                 self.__leader_id = msg[1]
+                for p in processes:
+                    p.terminate()
+                    p.join()
                 break
-
 
     def launch_election(self):
         self.__is_leader = True
-        for id  in self.__majors.items():
+        for id in self.__majors.items():
             if self.__leader_id == id:
                 continue
             try:
                 self._minor_socket.settimeout(3.0)
                 socket = self.__accept_new_connection()
-            except OSError as e:
+            except OSError:
                 continue
-            msg = list(read_exact(socket,2))
+            msg = list(read_exact(socket, 2))
             if msg[0] == COORDINATOR:
                 self.__leader_id = msg[1]
                 self.__is_leader = False
@@ -111,7 +145,7 @@ class HealthChecker:
             try:
                 socket = ClientSocket(addr)
                 socket._start_connection()
-            except OSError as e:
+            except OSError:
                 continue
             message = bytes([HEARTBEAT, self.__id])
             if self.__is_leader:

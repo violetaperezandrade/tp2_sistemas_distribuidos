@@ -57,6 +57,6 @@ class Client(ABC):
         """
 
         # Connection arrived
-        #logging.debug('action: close_connection | result: in_progress')
+        # logging.debug('action: close_connection | result: in_progress')
         self._client_socket.close()
-        #logging.info('action: close_connection | result: success ')
+        # logging.info('action: close_connection | result: success ')
