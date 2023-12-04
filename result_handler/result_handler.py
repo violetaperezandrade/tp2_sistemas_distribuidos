@@ -85,6 +85,5 @@ class ResultHandler:
         for route, flights in results.items():
             msg = flights[0]
             msg["query_number"] = query_number
-            msg["client_id"] = client_id
             msg = protocol.encode_query_result(msg)
             self.__send_exact(msg, client_id)
