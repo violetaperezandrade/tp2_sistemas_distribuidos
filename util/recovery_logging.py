@@ -12,26 +12,6 @@ SUM = 1
 COUNT = 2
 
 
-def recover_state(filename):
-    if os.path.exists(filename):
-        with open(filename, 'r') as file:
-            try:
-                last_line = file.readlines()[-1]
-            except IndexError:
-                return
-            if last_line.endswith("\n"):
-                last_line = last_line.strip('\n')
-                op_code, message_id, client_id = tuple(last_line.split(','))
-                op_code = int(op_code)
-                if op_code == EOF_SENT:
-                    return None
-                msg = {"op_code": op_code,
-                       "message_id": int(message_id),
-                       "client_id": int(client_id)}
-                return msg
-    return None
-
-
 def get_missing_flights(filename, missing_flight_set, first_message,
                         total_reducers, eof_message_id, client_id):
     correct_last_line(filename)
@@ -103,18 +83,10 @@ def delete_client_data(folder_path=None, file_path=None):
         return
     if file_path is not None:
         try:
-            print(f"Deleting {file_path}")
             os.remove(file_path)
+            print(f"Deleted {file_path}")
         except FileNotFoundError:
             pass
-
-
-def recover_broken_line(lines, temp_file, old_file, log_file):
-    with open(temp_file, 'w+') as file:
-        file.writelines(lines)
-    os.rename(log_file, old_file)
-    os.remove(old_file)
-    os.rename(temp_file, log_file)
 
 
 def check_files(directory, log_file):
@@ -141,20 +113,6 @@ def create_eof_flights_message_filters(accepted_flights, filter_id, client_id):
     register["client_id"] = int(client_id)
     register["filter_id"] = int(filter_id)
     return register
-
-
-def duplicated_message(filename, result_id):
-    if os.path.exists(filename):
-        with open(filename, 'r') as file:
-            for line in file:
-                line = line.strip("\n")
-                if line == result_id:
-                    return True
-    return False
-
-
-def create_if_necessary(path):
-    os.makedirs(path, exist_ok=True)
 
 
 def go_to_sleep():
