@@ -18,7 +18,7 @@ def main():
                                                reducers_amount)
     try:
         filterByStopOvers.run()
-    except pika.exceptions.ChannelWrongStateError:
+    except (pika.exceptions.ChannelWrongStateError, pika.exceptions.ConnectionClosedByBroker):
         pass
 
 

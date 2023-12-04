@@ -12,7 +12,7 @@ def main():
     result_handler = ResultHandler(listen_backlog, total_clients)
     try:
         result_handler.run()
-    except pika.exceptions.ChannelWrongStateError:
+    except (pika.exceptions.ChannelWrongStateError, pika.exceptions.ConnectionClosedByBroker):
         pass
 
 

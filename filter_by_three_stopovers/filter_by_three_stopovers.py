@@ -148,3 +148,4 @@ class FilterByThreeStopovers:
             self.processed_clients.append(client_id)
             delete_client_data(file_path=get_flights_log_file(self.main_path,
                                                               client_id))
+

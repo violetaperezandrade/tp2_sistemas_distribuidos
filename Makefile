@@ -30,9 +30,11 @@ docker-compose-logs:
 .PHONY: docker-compose-logs
 
 docker-compose-scaled-up: docker-image
-	sudo rm -r distance_calculator_1 || true
-	sudo rm -r distance_calculator_2 || true
-	sudo rm -r distance_calculator_3 || true
+	sudo rm -r distance_calculator/distance_calculator_1 || true
+	sudo rm -r distance_calculator/distance_calculator_2 || true
+	sudo rm -r distance_calculator/distance_calculator_3 || true
+	sudo rm -r group_by/group_by_airport || true
+	sudo rm -r group_by/group_by_route || true
 	sudo rm -f group_by/*.txt
 	sudo rm -r results || true
 	sudo rm -f column_cleaner/*.txt

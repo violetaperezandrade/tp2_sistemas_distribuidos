@@ -32,6 +32,7 @@ class DictionaryCreator:
                                     self.__airport_callback,
                                     self.__exchange_queue)
 
+
     def __airport_callback(self, body, method):
         register = json.loads(body)
         client_id = register["client_id"]

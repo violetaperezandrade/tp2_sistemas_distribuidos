@@ -11,7 +11,7 @@ from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
 from util.constants import (EOF_FLIGHTS_FILE, AIRPORT_REGISTER, BEGIN_EOF,
                             EOF_SENT, EOF_CLIENT, FLIGHT_REGISTER, NUMBER_CLIENTS)
-from util.recovery_logging import go_to_sleep, correct_last_line
+from util.recovery_logging import go_to_sleep, correct_last_line, delete_client_data
 
 REDUCER_ID = 1
 MESSAGES_SENT = 2
@@ -55,7 +55,6 @@ class GroupBy():
 
     def run(self):
         signal.signal(signal.SIGTERM, self.queue_middleware.handle_sigterm)
-
         initialize_exchanges([self.input_exchange], self.queue_middleware)
         initialize_queues([self.listening_queue, self.input_queue] +
                           self.reducers, self.queue_middleware)

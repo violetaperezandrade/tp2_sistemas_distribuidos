@@ -20,7 +20,7 @@ def run(query_number):
     query_handler = QueryHandler(query_number, reducers)
     try:
         query_handler.run()
-    except pika.exceptions.ChannelWrongStateError:
+    except (pika.exceptions.ChannelWrongStateError, pika.exceptions.ConnectionClosedByBroker):
         pass
 
 

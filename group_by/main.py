@@ -21,7 +21,7 @@ def main():
                        queue_group_by_secondary, requires_q5_eof)
     try:
         group_by.run()
-    except pika.exceptions.ChannelWrongStateError:
+    except (pika.exceptions.ChannelWrongStateError, pika.exceptions.ConnectionClosedByBroker):
         pass
 
 

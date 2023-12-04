@@ -1,5 +1,6 @@
-import json
 import os
+import signal
+import json
 
 from util.constants import NUMBER_CLIENTS, AVG_READY
 from util.file_manager import log_to_file
@@ -21,6 +22,7 @@ class FinalAvgCalculator:
         self.__sent_eof = {i: False for i in range(1, NUMBER_CLIENTS + 1)}
 
     def run(self):
+        signal.signal(signal.SIGTERM, self.__middleware.handle_sigterm)
         initialize_queues([self.__exchange_queue], self.__middleware)
         initialize_exchanges([self.__avg_exchange], self.__middleware)
         self.recover_state()

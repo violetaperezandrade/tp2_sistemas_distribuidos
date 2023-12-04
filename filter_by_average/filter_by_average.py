@@ -1,6 +1,7 @@
 
 import json
 import os
+import signal
 
 from util.constants import EOF_FLIGHTS_FILE, NUMBER_CLIENTS, BATCH_SIZE, EOF_SENT, BEGIN_EOF
 from util.initialization import initialize_queues
@@ -11,7 +12,7 @@ from util.recovery_logging import correct_last_line, create_eof_flights_message_
 
 
 class FilterByAverage:
-    def __init__(self, output_queue, input_queue, node_id, name, total_reducers, pipe):
+    def __init__(self, output_queue, input_queue, node_id, name, total_reducers, pipe, process):
         self.__output_queue = output_queue
         self.__input_queue = f"{input_queue}_{node_id}"
         self.__id = node_id
@@ -27,10 +28,10 @@ class FilterByAverage:
         self.__accepted_flights = {i: 0 for i in range(1, NUMBER_CLIENTS + 1)}
         self.main_path = f"filter_by_average/{self.__name}"
         self.processed_clients=[]
-        # self.sigterm_received = False
+        self.process = process
 
     def run(self):
-        # signal.signal(signal.SIGTERM, self._handle_sigterm)
+        signal.signal(signal.SIGTERM, self.handle_sigterm)
         initialize_queues([self.__output_queue, self.__input_queue], self.__middleware)
         self.recover_sent_state()
         os.makedirs(self.main_path, exist_ok=True)
@@ -182,3 +183,7 @@ class FilterByAverage:
     def get_avg_file(self, client_id):
         file = f"{self.main_path}/client_{client_id}_avg_log.txt"
         return file
+
+    def handle_sigterm(self, signum, frame):
+        os.kill(self.process.pid, signal.SIGTERM)
+        self.__middleware.handle_sigterm(signum, frame)

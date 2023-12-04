@@ -4,7 +4,7 @@ import socket
 import os
 
 from util import protocol
-from util.constants import NUMBER_CLIENTS, SIGTERM
+from util.constants import SIGTERM
 from util.initialization import initialize_queues
 from util.queue_middleware import QueueMiddleware
 
@@ -20,10 +20,9 @@ class ResultHandler:
         self._result_handler_socket.listen(listen_backlog)
         self.results = dict()
         self.total_clients = total_clients
-        self._main_path = "result_handler/"
 
     def run(self):
-        #signal.signal(signal.SIGTERM, self._handle_sigterm)
+        signal.signal(signal.SIGTERM, self._handle_sigterm)
         initialize_queues(["results"], self.__middleware)
         while len(self.__client_sockets) < self.total_clients:
             socket = self.__accept_new_connection()
@@ -74,12 +73,13 @@ class ResultHandler:
             bytes_read += new_bytes_read
         return bytes_read
 
-    # def _handle_sigterm(self, signum, frame):
-    #     self.__middleware.handle_sigterm(signum, frame)
-    #     msg = protocol.encode_signal(SIGTERM)
-    #     self.__send_exact(msg)
-    #     self.__client_socket.shutdown(socket.SHUT_RDWR)
-    #     self.__client_socket.close()
+    def _handle_sigterm(self, signum, frame):
+        self.__middleware.handle_sigterm(signum, frame)
+        msg = protocol.encode_signal(SIGTERM)
+        for id, client_socket in self.__client_sockets.items():
+            self.__send_exact(msg, id)
+            client_socket.shutdown(socket.SHUT_RDWR)
+            client_socket.close()
 
     def parse_query_3_result(self, results, client_id, query_number):
         for route, flights in results.items():

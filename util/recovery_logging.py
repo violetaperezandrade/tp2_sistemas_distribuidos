@@ -80,6 +80,7 @@ def get_state_log_file(path):
 def delete_client_data(folder_path=None, file_path=None):
     if folder_path is not None:
         shutil.rmtree(folder_path, ignore_errors=True)
+        print(f"Deleted {folder_path}")
         return
     if file_path is not None:
         try:

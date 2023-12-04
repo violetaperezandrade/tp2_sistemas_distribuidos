@@ -14,7 +14,7 @@ def main():
                                    node_id, name, total_reducers)
     try:
         avg_calculator.run()
-    except pika.exceptions.ChannelWrongStateError:
+    except (pika.exceptions.ChannelWrongStateError, pika.exceptions.ConnectionClosedByBroker):
         pass
 
 

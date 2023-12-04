@@ -16,19 +16,17 @@ def main():
     node_id = int(os.getenv("ID", None))
     name = os.getenv("HOSTNAME", None)
     total_reducers = int(os.getenv("REDUCERS_AMOUNT", 3))
-
     conn1, conn2 = multiprocessing.Pipe()
-
     final_avg_calculator = FinalAvgCalculator(avg_exchange, exchange_queue, node_id, name, total_reducers, conn2)
-    filter_by_average = FilterByAverage(output_queue, input_queue, node_id, name, total_reducers, conn1)
-
     process = Process(target=final_avg_calculator.run,
                       args=())
+    filter_by_average = FilterByAverage(output_queue, input_queue, node_id, name, total_reducers, conn1, process)
     process.start()
 
     try:
         filter_by_average.run()
-    except pika.exceptions.ChannelWrongStateError:
+        process.join()
+    except (pika.exceptions.ChannelWrongStateError, pika.exceptions.ConnectionClosedByBroker):
         pass
 
 

@@ -12,7 +12,7 @@ from util.queue_middleware import QueueMiddleware
 class ColumnCleaner:
     def __init__(self, output_queue, output_exchange, input_queue,
                  required_columns_flights, required_columns_airports,
-                 routing_key, connected_nodes, name):
+                 routing_key):
         self.__output_queue = output_queue
         self.__output_exchange = output_exchange
         self.__input_queue = input_queue
@@ -20,7 +20,6 @@ class ColumnCleaner:
         self.__required_columns_airports = required_columns_airports
         self.__routing_key = routing_key
         self.middleware = QueueMiddleware()
-        self.log_file = "column_cleaner/" + name + "_state_log.txt"
 
     def run(self, input_exchange):
         signal.signal(signal.SIGTERM, self.middleware.handle_sigterm)

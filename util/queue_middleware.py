@@ -76,4 +76,7 @@ class QueueMiddleware:
         self.__channel.stop_consuming()
 
     def __del__(self):
-        self.__connection.close()
+        try:
+            self.__connection.close()
+        except pika.exceptions.StreamLostError:
+            pass
