@@ -5,7 +5,7 @@ from util.constants import NUMBER_CLIENTS, AVG_READY
 from util.file_manager import log_to_file
 from util.initialization import initialize_queues, initialize_exchanges
 from util.queue_middleware import QueueMiddleware
-from util.recovery_logging import create_if_necessary, correct_last_line, delete_client_data
+from util.recovery_logging import correct_last_line
 
 
 class FinalAvgCalculator:

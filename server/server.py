@@ -4,6 +4,11 @@ import socket
 from client_handler import ClientHandler
 
 
+def launch_new_handler(client_socket):
+    new_client_handler = ClientHandler(client_socket)
+    new_client_handler.run()
+
+
 class Server:
     def __init__(self, port, listen_backlog):
         # Initialize server socket
@@ -15,9 +20,8 @@ class Server:
         processes = []
         while True:
             client_socket = self.__accept_new_connection()
-            new_client_handler = ClientHandler(client_socket)
-            listener_process = Process(target=new_client_handler.run,
-                                       args=())
+            listener_process = Process(target=launch_new_handler,
+                                       args=(client_socket,))
             processes.append(listener_process)
             listener_process.start()
 

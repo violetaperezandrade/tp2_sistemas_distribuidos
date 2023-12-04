@@ -48,7 +48,7 @@ services:
     volumes:
       - ./results:/results:rw
       - type: bind
-        source: ./client/itineraries_random_2M.csv
+        source: ./client/itineraries_random_demo.csv
         target: /itineraries.csv
       - type: bind
         source: ./client/airports-codepublic.csv

@@ -8,7 +8,7 @@ import json
 import signal
 
 from util.recovery_logging import get_missing_flights_for_avg_calculation, correct_last_line, \
-    get_updated_sum_and_count, delete_client_data, get_state_log_file, get_flights_log_file
+    delete_client_data, get_state_log_file, get_flights_log_file
 
 
 class AvgCalculator:
@@ -47,7 +47,7 @@ class AvgCalculator:
             self.__middleware.manual_ack(method)
             return
         if op_code == EOF_FLIGHTS_FILE:
-            log_to_file(get_state_log_file(self.main_path), f"{BEGIN_EOF},{message_id}")
+            log_to_file(get_state_log_file(self.main_path), f"{BEGIN_EOF},{message_id},{client_id}")
             self.eof_status[index] = True
             self.sum[index], self.count[index] = get_missing_flights_for_avg_calculation(
                 get_flights_log_file(self.main_path, client_id),
@@ -80,35 +80,35 @@ class AvgCalculator:
 
     def recover_state(self):
         state_log_file = get_state_log_file(self.main_path)
-        for client in range(1, NUMBER_CLIENTS + 1):
-            flights_log_file = get_flights_log_file(self.main_path, client)
-            index = client - 1
-            if os.path.exists(state_log_file):
-                correct_last_line(state_log_file)
-                with open(state_log_file, 'r') as file:
-                    lines = file.readlines()
-                    for line in lines:
-                        if line.endswith("#\n"):
+        if os.path.exists(state_log_file):
+            correct_last_line(state_log_file)
+            with open(state_log_file, 'r') as file:
+                lines = file.readlines()
+                for line in lines:
+                    if line.endswith("#\n"):
+                        continue
+                    try:
+                        opcode, message_id, client_id = tuple(line.split(","))
+                    except ValueError as e:
+                        continue
+                    client_id = int(client_id)
+                    index = client_id - 1
+                    if int(opcode) == BEGIN_EOF:
+                        if client_id in self.__processed_clients:
                             continue
-                        try:
-                            opcode, message_id = tuple(line.split(","))
-                        except ValueError as e:
+                        flights_log_file = get_flights_log_file(self.main_path, client_id)
+                        if f"{EOF_SENT},{client_id}\n" in lines:
+                            self.__processed_clients.append(client_id)
+                            delete_client_data(client_id, file_path=flights_log_file)
                             continue
-                        if int(opcode) == BEGIN_EOF:
-                            if client in self.__processed_clients:
-                                continue
-                            if f"{EOF_SENT},{client}\n" in lines:
-                                self.__processed_clients.append(client)
-                                delete_client_data(client, file_path=flights_log_file)
-                                continue
-                            self.eof_status[index] = True
-                            self.sum[index], self.count[index] = get_missing_flights_for_avg_calculation(
-                                flights_log_file,
-                                self.__missing_flights[index],
-                                self.__id,
-                                self.reducers_amount,
-                                int(message_id))
-                            self.send_and_log_partial_avg(client, message_id)
+                        self.eof_status[index] = True
+                        self.sum[index], self.count[index] = get_missing_flights_for_avg_calculation(
+                            flights_log_file,
+                            self.__missing_flights[index],
+                            self.__id,
+                            self.reducers_amount,
+                            int(message_id))
+                        self.send_and_log_partial_avg(client_id, message_id)
 
     def send_and_log_partial_avg(self, client_id, message_id):
         if len(self.__missing_flights[client_id - 1]) == 0:
