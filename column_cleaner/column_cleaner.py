@@ -38,7 +38,7 @@ class ColumnCleaner:
         register = json.loads(body)
         op_code = register.get("op_code")
         if op_code == CLEANUP:
-            self.__output_message(body, op_code)
+            #self.__output_message(body, op_code)
             self.middleware.manual_ack(method)
             return
         if self.__routing_key == "flights" and op_code > FLIGHT_REGISTER:

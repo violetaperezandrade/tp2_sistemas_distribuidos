@@ -32,9 +32,6 @@ class DistanceCalculator:
         register = json.loads(body)
         client_id = register["client_id"]
         op_code = register["op_code"]
-        if op_code == CLEANUP:
-            self.__middleware.manual_ack(method)
-            return
         if op_code == EOF_FLIGHTS_FILE:
             self.__middleware.send_message(self.__output_queue,
                                            json.dumps(register))
