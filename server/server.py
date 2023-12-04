@@ -1,8 +1,10 @@
+import json
 import logging
 from multiprocessing import Process
 import socket
 from client_handler import ClientHandler
-from util.constants import NUMBER_CLIENTS
+from util.constants import NUMBER_CLIENTS, CLEANUP, ALL_CLIENTS
+from util.queue_middleware import QueueMiddleware
 
 
 def launch_new_handler(client_socket):
@@ -17,8 +19,13 @@ class Server:
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
         self.connections = 0
+        self.__queue_middleware = QueueMiddleware()
 
     def run(self):
+        cleanup_message = {"op_code": CLEANUP, "client_id": ALL_CLIENTS}
+        self.__queue_middleware.create_queue("full_flight_registers")
+        self.__queue_middleware.send_message("full_flight_registers",
+                                             json.dumps(cleanup_message))
         processes = []
         while self.connections < NUMBER_CLIENTS:
             client_socket = self.__accept_new_connection()

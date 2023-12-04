@@ -3,7 +3,7 @@ from random import randint
 from time import sleep
 import shutil
 
-from util.constants import EOF_SENT, ACCEPTED, EOF_FLIGHTS_FILE
+from util.constants import EOF_SENT, ACCEPTED, EOF_FLIGHTS_FILE, ALL_CLIENTS
 
 MESSAGE_ID = 0
 CLIENT_ID = 1
@@ -88,6 +88,14 @@ def delete_client_data(folder_path=None, file_path=None):
             print(f"Deleted {file_path}")
         except FileNotFoundError:
             pass
+
+
+def delete_node_data(main_path, client_id):
+    if client_id == ALL_CLIENTS:
+        delete_client_data(folder_path=main_path)
+        return
+    delete_client_data(file_path=get_flights_log_file(main_path, client_id))
+    print("Deleted files")
 
 
 def check_files(directory, log_file):

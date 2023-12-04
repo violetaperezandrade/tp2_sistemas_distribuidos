@@ -1,7 +1,7 @@
 from util.constants import (EOF_FLIGHTS_FILE,
                             AIRPORT_REGISTER,
                             EOF_AIRPORTS_FILE,
-                            FLIGHT_REGISTER)
+                            FLIGHT_REGISTER, CLEANUP)
 import json
 import signal
 
@@ -37,6 +37,10 @@ class ColumnCleaner:
     def callback(self, body, method):
         register = json.loads(body)
         op_code = register.get("op_code")
+        if op_code == CLEANUP:
+            self.__output_message(body, op_code)
+            self.middleware.manual_ack(method)
+            return
         if self.__routing_key == "flights" and op_code > FLIGHT_REGISTER:
             self.middleware.manual_ack(method)
             return
@@ -61,7 +65,7 @@ class ColumnCleaner:
 
     def __output_message(self, msg, op_code):
         if self.__output_exchange is not None:
-            if self.__routing_key == "all" and op_code <= FLIGHT_REGISTER:
+            if self.__routing_key == "all" and (op_code <= FLIGHT_REGISTER or op_code == CLEANUP):
                 self.middleware.send_message(self.__output_queue, msg)
                 return
             self.middleware.publish(self.__output_exchange, msg)

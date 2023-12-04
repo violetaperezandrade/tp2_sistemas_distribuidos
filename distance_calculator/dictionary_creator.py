@@ -2,11 +2,11 @@ import json
 import signal
 import os
 
-from util.constants import EOF_AIRPORTS_FILE, BEGIN_EOF, NUMBER_CLIENTS
+from util.constants import EOF_AIRPORTS_FILE, BEGIN_EOF, NUMBER_CLIENTS, CLEANUP
 from util.file_manager import log_to_file
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
-from util.recovery_logging import correct_last_line, get_flights_log_file, get_state_log_file, delete_client_data
+from util.recovery_logging import correct_last_line, get_flights_log_file, get_state_log_file
 
 
 class DictionaryCreator:
@@ -36,10 +36,11 @@ class DictionaryCreator:
     def __airport_callback(self, body, method):
         register = json.loads(body)
         client_id = register["client_id"]
-        if client_id in self.clients_processed:
+        op_code = register["op_code"]
+        if client_id in self.clients_processed or op_code == CLEANUP:
             self.__middleware.manual_ack(method)
             return
-        if register["op_code"] == EOF_AIRPORTS_FILE:
+        if op_code == EOF_AIRPORTS_FILE:
             required_length = register["message_id"] - 1
             log_to_file(get_state_log_file(self.main_path), f"{BEGIN_EOF},{register.get('message_id')},"
                                                             f"{register.get('client_id')}")

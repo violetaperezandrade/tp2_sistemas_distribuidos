@@ -4,7 +4,7 @@ import socket
 import os
 
 from util import protocol
-from util.constants import SIGTERM
+from util.constants import SIGTERM, CLEANUP
 from util.initialization import initialize_queues
 from util.queue_middleware import QueueMiddleware
 
@@ -37,6 +37,12 @@ class ResultHandler:
         client_id = int(result.pop('client_id'))
         result_id = result.pop('result_id', None)
         query_number = int(result.get('query_number'))
+        op_code = result.pop('op_code', None)
+        if op_code:
+            if op_code == CLEANUP:
+                self.results[client_id] = set()
+                self.__middleware.manual_ack(method)
+                return
         result_key = message_id
         if query_number >= 3:
             result_key = result_id

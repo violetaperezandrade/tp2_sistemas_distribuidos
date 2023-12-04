@@ -4,7 +4,7 @@ import os
 from geopy.distance import geodesic
 import signal
 
-from util.constants import EOF_AIRPORTS_FILE, EOF_FLIGHTS_FILE, NUMBER_CLIENTS
+from util.constants import EOF_FLIGHTS_FILE, NUMBER_CLIENTS
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
 
@@ -31,7 +31,11 @@ class DistanceCalculator:
     def __flight_callback(self, body, method):
         register = json.loads(body)
         client_id = register["client_id"]
-        if register["op_code"] == EOF_FLIGHTS_FILE:
+        op_code = register["op_code"]
+        if op_code == CLEANUP:
+            self.__middleware.manual_ack(method)
+            return
+        if op_code == EOF_FLIGHTS_FILE:
             self.__middleware.send_message(self.__output_queue,
                                            json.dumps(register))
             self.__middleware.manual_ack(method)

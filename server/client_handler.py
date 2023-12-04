@@ -26,7 +26,6 @@ class ClientHandler:
         self._register_number = 1
 
     def run(self):
-        self.__queue_middleware.create_queue("full_flight_registers")
         try:
             while self._running and self._reading_file:
                 self.__handle_client_connection()
