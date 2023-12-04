@@ -19,7 +19,6 @@ class ColumnCleaner:
         self.__required_columns_flights = required_columns_flights
         self.__required_columns_airports = required_columns_airports
         self.__routing_key = routing_key
-        self.__connected_nodes = connected_nodes
         self.middleware = QueueMiddleware()
         self.log_file = "column_cleaner/" + name + "_state_log.txt"
 
