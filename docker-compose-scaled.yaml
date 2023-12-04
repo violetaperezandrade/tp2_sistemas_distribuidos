@@ -393,7 +393,8 @@ services:
       - LISTENING_QUEUE=
       - QUEUE_GROUP_BY=group_by_airport_queue
       - INPUT_QUEUE=mode_calculation
-      - SEVERAL_EOF=false
+      - SEVERAL_EOF=true
+      - QUERY_5_EOF=true
       - HANDLE_FLIGHTS_LOG=true
     depends_on:
       - reducer_group_by_airport_1
