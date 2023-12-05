@@ -2,10 +2,11 @@ import ast
 import json
 import signal
 import os
+import re
 import time
 from file_read_backwards import FileReadBackwards
 
-from util.recovery_logging import correct_last_line, check_files
+from util.recovery_logging import correct_last_line, check_files_single_line, go_to_sleep
 from util.initialization import initialize_queues
 from util.queue_middleware import QueueMiddleware
 from util.utils_query_3 import handle_query_3_register
@@ -31,11 +32,17 @@ class ReducerGroupBy:
         self.operations_map = {4: handle_query_4,
                                5: handle_query_5}
         self.handlers_map = {3: handle_query_3_register,
-                             4: handle_query_4_register,}
-        self.state_log_filename = "reducer_group_by/" + name + "_state_log.txt"
-        self.result_log_filename = "reducer_group_by/" + name + "_result_log.txt"
+                             4: handle_query_4_register}
+        self.recovery_map = {3: self.recover_state_q3,
+                             4: self.recover_state_q4,
+                             5: self.recover_state_q5}
+        self.callback_map = {3: self.callback_query_3,
+                             4: self.callback_query_4,
+                             5: self.callback_query_5}
+        self.state_log_filename = f"reducer_group_by/{name}_state_log.txt"
+        self.result_log_filename = f"reducer_group_by/{name}_result_log.txt"
         self.n_clients = NUMBER_CLIENTS
-        self.flights_log_filename = "reducer_group_by/" + name + "_flights_log.txt"
+        self.flights_log_filename = f"reducer_group_by/{name}flights_log.txt"
         self.processed_clients = []
         self.name = name
         self.query_4_results = dict()
@@ -45,20 +52,11 @@ class ReducerGroupBy:
         initialize_queues([self.output_queue, self.input_queue],
                           self.queue_middleware)
         self.recover_state()
-        self.initialize_result_log()
         self.queue_middleware.listen_on(self.input_queue, self.__callback)
 
     def __callback(self, body, method):
         flight = json.loads(body)
-        if self.query_number == 3:
-            self.callback_query_3(flight, method)
-        
-        elif self.query_number == 4:
-            self.callback_query_4(flight, method)
-        
-        elif self.query_number == 5:
-            self.callback_query_5(flight, method)
-
+        self.callback_map[self.query_number](flight, method)
 
     def callback_query_3(self, flight, method):
         op_code = flight.get("op_code")
@@ -68,12 +66,26 @@ class ReducerGroupBy:
         if op_code == EOF_FLIGHTS_FILE:
             self.spread_eof(client_id, method)
             return
-        
+
+        result_log_filename = self.get_result_log_filename_client(client_id)
+        old_filename = (
+            f"reducer_group_by/{client_id}/old_results"
+            f"_{self.name}_{client_id}.txt")
+        tmp_filename = (
+            f"reducer_group_by/{client_id}/temp_results"
+            f"_{self.name}_{client_id}.txt")
         self.handlers_map[self.query_number](flight, self.grouped[client_id-1],
-                                             self.result_log_filename, self.name)
- 
+                                             result_log_filename,
+                                             self.name,
+                                             old_filename,
+                                             tmp_filename)
+
         self.queue_middleware.manual_ack(method)
- 
+
+    def get_result_log_filename_client(self, client_id):
+        return (
+            f"reducer_group_by/{client_id}/{self.name}"
+            f"_result_log_{client_id}.txt")
 
     def callback_query_5(self, flight, method):
         op_code = flight.get("op_code")
@@ -91,12 +103,14 @@ class ReducerGroupBy:
         self.handle_client_message(flight)
         self.queue_middleware.manual_ack(method)
 
-
     def generate_q3_result_message(self, client_id, method):
-        with open(self.result_log_filename, "r") as file:
-            lines = file.readlines()
-            result = ast.literal_eval(lines[int(client_id)-1])
-        eof_message = {'result': result, "client_id": client_id, "query_number": self.query_number,
+        result_log_filename = self.get_result_log_filename_client(client_id)
+        with open(result_log_filename, "r") as file:
+            for line in file:
+                result = ast.literal_eval(line)
+        eof_message = {"result": result,
+                       "client_id": client_id,
+                       "query_number": self.query_number,
                        "result_id": f"{self.name}_{client_id}"}
         self.queue_middleware.send_message(self.output_queue,
                                            json.dumps(eof_message))
@@ -104,14 +118,6 @@ class ReducerGroupBy:
         self.processed_clients.append(int(client_id))
         if method:
             self.queue_middleware.manual_ack(method)
-
-    def initialize_result_log(self):
-        if self.query_number == 3:
-            if not os.path.exists(self.result_log_filename):
-                with open(self.result_log_filename, "w") as file:
-                    for i in range(self.n_clients):
-                        file.write('\n')
-                        file.flush()
 
     def spread_eof(self, client_id, method=None):
         if self.query_number == 3:
@@ -125,20 +131,10 @@ class ReducerGroupBy:
             self.delete_client_files(client_id)
             self.clean_client_info(client_id)
 
-
     def recover_state(self):
-        if self.query_number == 3:
-            self.recover_state_q3()
-        
-        elif self.query_number == 4:
-            self.recover_state_q4()
-
-        elif self.query_number == 5:
-            self.recover_state_q5()
-
+        self.recovery_map[self.query_number]()
 
     def recover_state_q3(self):
-        check_files("/reducer_group_by", self.name + "_result_log.txt")
         if os.path.exists(self.state_log_filename):
             correct_last_line(self.state_log_filename)
             with open(self.state_log_filename, 'r') as file:
@@ -147,6 +143,25 @@ class ReducerGroupBy:
                         continue
                     self.processed_clients.append(int(line))
         self.processed_clients = list(set(self.processed_clients))
+        existing_clients = []
+        for client_id in range(1, self.n_clients+1):
+            dir = f"/reducer_group_by/{client_id}"
+            if not os.path.isdir(dir):
+                os.makedirs(dir)
+            else:
+                existing_clients.append(client_id)
+        for client_id in existing_clients:
+            if client_id not in self.processed_clients:
+                check_files_single_line(f"/reducer_group_by/{client_id}",
+                                        f"{self.name}_result_log_{client_id}.txt")
+                if os.path.exists(self.get_result_log_filename_client(client_id)):
+                    with open(self.get_result_log_filename_client(client_id), 'r') as file:
+                        line = file.read().rstrip('#')
+                        self.grouped[client_id-1] = ast.literal_eval(line)
+
+    def add_client_id_to_dir(self, dir, client_id):
+        pattern = re.compile(r'(/)')
+        return re.sub(pattern, r'/{}\1'.format(client_id), dir, count=1)
 
     def recover_state_q5(self):
         self.flights_received = dict()
@@ -177,7 +192,7 @@ class ReducerGroupBy:
             if client_id not in data.keys() and int(client_id) not in self.processed_clients and os.path.isdir(f"reducer_group_by/{self.name}/client_{client_id}"):
                 airport_log_file = os.listdir(f"reducer_group_by/{self.name}/client_{client_id}")
                 self.recover_processed_client_airports_q5(client_id, airport_log_file)
-    
+
     def recover_processed_client_airports_q5(self, client_id, airports_logs):
         if client_id not in self.flights_received.keys():
             self.flights_received[client_id] = set()
@@ -189,13 +204,13 @@ class ReducerGroupBy:
                     if line.endswith("#\n"):
                         continue
                     self.flights_received[client_id].add(line.split(",")[0])
- 
+
     def recover_process_state_file(self):
         client_finished = set()
         client_unfinished = dict()
         if os.path.exists(self.state_log_filename):
             correct_last_line(self.state_log_filename)
-            with open( self.state_log_filename, 'r') as f:
+            with open(self.state_log_filename, 'r') as f:
                 lines = f.readlines()
                 for line in lines[::-1]:
                     if "#\n" in line:
@@ -204,7 +219,7 @@ class ReducerGroupBy:
                     data = line.split(",")
                     if len(data) == 1:
                         client_finished.add(data[0])
-                    
+
                     elif len(data) == 2 and data[0] not in client_finished:
                         if data[0] not in client_unfinished.keys():
                             client_unfinished[data[0]] = set()
@@ -214,7 +229,7 @@ class ReducerGroupBy:
 
             self.processed_clients = list(client_finished)
         return client_unfinished
-    
+
     def save_in_airport_file(self, flight):
         filename = f"reducer_group_by/{self.name}/client_{flight['client_id']}/{flight[self.field_group_by]}.txt"
         os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -231,7 +246,6 @@ class ReducerGroupBy:
                 sent_first_log = True
                 self.queue_middleware.manual_ack(method)
         log_to_file(self.state_log_filename, f"{client_id}")
-    
 
     def handle_client_message(self, flight):
         message_id = flight["message_id"]
@@ -240,12 +254,12 @@ class ReducerGroupBy:
 
     def handle_airport_file(self, client_id, airport):
         base_fares = []
-        with open( f"reducer_group_by/{self.name}/client_{client_id}/{airport}", 'r') as f:
+        with open(f"reducer_group_by/{self.name}/client_{client_id}/{airport}", 'r') as f:
             for line in f:
                 if line.endswith("#\n"):
                     continue
                 base_fares.append(float(line.replace("\n", "").split(",")[1]))
-        
+
         message = handle_query_5(airport.split(".")[0], base_fares)
         message["client_id"] = client_id
         message["query_number"] = self.query_number
@@ -253,7 +267,6 @@ class ReducerGroupBy:
         self.queue_middleware.send_message(self.output_queue,
                                         json.dumps(message))
         log_to_file(self.state_log_filename, f"{client_id},{airport.split('.')[0]}")
-
 
     def callback_query_4(self, flight, method):
         op_code = flight.get("op_code")
@@ -271,7 +284,7 @@ class ReducerGroupBy:
         self.handle_flight_avg(flight)
         self.save_in_route_file_q4(flight)
         self.queue_middleware.manual_ack(method)
-    
+
     def processed_flight(self, flight):
         client_id = flight.get("client_id")
         message_id = flight.get("message_id")
@@ -290,13 +303,14 @@ class ReducerGroupBy:
         with open(filename, "a+") as file:
             file.write(f"{line}\n")
             file.flush()
+
     def handle_flight_avg(self, flight):
         client_id = flight.get("client_id")
         message_id = flight.get("message_id")
         route = flight.get("route")
         self.handle_avg_results(client_id, route, float(flight["totalFare"]))
         self.flights_received[client_id].add(message_id)
-    
+
     def handle_avg_results(self, client_id, route, totalFare):
         if client_id not in self.query_4_results.keys():
             self.query_4_results[client_id] = dict()
@@ -309,7 +323,6 @@ class ReducerGroupBy:
         self.query_4_results[client_id][route]["sum"] += totalFare 
         self.query_4_results[client_id][route]["count"] += 1
         self.query_4_results[client_id][route]["max"] = max(totalFare, self.query_4_results[client_id][route]["max"])
-
 
     def generate_q4_result_message(self, client_id, method):
         sent_first_log = False
@@ -346,13 +359,13 @@ class ReducerGroupBy:
         message["query_number"] = self.query_number
         message["result_id"] = f"{self.name}_{client_id}_{route}"
         self.queue_middleware.send_message(self.output_queue,
-                                        json.dumps(message))
+                                           json.dumps(message))
         log_to_file(self.state_log_filename, f"{client_id},{route.split('.')[0]}")
 
     def handle_route_avg(self, client_id, route):
         message = dict()
         message["avg"] = self.query_4_results[client_id][route]["sum"] / self.query_4_results[client_id][route]["count"]
-        message["max"] = self.query_4_results[client_id][route]["max"] 
+        message["max"] = self.query_4_results[client_id][route]["max"]
         message["client_id"] = client_id
         message["route"] = route.split(".")[0]
         message["query_number"] = self.query_number
@@ -430,7 +443,3 @@ class ReducerGroupBy:
             del self.flights_received[client_id]
         if self.query_number == 4:
             del self.query_4_results[client_id]
-
-
-
-        

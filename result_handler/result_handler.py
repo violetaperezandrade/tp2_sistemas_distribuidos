@@ -88,8 +88,9 @@ class ResultHandler:
             client_socket.close()
 
     def parse_query_3_result(self, results, client_id, query_number):
+        # print(f"fot client_id: {client_id}, sending: {results}")
         for route, flights in results.items():
-            msg = flights[0]
-            msg["query_number"] = query_number
-            msg = protocol.encode_query_result(msg)
-            self.__send_exact(msg, client_id)
+            for flight in flights:
+                flight["query_number"] = query_number
+                flight = protocol.encode_query_result(flight)
+                self.__send_exact(flight, client_id)
