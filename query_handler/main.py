@@ -14,10 +14,7 @@ def handle_sigterm(signum, sigframe):
 
 
 def run(query_number):
-    reducers = int(os.environ['TOTAL_REDUCERS'])
-    if query_number in [1, 2]:
-        reducers = 1
-    query_handler = QueryHandler(query_number, reducers)
+    query_handler = QueryHandler(query_number)
     try:
         query_handler.run()
     except (pika.exceptions.ChannelWrongStateError, pika.exceptions.ConnectionClosedByBroker):

@@ -8,11 +8,10 @@ from util.queue_middleware import QueueMiddleware
 
 class QueryHandler:
 
-    def __init__(self, query_number, eof_max):
+    def __init__(self, query_number):
         self.query_number = query_number
         self.__input_queue = f"output_{query_number}"
         self.__middleware = QueueMiddleware()
-        self.__eof_max = eof_max
 
     def run(self):
         signal.signal(signal.SIGTERM, self.__middleware.handle_sigterm)

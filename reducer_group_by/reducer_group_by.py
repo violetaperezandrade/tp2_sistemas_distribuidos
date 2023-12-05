@@ -275,7 +275,6 @@ class ReducerGroupBy:
             self.queue_middleware.manual_ack(method)
             return
         if op_code == EOF_FLIGHTS_FILE:
-            print(f"eof {flight}")
             self.spread_eof(client_id, method)
             return
         if self.processed_flight(flight):

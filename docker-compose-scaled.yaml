@@ -48,7 +48,7 @@ services:
     volumes:
       - ./results:/results:rw
       - type: bind
-        source: ./client/itineraries_random_2M.csv
+        source: ./client/itineraries_random_demo.csv
         target: /itineraries.csv
       - type: bind
         source: ./client/airports-codepublic.csv
@@ -66,7 +66,7 @@ services:
     volumes:
       - ./results:/results:rw
       - type: bind
-        source: ./client/itineraries_random_2M.csv
+        source: ./client/itineraries_random_demo.csv
         target: /itineraries.csv
       - type: bind
         source: ./client/airports-codepublic.csv
@@ -134,18 +134,11 @@ services:
       - OUTPUT_QUEUE=output_1
       - OUTPUT_EXCHANGE=three_or_more_stopovers
       - COLUMNS_TO_FILTER=legId,client_id,startingAirport,destinationAirport,stopovers,totalFare,message_id
-    depends_on:
-      - query_handler
-  query_handler:
-    container_name: query_handler
-    image: query_handler:latest
-    entrypoint: python3 /main.py
-    environment:
-      - PYTHONUNBUFFERED=1
-      - TOTAL_REDUCERS=2
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
+    depends_on: &id065
+      - query_handler_1
+      - query_handler_2
+      - query_handler_3
+      - group_by_route
   initial_column_cleaner_2:
     container_name: initial_column_cleaner_2
     image: column_cleaner:latest
@@ -169,8 +162,7 @@ services:
     entrypoint: python3 /main.py
     volumes: *id005
     environment: *id003
-    depends_on:
-      - query_handler
+    depends_on: *id065
   filter_by_three_stopovers_3:
     container_name: filter_by_three_stopovers_3
     image: filter_by_three_stopovers:latest
@@ -178,8 +170,8 @@ services:
     entrypoint: python3 /main.py
     volumes: *id005
     environment: *id003
-    depends_on:
-      - query_handler
+    depends_on: *id065
+
   group_by_id_1:
     container_name: group_by_id_1
     image: group_by:latest
@@ -252,8 +244,10 @@ services:
       - OUTPUT_QUEUE=output_3
       - QUERY_NUMBER=3
       - QUERY_HANDLER_AMOUNT=1
-    depends_on:
-      - query_handler
+    depends_on: &id051
+      - query_handler_1
+      - query_handler_2
+      - query_handler_3
   reducer_group_by_route_2:
     container_name: reducer_group_by_route_2
     image: reducer_group_by:latest
@@ -266,8 +260,7 @@ services:
       - INPUT_QUEUE=group_by_route_queue_2
       - OUTPUT_QUEUE=output_3
       - QUERY_NUMBER=3
-    depends_on:
-      - query_handler
+    depends_on: *id051
   reducer_group_by_route_3:
     container_name: reducer_group_by_route_3
     image: reducer_group_by:latest
@@ -280,8 +273,7 @@ services:
       - INPUT_QUEUE=group_by_route_queue_3
       - OUTPUT_QUEUE=output_3
       - QUERY_NUMBER=3
-    depends_on:
-      - query_handler
+    depends_on: *id051
       
   query_2_column_filter_1:
     container_name: query_2_column_filter_1
@@ -325,8 +317,7 @@ services:
       - INPUT_QUEUE=distance_calculation
       - INPUT_EXCHANGE=airport_registers
       - OUTPUT_QUEUE=output_2
-    depends_on: &id018
-      - query_handler
+    depends_on: *id051
   distance_calculator_2:
     container_name: distance_calculator_2
     image: distance_calculator:latest
@@ -334,7 +325,7 @@ services:
     entrypoint: python3 /main.py
     volumes: *id019
     environment: *id017
-    depends_on: *id018
+    depends_on: *id051
   distance_calculator_3:
     container_name: distance_calculator_3
     image: distance_calculator:latest
@@ -342,7 +333,7 @@ services:
     entrypoint: python3 /main.py
     volumes: *id019
     environment: *id017
-    depends_on: *id018
+    depends_on: *id051
 
   query_5_column_filter_1:
     container_name: query_5_column_filter_1
@@ -414,8 +405,7 @@ services:
       - INPUT_QUEUE=group_by_airport_queue_1
       - OUTPUT_QUEUE=output_5
       - QUERY_NUMBER=5
-    depends_on:
-      - query_handler
+    depends_on: *id051
 
   reducer_group_by_airport_2:
     container_name: reducer_group_by_airport_2
@@ -429,8 +419,7 @@ services:
       - INPUT_QUEUE=group_by_airport_queue_2
       - OUTPUT_QUEUE=output_5
       - QUERY_NUMBER=5
-    depends_on:
-      - query_handler
+    depends_on: *id051
 
   reducer_group_by_airport_3:
     container_name: reducer_group_by_airport_3
@@ -444,9 +433,7 @@ services:
       - INPUT_QUEUE=group_by_airport_queue_3
       - OUTPUT_QUEUE=output_5
       - QUERY_NUMBER=5
-    depends_on:
-      - query_handler
-
+    depends_on: *id051
 
   avg_calculator_1:
     container_name: avg_calculator_1
@@ -624,8 +611,7 @@ services:
        - INPUT_QUEUE=group_by_route_queue_q4_1
        - OUTPUT_QUEUE=output_4
        - QUERY_NUMBER=4
-     depends_on:
-       - query_handler
+     depends_on: *id051
 
 
   reducer_group_by_route_q4_2:
@@ -640,8 +626,8 @@ services:
        - INPUT_QUEUE=group_by_route_queue_q4_2
        - OUTPUT_QUEUE=output_4
        - QUERY_NUMBER=4
-     depends_on:
-       - query_handler
+     depends_on: *id051
+
 
   reducer_group_by_route_q4_3:
      container_name: reducer_group_by_route_q4_3
@@ -655,5 +641,37 @@ services:
        - INPUT_QUEUE=group_by_route_queue_q4_3
        - OUTPUT_QUEUE=output_4
        - QUERY_NUMBER=4
-     depends_on:
-       - query_handler
+     depends_on: *id051
+
+  query_handler_1:
+    container_name: query_handler_1
+    image: query_handler:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TOTAL_REDUCERS=3
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  query_handler_2:
+    container_name: query_handler_2
+    image: query_handler:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TOTAL_REDUCERS=3
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  query_handler_3:
+    container_name: query_handler_3
+    image: query_handler:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TOTAL_REDUCERS=3
+    depends_on:
+      rabbitmq:
+        condition: service_healthy

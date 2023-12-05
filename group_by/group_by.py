@@ -3,15 +3,13 @@ from hashlib import sha256
 import signal
 from math import floor
 import os
-from file_read_backwards import FileReadBackwards
-from functools import reduce
 
 from util.file_manager import log_to_file
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
-from util.constants import (EOF_FLIGHTS_FILE, AIRPORT_REGISTER, BEGIN_EOF,
+from util.constants import (EOF_FLIGHTS_FILE, BEGIN_EOF,
                             EOF_SENT, EOF_CLIENT, FLIGHT_REGISTER, NUMBER_CLIENTS)
-from util.recovery_logging import go_to_sleep, correct_last_line, delete_client_data
+from util.recovery_logging import correct_last_line, get_flights_log_file
 
 REDUCER_ID = 1
 MESSAGES_SENT = 2
@@ -39,10 +37,9 @@ class GroupBy():
         self.requires_query_5_eof = requires_query_5_eof
         self.requires_several_eof = requires_several_eof
         self.state_log_filename = "group_by/" + name + "_state_log.txt"
-        self.flights_log_filename = "group_by/" + name + "_flights_log.txt"
         self.name = name
         self.necessary_lines = dict()
-        self.reducer_messages_per_client = dict()
+
         self.handle_flights_logs = handle_flights_logs
         self.messages_sent_per_client = {i: set() for i in range(1, NUMBER_CLIENTS + 1)}
 
@@ -168,60 +165,32 @@ class GroupBy():
                 self.delete_client_files(client_id)
 
     def handle_reducer_message_per_client(self, client_id, output_queue, flight, message_id):
-        if client_id not in self.reducer_messages_per_client.keys():
-            self.reducer_messages_per_client[client_id] = [0] * self.reducers_amount
-        
         if message_id in self.messages_sent_per_client[client_id]:
             return
-
-        self.reducer_messages_per_client[client_id][output_queue] += 1
-        log_reducers_amounts = ",".join(map(str,
-                                                self.reducer_messages_per_client[client_id]))
         dirname = f"group_by/{self.name}"
         filename = f"{dirname}/client_{client_id}_flights_log.txt"
         os.makedirs(os.path.dirname(filename), exist_ok=True)
-        log_to_file(filename, f"{message_id},{client_id},{log_reducers_amounts}")
+        log_to_file(filename, f"{message_id}")
         self.messages_sent_per_client[client_id].add(message_id)
         self.send_eof_to_reducers(client_id, flight)
 
     def recover_state(self):
-        clients_recovered = []
         dirname = f"group_by/{self.name}"
         if not os.path.exists(dirname):
             return 
         os.makedirs(os.path.dirname(dirname), exist_ok=True)
-        for filename in os.listdir(dirname):
+        for client_id in range(1, NUMBER_CLIENTS+1):
+            filename = get_flights_log_file(dirname, client_id)
             correct_last_line(filename)
-            with FileReadBackwards(filename, encoding="utf-8") as frb:
-                while True:
-                    line = frb.readline()
-                    if not line:
-                        break
-                    if line == '\n':
-                        continue
+            with open(filename, "r") as file:
+                for line in file:
                     if line.endswith("#\n"):
                         continue
-                    line_list_ = line.split(",")
-                    line_list = [ int(x) for x in line_list_]
-                    message_id = line_list.pop(0)
-                    client_id = line_list.pop(0)
-
+                    message_id = int(line)
                     self.messages_sent_per_client[client_id].add(message_id)
-                    
-                    if client_id in clients_recovered:
-                        continue
-                    else:
-                        self.reducer_messages_per_client[client_id] = line_list
-                        clients_recovered.append(client_id)
-        if len(clients_recovered) != NUMBER_CLIENTS:
-            for i in range(1, NUMBER_CLIENTS + 1):
-                if i not in clients_recovered:
-                    self.reducer_messages_per_client[i] = [0] * self.reducers_amount
-        if os.path.exists(self.state_log_filename):
-            correct_last_line(self.state_log_filename)
-            for client in range(1, NUMBER_CLIENTS + 1):
-                self.verify_all_eofs_received(client)
-        return
+                if os.path.exists(self.state_log_filename):
+                    correct_last_line(self.state_log_filename)
+                    self.verify_all_eofs_received(client_id)
 
     def handle_query_5_eof(self, flight):
         client_id = flight["client_id"]
