@@ -106,6 +106,25 @@ def check_files(directory, log_file):
     return
 
 
+def check_files_single_line(directory, filename):
+    log_file = os.path.join(directory, filename)
+    old_file = os.path.join(directory, 'old_' + filename)
+    tmp_file = os.path.join(directory, 'temp_' + filename)
+    if os.path.exists(tmp_file):
+        if os.path.exists(old_file):
+            os.rename(tmp_file, log_file)
+            os.remove(old_file)
+        else:
+            if last_character_is_hash(tmp_file):
+                os.rename(log_file, old_file)
+                os.rename(tmp_file, log_file)
+                os.remove(old_file)
+            else:
+                os.remove(tmp_file)
+    else:
+        os.remove(old_file) if os.path.exists(old_file) else None
+
+
 def create_eof_flights_message_filters(accepted_flights, filter_id, client_id):
     register = dict()
     register["op_code"] = EOF_FLIGHTS_FILE
@@ -119,3 +138,10 @@ def go_to_sleep():
     sleepytime = randint(10, 15)
     print(f"Going to sleep for {sleepytime}")
     sleep(sleepytime)
+
+
+def last_character_is_hash(file_path):
+    with open(file_path, 'rb') as file:
+        file.seek(-1, os.SEEK_END)
+        last_byte = file.read(1)
+        return last_byte == b'#'

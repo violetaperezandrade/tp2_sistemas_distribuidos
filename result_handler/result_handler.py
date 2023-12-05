@@ -23,7 +23,7 @@ class ResultHandler:
         self._main_path = "result_handler/"
 
     def run(self):
-        #signal.signal(signal.SIGTERM, self._handle_sigterm)
+        # signal.signal(signal.SIGTERM, self._handle_sigterm)
         initialize_queues(["results"], self.__middleware)
         while len(self.__client_sockets) < self.total_clients:
             socket = self.__accept_new_connection()
@@ -82,8 +82,9 @@ class ResultHandler:
     #     self.__client_socket.close()
 
     def parse_query_3_result(self, results, client_id, query_number):
+        # print(f"fot client_id: {client_id}, sending: {results}")
         for route, flights in results.items():
-            msg = flights[0]
-            msg["query_number"] = query_number
-            msg = protocol.encode_query_result(msg)
-            self.__send_exact(msg, client_id)
+            for flight in flights:
+                flight["query_number"] = query_number
+                flight = protocol.encode_query_result(flight)
+                self.__send_exact(flight, client_id)
