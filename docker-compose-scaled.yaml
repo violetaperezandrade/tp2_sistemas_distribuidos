@@ -48,7 +48,7 @@ services:
     volumes:
       - ./results:/results:rw
       - type: bind
-        source: ./client/itineraries_random_demo.csv
+        source: ./client/itineraries_random_2M.csv
         target: /itineraries.csv
       - type: bind
         source: ./client/airports-codepublic.csv
@@ -66,7 +66,7 @@ services:
     volumes:
       - ./results:/results:rw
       - type: bind
-        source: ./client/itineraries_random_demo.csv
+        source: ./client/itineraries_random_2M.csv
         target: /itineraries.csv
       - type: bind
         source: ./client/airports-codepublic.csv
@@ -513,7 +513,7 @@ services:
       - EXCHANGE_QUEUE=partial_avg_final_calculator
       - ID=1
     depends_on: &id031
-      - query_handler
+      - group_by_route_query_4
 
   filter_by_average_2:
     container_name: filter_by_average_2

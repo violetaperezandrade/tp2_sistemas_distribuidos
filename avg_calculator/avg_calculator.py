@@ -58,13 +58,14 @@ class AvgCalculator:
             self.send_and_log_partial_avg(client_id, message_id)
             self.__middleware.manual_ack(method)
             return
-        self.sum[index] += float(flight[self.__column_name])
-        self.count[index] += 1
+        base_fare = float(flight[self.__column_name])
         log_to_file(get_flights_log_file(self.main_path, client_id),
-                    f"{message_id},{self.sum[index]},{self.count[index]}")
+                    f"{message_id},{base_fare}")
         if self.eof_status[index]:
             if len(self.__missing_flights[index]) > 0:
                 self.__missing_flights[index].remove(message_id)
+                self.sum[index] += base_fare
+                self.count[index] += 1
             self.send_and_log_partial_avg(client_id, message_id)
         self.__middleware.manual_ack(method)
 
@@ -119,3 +120,4 @@ class AvgCalculator:
                                                     client_id)
             self.__processed_clients.append(client_id)
             delete_client_data(file_path=flights_log_file)
+

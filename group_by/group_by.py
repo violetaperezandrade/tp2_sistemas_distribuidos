@@ -44,7 +44,7 @@ class GroupBy():
         self.necessary_lines = dict()
         self.reducer_messages_per_client = dict()
         self.handle_flights_logs = handle_flights_logs
-        self.messages_sent_per_client = dict()
+        self.messages_sent_per_client = {i: set() for i in range(1, NUMBER_CLIENTS + 1)}
 
     def handle_group_by_fields(self, fields_group_by):
         if len(fields_group_by) > 1:
@@ -160,26 +160,18 @@ class GroupBy():
 
     def send_eof_to_reducers(self, client_id, flight):
         if client_id in self.necessary_lines.keys():
-            total = 0
-            for value in self.reducer_messages_per_client[client_id]:
-                total += value
-            if total == self.necessary_lines[client_id]:
+            if len(self.messages_sent_per_client[client_id]) == self.necessary_lines[client_id]:
                 flight["op_code"] = EOF_FLIGHTS_FILE
-                flight["messages_sent"] = 0
                 for i, reducer in enumerate(self.reducers):
-                    flight["messages_sent"] += self.reducer_messages_per_client[client_id][i]
                     self.queue_middleware.send_message(reducer, json.dumps(flight))
-                    print(f"message {flight}")
-                    print(f"reducer {reducer}")
                 log_to_file(self.state_log_filename, f"{EOF_SENT},{client_id}")
                 self.delete_client_files(client_id)
 
     def handle_reducer_message_per_client(self, client_id, output_queue, flight, message_id):
         if client_id not in self.reducer_messages_per_client.keys():
-            self.messages_sent_per_client[client_id] = set()
             self.reducer_messages_per_client[client_id] = [0] * self.reducers_amount
         
-        if message_id in self.reducer_messages_per_client[client_id]:
+        if message_id in self.messages_sent_per_client[client_id]:
             return
 
         self.reducer_messages_per_client[client_id][output_queue] += 1
@@ -189,7 +181,7 @@ class GroupBy():
         filename = f"{dirname}/client_{client_id}_flights_log.txt"
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         log_to_file(filename, f"{message_id},{client_id},{log_reducers_amounts}")
-        self.reducer_messages_per_client[client_id].add(message_id)
+        self.messages_sent_per_client[client_id].add(message_id)
         self.send_eof_to_reducers(client_id, flight)
 
     def recover_state(self):
@@ -213,9 +205,7 @@ class GroupBy():
                     line_list = [ int(x) for x in line_list_]
                     message_id = line_list.pop(0)
                     client_id = line_list.pop(0)
-                    
-                    if client_id not in self.reducer_messages_per_client.keys():
-                        self.messages_sent_per_client[client_id] = set()
+
                     self.messages_sent_per_client[client_id].add(message_id)
                     
                     if client_id in clients_recovered:

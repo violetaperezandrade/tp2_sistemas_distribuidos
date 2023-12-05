@@ -258,7 +258,6 @@ class ReducerGroupBy:
     def callback_query_4(self, flight, method):
         op_code = flight.get("op_code")
         client_id = flight.get("client_id")
-        print(f"message {flight}")
         if int(client_id) in self.processed_clients:
             self.queue_middleware.manual_ack(method)
             return

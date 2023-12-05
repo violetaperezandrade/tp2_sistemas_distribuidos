@@ -43,20 +43,26 @@ def get_missing_flights_for_avg_calculation(filename, missing_flight_set, first_
     return get_updated_sum_and_count(filename, missing_flight_set)
 
 
-def get_updated_sum_and_count(filename, missing_flight_set=None):
+def get_updated_sum_and_count(filename, missing_flight_set):
     correct_last_line(filename)
+    total_fare = 0
+    count = 0
     with open(filename, 'r') as file:
         for line in file:
             if line.endswith("#\n"):
                 continue
-            line = line.split(",")
-            message_id = int(line[MESSAGE_ID])
-            sum = float(line[SUM])
-            count = int(line[COUNT])
-            if missing_flight_set is not None:
-                if message_id in missing_flight_set:
-                    missing_flight_set.remove(message_id)
-    return sum, count
+            try:
+                message_id, fare = tuple(line.split(","))
+            except ValueError as e:
+                continue
+            message_id = int(message_id)
+            fare = float(fare)
+            if message_id not in missing_flight_set:
+                continue
+            total_fare += fare
+            count += 1
+            missing_flight_set.remove(message_id)
+    return total_fare, count
 
 
 def correct_last_line(filename):
@@ -95,7 +101,6 @@ def delete_node_data(main_path, client_id):
         delete_client_data(folder_path=main_path)
         return
     delete_client_data(file_path=get_flights_log_file(main_path, client_id))
-    print("Deleted files")
 
 
 def check_files(directory, log_file):
