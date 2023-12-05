@@ -15,10 +15,11 @@ from util.constants import (AIRPORT_REGISTER,
 
 
 class SenderClient(Client):
-    def __init__(self, address, flights_file, airports_file):
+    def __init__(self, address, flights_file, airports_file,client_id):
         super().__init__(address)  # Call the constructor of the abstract class
         self._flights_file = flights_file
         self._airports_file = airports_file
+        self._client_id = client_id
         self._eof = False
 
     def run(self):
@@ -67,7 +68,8 @@ class SenderClient(Client):
                 if len(rows) == BATCH_SIZE:
                     try:
                         msg = protocol.encode_registers_batch(rows,
-                                                              AIRPORT_REGISTER)
+                                                              AIRPORT_REGISTER,
+                                                              self._client_id)
                         self._send_exact(msg)
                         self.__retrieve_server_ack()
                         logging.debug(
@@ -82,7 +84,8 @@ class SenderClient(Client):
                     return
                 try:
                     msg = protocol.encode_registers_batch(rows,
-                                                          AIRPORT_REGISTER)
+                                                          AIRPORT_REGISTER,
+                                                          self._client_id)
                     self._send_exact(msg)
                     self.__retrieve_server_ack()
                     logging.debug(
@@ -101,7 +104,8 @@ class SenderClient(Client):
                 if len(rows) == BATCH_SIZE:
                     try:
                         msg = protocol.encode_registers_batch(rows,
-                                                              FLIGHT_REGISTER)
+                                                              FLIGHT_REGISTER,
+                                                              self._client_id)
                         self._send_exact(msg)
                         self.__retrieve_server_ack()
                         logging.debug(
@@ -116,7 +120,8 @@ class SenderClient(Client):
                     return
                 try:
                     msg = protocol.encode_registers_batch(rows,
-                                                          FLIGHT_REGISTER)
+                                                          FLIGHT_REGISTER,
+                                                          self._client_id)
                     self._send_exact(msg)
                     self.__retrieve_server_ack()
                     if self._sigterm:

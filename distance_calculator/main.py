@@ -14,19 +14,19 @@ def main():
     output_queue = os.getenv("OUTPUT_QUEUE", None)
     name = os.getenv("HOSTNAME", None)
     conn1, conn2 = multiprocessing.Pipe()
-    distance_calculator = DistanceCalculator(input_exchange,
-                                             input_queue,
-                                             output_queue,
-                                             conn2)
     dictionary_creator = DictionaryCreator(input_exchange,
                                            name, conn1)
     process = Process(target=dictionary_creator.run,
                       args=())
+    distance_calculator = DistanceCalculator(input_exchange,
+                                             input_queue,
+                                             output_queue,
+                                             conn2, process)
     process.start()
-    # processes.append(new_process)
     try:
         distance_calculator.run()
-    except pika.exceptions.ChannelWrongStateError:
+        process.join()
+    except (pika.exceptions.ChannelWrongStateError, pika.exceptions.ConnectionClosedByBroker):
         pass
 
 

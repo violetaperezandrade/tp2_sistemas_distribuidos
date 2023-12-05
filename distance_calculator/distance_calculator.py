@@ -1,24 +1,27 @@
 import json
+import os
+
 from geopy.distance import geodesic
 import signal
 
-from util.constants import EOF_AIRPORTS_FILE, EOF_FLIGHTS_FILE, NUMBER_CLIENTS
+from util.constants import EOF_FLIGHTS_FILE, NUMBER_CLIENTS
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
 
 
 class DistanceCalculator:
 
-    def __init__(self, input_exchange, input_queue, output_queue, pipe):
+    def __init__(self, input_exchange, input_queue, output_queue, pipe, process):
         self.__middleware = QueueMiddleware()
         self.__airports_distances = {key: dict() for key in range(1, NUMBER_CLIENTS + 1)}
         self.__input_exchange = input_exchange
         self.__input_queue = input_queue
         self.__output_queue = output_queue
         self.__pipe = pipe
+        self.process = process
 
     def run(self):
-        signal.signal(signal.SIGTERM, self.__middleware.handle_sigterm)
+        signal.signal(signal.SIGTERM, self.handle_sigterm)
         initialize_exchanges([self.__input_exchange], self.__middleware)
         initialize_queues([self.__input_queue, self.__output_queue],
                           self.__middleware)
@@ -28,7 +31,8 @@ class DistanceCalculator:
     def __flight_callback(self, body, method):
         register = json.loads(body)
         client_id = register["client_id"]
-        if register["op_code"] == EOF_FLIGHTS_FILE:
+        op_code = register["op_code"]
+        if op_code == EOF_FLIGHTS_FILE:
             self.__middleware.send_message(self.__output_queue,
                                            json.dumps(register))
             self.__middleware.manual_ack(method)
@@ -71,3 +75,7 @@ class DistanceCalculator:
             if alt_client_id != client_id:
                 continue
             break
+
+    def handle_sigterm(self, signum, frame):
+        os.kill(self.process.pid, signal.SIGTERM)
+        self.__middleware.handle_sigterm(signum, frame)

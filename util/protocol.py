@@ -21,8 +21,8 @@ def decode_to_str(payload):
     return flight_str
 
 
-def encode_eof(opcode, id):
-    eof = {"op_code": opcode, "message_id": id, "client_id": id}
+def encode_eof(opcode, message_id, client_id):
+    eof = {"op_code": opcode, "message_id": message_id, "client_id": client_id}
     return json.dumps(eof)
 
 
@@ -41,8 +41,8 @@ def encode_sigterm_msg(opcode):
     return json.dumps(eof)
 
 
-def encode_registers_batch(batch, op_code):
-    batch = list(map(lambda d: {**d, "op_code": op_code}, batch))
+def encode_registers_batch(batch, op_code, client_id):
+    batch = list(map(lambda d: {**d, "op_code": op_code, "client_id": client_id}, batch))
     data_json = json.dumps(batch)
     payload_length = len(data_json)
     header = struct.pack('!I', payload_length & 0xFFFFFF)

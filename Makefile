@@ -53,14 +53,7 @@ docker-compose-logs:
 	docker compose -f docker-compose.yaml logs -f
 .PHONY: docker-compose-logs
 
-docker-compose-scaled-up: docker-image
-	sudo rm -f distance_calculator/*.txt
-	sudo rm -f group_by/*.txt
-	sudo rm -f results/*.txt
-	sudo rm -f column_cleaner/*.txt
-	sudo rm -f result_handler/*.txt
-	sudo rm -f filter_by_three_stopovers/*.txt
-	sudo rm -f reducer_group_by/*.txt
+docker-compose-scaled-up: docker-image docker-compose-scaled-delete
 	docker compose -f docker-compose-scaled.yaml up -d --build
 .PHONY: docker-compose-up
 
@@ -72,3 +65,28 @@ docker-compose-scaled-down:
 docker-compose-scaled-logs:
 	docker compose -f docker-compose-scaled.yaml logs -f
 .PHONY: docker-compose-logs
+
+docker-compose-scaled-delete:
+	sudo rm -r ./distance_calculator/distance_calculator_1 || true
+	sudo rm -r ./distance_calculator/distance_calculator_2 || true
+	sudo rm -r ./distance_calculator/distance_calculator_3 || true
+	sudo rm -r ./group_by/group_by_airport || true
+	sudo rm -r ./group_by/group_by_route || true
+	sudo rm -f ./group_by/*.txt
+	sudo rm -r results || true
+	sudo rm -f column_cleaner/*.txt
+	sudo rm -f result_handler/*.txt
+	sudo rm -r ./reducer_group_by/3 || true
+	sudo rm -r ./reducer_group_by/5 || true
+	sudo rm -r ./reducer_group_by/4 || true
+	sudo rm -r ./avg_calculator/avg_calculator_1 || true
+	sudo rm -r ./avg_calculator/avg_calculator_2 || true
+	sudo rm -r ./avg_calculator/avg_calculator_3 || true
+	sudo rm -r ./filter_by_average/filter_by_average_1 || true
+	sudo rm -r ./filter_by_average/filter_by_average_2 || true
+	sudo rm -r ./filter_by_average/filter_by_average_3 || true
+	sudo rm -r ./group_by/group_by_route_query_4 || true
+	sudo rm -r ./filter_by_three_stopovers/filter_by_three_stopovers_1 || true
+	sudo rm -r ./filter_by_three_stopovers/filter_by_three_stopovers_2 || true
+	sudo rm -r ./filter_by_three_stopovers/filter_by_three_stopovers_3 || true
+.PHONY: docker-compose-scaled-delete
