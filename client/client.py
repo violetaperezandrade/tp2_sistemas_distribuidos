@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 import socket
 import logging
-from time import sleep
 
 
 class Client(ABC):
@@ -26,10 +25,10 @@ class Client(ABC):
         #     f"action: start_connection | host: {self._address[0]}"
         #     f"| port: {self._address[1]} | result: in_progress")
         self._client_socket.connect(self._address)
-        # logging.info(
-        #     f'action: start_connection | host: {self._address[0]} | '
-        #     f'port: {self._address[1]} | result: success'
-        # )
+        logging.info(
+            f'action: start_connection | host: {self._address[0]} | '
+            f'port: {self._address[1]} | result: success'
+        )
 
     def _read_exact(self, bytes_to_read):
         bytes_read = self._client_socket.recv(bytes_to_read)

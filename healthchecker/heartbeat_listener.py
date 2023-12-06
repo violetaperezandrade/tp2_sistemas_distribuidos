@@ -1,7 +1,6 @@
 import socket
 import logging
 import subprocess
-import time
 
 from server_utils import read_exact
 from util.nodes_utils import get_node_from_idx
@@ -20,7 +19,6 @@ class HeartbeatListener():
         self._listener_socket.bind(('', listen_port))
         self._listener_socket.listen(1)
         self._listener_socket.settimeout(timeout)
-        print(f"LISTEN PORT: {listen_port}")
         self._node_id = node_id
         self._timeout = timeout
 
@@ -32,8 +30,8 @@ class HeartbeatListener():
                 node_socket.settimeout(self._timeout)
                 read_exact(node_socket, 1)
             except Exception as e:
-                print(repr(e))
-                print(f"Got exception: {type(e).__name__}")
+                # print(repr(e))
+                print(f"Got exception: {type(e).__name__}, when connecting with {get_node_from_idx(self._node_id)}:")
                 self.restart_node(self._node_id)
                 node_socket = self.__accept_new_connection()
                 while not node_socket:
@@ -43,6 +41,7 @@ class HeartbeatListener():
     def restart_node(self, node_id):
         node_name = get_node_from_idx(node_id)
         print(f"Will restart node {node_name}")
+        # time.sleep(18)
         result = subprocess.run(['docker', 'start', node_name],
                                 check=False,
                                 stdout=subprocess.PIPE,
@@ -60,9 +59,7 @@ class HeartbeatListener():
         """
         try:
             # Connection arrived
-            print("Accepting new connection")
             c, addr = self._listener_socket.accept()
-            print(f"Accepting new connection ip: {addr[0]}")
             logging.info(
                 f'action: accept_connection | ip: {addr[0]}')
             return c

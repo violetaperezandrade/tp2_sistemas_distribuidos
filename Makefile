@@ -20,6 +20,13 @@ all:
 
 docker-image:
 	docker build -f ./healthchecker/Dockerfile -t "healthchecker:latest" .
+	docker build -f ./server/Dockerfile -t "server:latest" .
+	docker build -f ./client/Dockerfile -t "client:latest" .
+	docker build -f ./column_cleaner/Dockerfile -t "column_cleaner:latest" .
+	docker build -f ./filter_by_three_stopovers/Dockerfile -t "filter_by_three_stopovers:latest" .
+	docker build -f ./query_handler/Dockerfile -t "query_handler:latest" .
+	docker build -f ./result_handler/Dockerfile -t "result_handler:latest" .
+	docker build -f ./group_by/Dockerfile -t "group_by:latest" .
 .PHONY: docker-image
 
 docker-compose-hc-up: docker-image

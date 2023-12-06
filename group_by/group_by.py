@@ -10,8 +10,10 @@ from util.file_manager import log_to_file
 from util.initialization import initialize_exchanges, initialize_queues
 from util.queue_middleware import QueueMiddleware
 from util.constants import (EOF_FLIGHTS_FILE, AIRPORT_REGISTER, BEGIN_EOF,
-                            EOF_SENT, EOF_CLIENT, FLIGHT_REGISTER, NUMBER_CLIENTS)
-from util.recovery_logging import go_to_sleep, correct_last_line, delete_client_data
+                            EOF_SENT, EOF_CLIENT, FLIGHT_REGISTER,
+                            NUMBER_CLIENTS)
+from util.recovery_logging import (go_to_sleep, correct_last_line,
+                                   delete_client_data)
 
 REDUCER_ID = 1
 MESSAGES_SENT = 2
@@ -79,7 +81,7 @@ class GroupBy():
         if op_code == EOF_FLIGHTS_FILE:
             if self.requires_query_5_eof:
                 self.handle_query_5_eof(flight)
-            
+
             elif self.requires_several_eof and not self.requires_query_5_eof:
                 self.handle_several_eofs(flight)
 
@@ -109,7 +111,8 @@ class GroupBy():
     def handle_eof(self, flight):
         message_id = flight.get("message_id")
         client_id = flight.get("client_id")
-        log_to_file(self.state_log_filename, f"{BEGIN_EOF},{message_id},{client_id}")
+        log_to_file(self.state_log_filename,
+                    f"{BEGIN_EOF},{message_id},{client_id}")
         messages_sent = floor((flight["message_id"] - 1) / self.reducers_amount)
         module = (flight["message_id"] - 1) % self.reducers_amount
         for reducer in self.reducers + self.reducers_secondary:
@@ -136,7 +139,8 @@ class GroupBy():
         messages_sent = flight["messages_sent"]
         client_id = flight["client_id"]
         reducer_id = flight["filter_id"]
-        log_to_file(self.state_log_filename, f"{EOF_CLIENT},{reducer_id},{messages_sent},{client_id}")
+        log_to_file(self.state_log_filename,
+                    f"{EOF_CLIENT},{reducer_id},{messages_sent},{client_id}")
         self.verify_all_eofs_received(client_id, flight)
 
     def verify_all_eofs_received(self, client_id, flight=None):
@@ -163,14 +167,16 @@ class GroupBy():
             if len(self.messages_sent_per_client[client_id]) == self.necessary_lines[client_id]:
                 flight["op_code"] = EOF_FLIGHTS_FILE
                 for i, reducer in enumerate(self.reducers):
-                    self.queue_middleware.send_message(reducer, json.dumps(flight))
+                    self.queue_middleware.send_message(reducer,
+                                                       json.dumps(flight))
                 log_to_file(self.state_log_filename, f"{EOF_SENT},{client_id}")
                 self.delete_client_files(client_id)
 
-    def handle_reducer_message_per_client(self, client_id, output_queue, flight, message_id):
+    def handle_reducer_message_per_client(self, client_id, output_queue,
+                                          flight, message_id):
         if client_id not in self.reducer_messages_per_client.keys():
             self.reducer_messages_per_client[client_id] = [0] * self.reducers_amount
-        
+
         if message_id in self.messages_sent_per_client[client_id]:
             return
 
@@ -180,7 +186,8 @@ class GroupBy():
         dirname = f"group_by/{self.name}"
         filename = f"{dirname}/client_{client_id}_flights_log.txt"
         os.makedirs(os.path.dirname(filename), exist_ok=True)
-        log_to_file(filename, f"{message_id},{client_id},{log_reducers_amounts}")
+        log_to_file(filename,
+                    f"{message_id},{client_id},{log_reducers_amounts}")
         self.messages_sent_per_client[client_id].add(message_id)
         self.send_eof_to_reducers(client_id, flight)
 
@@ -188,7 +195,7 @@ class GroupBy():
         clients_recovered = []
         dirname = f"group_by/{self.name}"
         if not os.path.exists(dirname):
-            return 
+            return
         os.makedirs(os.path.dirname(dirname), exist_ok=True)
         for filename in os.listdir(dirname):
             correct_last_line(filename)
@@ -202,12 +209,12 @@ class GroupBy():
                     if line.endswith("#\n"):
                         continue
                     line_list_ = line.split(",")
-                    line_list = [ int(x) for x in line_list_]
+                    line_list = [int(x) for x in line_list_]
                     message_id = line_list.pop(0)
                     client_id = line_list.pop(0)
 
                     self.messages_sent_per_client[client_id].add(message_id)
-                    
+
                     if client_id in clients_recovered:
                         continue
                     else:
@@ -226,7 +233,8 @@ class GroupBy():
     def handle_query_5_eof(self, flight):
         client_id = flight["client_id"]
         messages_sent = int(flight["message_id"]) - 1
-        log_to_file(self.state_log_filename, f"{EOF_CLIENT},1,{messages_sent},{client_id}")
+        log_to_file(self.state_log_filename,
+                    f"{EOF_CLIENT},1,{messages_sent},{client_id}")
         self.verify_query_5_eof_received(client_id, flight)
 
     def verify_query_5_eof_received(self, client_id, flight=None):

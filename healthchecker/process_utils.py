@@ -1,6 +1,6 @@
 from time import sleep
 
-from client_socket import ClientSocket
+from util.client_socket import ClientSocket
 from constants import HEARTBEAT, COORDINATOR
 
 

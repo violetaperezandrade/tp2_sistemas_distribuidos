@@ -8,8 +8,9 @@ def main():
     name = os.environ['HOSTNAME']
     total_amount = int(os.environ['TOTAL_AMOUNT'])
     logging_level = os.environ["LOGGING_LEVEL"]
+    nodes_idxs = os.environ["NODES_IDXS"].split(",")
     initialize_log(logging_level)
-    health_checker = HealthChecker(id, total_amount, name)
+    health_checker = HealthChecker(id, total_amount, name, nodes_idxs)
     health_checker.start()
 
 

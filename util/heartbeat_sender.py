@@ -1,6 +1,6 @@
 import time
 import struct
-from client_socket import ClientSocket
+from .client_socket import ClientSocket
 
 
 class HeartbeatSender():
@@ -17,15 +17,21 @@ class HeartbeatSender():
             try:
                 listener_socket = ClientSocket((host, self.__port))
                 listener_socket._start_connection()
+                print(f"Connected, sending heartbeats, host: {self.__hosts[self.__idx]}, port:{self.__port}")
 
                 while True:
                     heartbeat = struct.pack('>B', self.__id)
                     listener_socket._send_exact(heartbeat)
+                    # print(f"Heartbeat sent, h: {heartbeat}"
+                    #       f"host: {host}, port: {self.__port}")
                     time.sleep(self.frequency)
 
             except Exception:
+                # print(f"This is not responding: host: {host}, port: {self.__port}")
                 self.__update_idx()
                 host = self.__hosts[self.__idx]
+                time.sleep(2)
+                # print(f"Now trying with: host: {host}, port: {self.__port}")
 
     def __set_up_port(self):
         host = self.__hosts[self.__idx]
@@ -50,4 +56,5 @@ class HeartbeatSender():
 
     def start(self):
         # self.__set_up_port()
+        print(f"Start sending heartbeats, host: {self.__hosts[self.__idx]}, port:{self.__port}")
         self.__send_heartbeats()

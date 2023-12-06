@@ -3,26 +3,33 @@ import random
 import sys
 from time import sleep
 
-TIME_BETWEEN_DROPS = 10
+TIME_BETWEEN_DROPS = 11
 REPLICATED_NODES = 3
 
 
 def generate_node_list(with_healthcheckers=False):
+    #     potentially_failing_replicated_nodes = ["group_by_id",
+    #                                             "initial_column_cleaner",
+    #                                             "filter_by_three_stopovers",
+    #                                             "reducer_group_by_route",
+    #                                             "query_2_column_filter",
+    #                                             "reducer_group_by_airport",
+    #                                             "query_5_column_filter",
+    #                                             "distance_calculator",
+    #                                             "filter_by_average",
+    #                                             "avg_calculator",
+    #                                             "group_by_id_avg",
+    #                                             "reducer_group_by_route_q4"]
+
+    #     potentially_failing_single_nodes = ["group_by_route",
+    #                                         "group_by_airport",
+    #                                         "group_by_route_query_4"]
     potentially_failing_replicated_nodes = ["group_by_id",
                                             "initial_column_cleaner",
                                             "filter_by_three_stopovers",
-                                            "reducer_group_by_route",
-                                            "query_2_column_filter",
-                                            "reducer_group_by_airport",
-                                            "query_5_column_filter",
-                                            "distance_calculator",
-                                            "filter_by_average",
-                                            "avg_calculator",
-                                            "group_by_id_avg",
-                                            "reducer_group_by_route_q4"]
+                                            "healthchecker"]
 
-    potentially_failing_single_nodes = ["group_by_route", "group_by_airport",
-                                        "group_by_route_query_4"]
+    potentially_failing_single_nodes = ["query_handler"]
 
     possible_failures = []
     for i in range(1, REPLICATED_NODES + 1):
@@ -55,8 +62,8 @@ def main():
     while True:
         random.shuffle(possible_failures)
         for node in possible_failures:
-            print("Restarting {node}")
-            os.system(f"docker restart {node} -t 0")
+            print(f"Stoping {node}")
+            os.system(f"docker stop {node} -t 0")
             sleep(TIME_BETWEEN_DROPS)
 
 

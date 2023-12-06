@@ -1,23 +1,24 @@
 from multiprocessing import Process
 import socket
 
-from client_socket import ClientSocket
+from util.client_socket import ClientSocket
 from constants import PORT, LEADER, HEARTBEAT, ELECTION, COORDINATOR
 from process_utils import leader_validation
 from server_utils import read_exact
 from heartbeat_listener import HeartbeatListener
-from heartbeat_sender import HeartbeatSender
-from util.nodes_utils import get_nodes_list
+from util.heartbeat_sender import HeartbeatSender
+from util.nodes_utils import get_node_from_idx
 
 INVALID_LEADER_ID = -1
 PORT_HB = 5000
 
 
 class HealthChecker:
-    def __init__(self, id, total_amount, name):
+    def __init__(self, id, total_amount, name, nodes_idxs):
         self.__id = id
         self.__total_amount = total_amount
         self.__name = name
+        self.__nodes_idxs = nodes_idxs
         self.__minors = {i: (f"{name[:-1]}{i}",
                              PORT) for i in range(1, id)}
         self.__majors = {i: (f"{name[:-1]}{i}",
@@ -48,7 +49,7 @@ class HealthChecker:
             if self.current_operation == ELECTION:
                 self.launch_election()
             if self.current_operation == LEADER:
-                print("Soy el lider")
+                print("Soy el liderrr")
                 self.act_as_leader()
                 continue
 
@@ -95,18 +96,22 @@ class HealthChecker:
 
         nodes_list = [i for i in range(0, self.__total_amount)]
         nodes_list.remove(int(self.__name[-1]) - 1)
-        print()
         processes = []
         for i in nodes_list:
-            heartbeat_listener = HeartbeatListener(PORT_HB+i, i, 5)
+            heartbeat_listener = HeartbeatListener(PORT_HB+i, i, 8.5)
             print(f"Launching process{i}, port: {PORT_HB+i}, node_id: {i}")
             process = Process(target=heartbeat_listener.start, args=())
             process.start()
             processes.append(process)
 
+        for idx in self.__nodes_idxs:
+            idx = int(idx)
+            heartbeat_listener = HeartbeatListener(PORT_HB+idx, idx, 8.5)
+            process = Process(target=heartbeat_listener.start, args=())
+            process.start()
+            processes.append(process)
+
         while True:
-            # Parte de la accion del lider seria levantar a los nodos
-            # caidos en alguna linea por aca
             self._minor_socket.settimeout(0.5)
             # Tengo que escuchar a ver si viene alguien a sacarme cada tanto
             # (por ejemplo si soy el 1 o el 2 y se

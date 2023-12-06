@@ -1,9 +1,9 @@
-import json
+import pika
 import os
+from multiprocessing import Process
 
 from column_cleaner import ColumnCleaner
-from configparser import ConfigParser
-import pika
+from util.heartbeat_sender import HeartbeatSender
 
 
 def main():
@@ -14,14 +14,30 @@ def main():
     required_columns_flights = os.getenv("REQUIRED_COLUMNS_FLIGHTS", '').split(',')
     required_columns_airports = os.getenv("REQUIRED_COLUMNS_AIRPORTS", '').split(',')
     routing_key = os.getenv("ROUTING_KEY", '')
+    node_id = int(os.environ['IDX'])
+    ips = os.environ['IPS'].split(",")
+    port = int(os.environ['PORT'])
+    frequency = int(os.environ['FREQUENCY'])
     cleaner = ColumnCleaner(output_queue, output_exchange, input_queue,
                             required_columns_flights,
                             required_columns_airports,
                             routing_key)
+    process = Process(target=launch_healthchecker,
+                      args=(node_id,
+                            ips,
+                            port,
+                            frequency))
+    process.start()
     try:
         cleaner.run(input_exchange)
-    except (pika.exceptions.ChannelWrongStateError, pika.exceptions.ConnectionClosedByBroker):
+    except (pika.exceptions.ChannelWrongStateError,
+            pika.exceptions.ConnectionClosedByBroker):
         pass
+
+
+def launch_healthchecker(node_id, ips, port, frequency):
+    heartbeat_sender = HeartbeatSender(node_id, ips, port, frequency)
+    heartbeat_sender.start()
 
 
 if __name__ == '__main__':

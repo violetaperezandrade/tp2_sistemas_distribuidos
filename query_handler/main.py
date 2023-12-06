@@ -4,6 +4,7 @@ import pika
 import signal
 
 from query_handler import QueryHandler
+from util.heartbeat_sender import HeartbeatSender
 QUERIES = 5
 processes = []
 
@@ -13,6 +14,11 @@ def handle_sigterm(signum, sigframe):
         os.kill(process.pid, signal.SIGTERM)
 
 
+def launch_healthchecker(node_id, ips, port, frequency):
+    heartbeat_sender = HeartbeatSender(node_id, ips, port, frequency)
+    heartbeat_sender.start()
+
+
 def run(query_number):
     reducers = int(os.environ['TOTAL_REDUCERS'])
     if query_number in [1, 2]:
@@ -20,11 +26,26 @@ def run(query_number):
     query_handler = QueryHandler(query_number, reducers)
     try:
         query_handler.run()
-    except (pika.exceptions.ChannelWrongStateError, pika.exceptions.ConnectionClosedByBroker):
+    except (pika.exceptions.ChannelWrongStateError,
+            pika.exceptions.ConnectionClosedByBroker):
         pass
 
 
+def run_heartbeat():
+    node_id = int(os.environ['IDX'])
+    ips = os.environ['IPS'].split(",")
+    port = int(os.environ['PORT'])
+    frequency = int(os.environ['FREQUENCY'])
+    process_hb = multiprocessing.Process(target=launch_healthchecker,
+                                         args=(node_id,
+                                               ips,
+                                               port,
+                                               frequency))
+    process_hb.start()
+
+
 signal.signal(signal.SIGTERM, handle_sigterm)
+run_heartbeat()
 for i in range(1, QUERIES+1):
     process = multiprocessing.Process(target=run, args=(i,))
     processes.append(process)

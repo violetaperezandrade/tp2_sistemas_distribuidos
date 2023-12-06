@@ -1,6 +1,8 @@
-from group_by import GroupBy
+from multiprocessing import Process
 import os
 import pika
+from group_by import GroupBy
+from util.heartbeat_sender import HeartbeatSender
 
 
 def main():
@@ -15,14 +17,32 @@ def main():
     requires_several_eof = (os.getenv("SEVERAL_EOF", "false") == "true")
     requires_q5_eof = (os.getenv("QUERY_5_EOF", "false") == "true")
     handle_flights_log = (os.getenv("HANDLE_FLIGHTS_LOG", "false") == "true")
+    node_id = int(os.environ['IDX'])
+    ips = os.environ['IPS'].split(",")
+    port = int(os.environ['PORT'])
+    frequency = int(os.environ['FREQUENCY'])
     group_by = GroupBy(field_group_by, input_exchange,
                        reducers_amount, queue_group_by, listening_queue,
-                       input_queue, name, requires_several_eof, handle_flights_log,
+                       input_queue, name, requires_several_eof,
+                       handle_flights_log,
                        queue_group_by_secondary, requires_q5_eof)
+
+    process = Process(target=launch_healthchecker,
+                      args=(node_id,
+                            ips,
+                            port,
+                            frequency))
+    process.start()
     try:
         group_by.run()
-    except (pika.exceptions.ChannelWrongStateError, pika.exceptions.ConnectionClosedByBroker):
+    except (pika.exceptions.ChannelWrongStateError,
+            pika.exceptions.ConnectionClosedByBroker):
         pass
+
+
+def launch_healthchecker(node_id, ips, port, frequency):
+    heartbeat_sender = HeartbeatSender(node_id, ips, port, frequency)
+    heartbeat_sender.start()
 
 
 if __name__ == '__main__':
