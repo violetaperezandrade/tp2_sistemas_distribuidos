@@ -2,7 +2,7 @@ from multiprocessing import Process
 import os
 import pika
 from group_by import GroupBy
-from util.heartbeat_sender import HeartbeatSender
+from util.launch_heartbeat_sender import launch_heartbeat_sender
 
 
 def main():
@@ -27,7 +27,7 @@ def main():
                        handle_flights_log,
                        queue_group_by_secondary, requires_q5_eof)
 
-    process = Process(target=launch_healthchecker,
+    process = Process(target=launch_heartbeat_sender,
                       args=(node_id,
                             ips,
                             port,
@@ -38,11 +38,6 @@ def main():
     except (pika.exceptions.ChannelWrongStateError,
             pika.exceptions.ConnectionClosedByBroker):
         pass
-
-
-def launch_healthchecker(node_id, ips, port, frequency):
-    heartbeat_sender = HeartbeatSender(node_id, ips, port, frequency)
-    heartbeat_sender.start()
 
 
 if __name__ == '__main__':

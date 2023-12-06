@@ -3,7 +3,7 @@ import pika
 from multiprocessing import Process
 
 from filter_by_three_stopovers import FilterByThreeStopovers
-from util.heartbeat_sender import HeartbeatSender
+from util.launch_heartbeat_sender import launch_heartbeat_sender
 
 
 def main():
@@ -23,7 +23,7 @@ def main():
                                                output_exchange,
                                                name,
                                                reducers_amount)
-    process = Process(target=launch_healthchecker,
+    process = Process(target=launch_heartbeat_sender,
                       args=(node_id,
                             ips,
                             port,
@@ -34,11 +34,6 @@ def main():
     except (pika.exceptions.ChannelWrongStateError,
             pika.exceptions.ConnectionClosedByBroker):
         pass
-
-
-def launch_healthchecker(node_id, ips, port, frequency):
-    heartbeat_sender = HeartbeatSender(node_id, ips, port, frequency)
-    heartbeat_sender.start()
 
 
 if __name__ == '__main__':

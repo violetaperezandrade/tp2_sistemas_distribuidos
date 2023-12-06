@@ -115,7 +115,7 @@ services:
       - IDX=3
       - IPS=healthchecker_1,healthchecker_2,healthchecker_3
       - PORT=5000
-      - FREQUENCY=5
+      - FREQUENCY=1
     depends_on: &id002
       - group_by_id_1
       - group_by_id_2
@@ -146,7 +146,7 @@ services:
       - IDX=9
       - IPS=healthchecker_1,healthchecker_2,healthchecker_3
       - PORT=5000
-      - FREQUENCY=5
+      - FREQUENCY=1
     depends_on:
       - query_handler
 
@@ -160,7 +160,7 @@ services:
       - IDX=12
       - IPS=healthchecker_1,healthchecker_2,healthchecker_3
       - PORT=5000
-      - FREQUENCY=5
+      - FREQUENCY=1
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -180,7 +180,7 @@ services:
       - IDX=4
       - IPS=healthchecker_1,healthchecker_2,healthchecker_3
       - PORT=5000
-      - FREQUENCY=5
+      - FREQUENCY=1
     depends_on: *id002
 
   initial_column_cleaner_3:
@@ -198,7 +198,7 @@ services:
       - IDX=5
       - IPS=healthchecker_1,healthchecker_2,healthchecker_3
       - PORT=5000
-      - FREQUENCY=5
+      - FREQUENCY=1
     depends_on: *id002
 
   filter_by_three_stopovers_2:
@@ -216,7 +216,7 @@ services:
       - IDX=10
       - IPS=healthchecker_1,healthchecker_2,healthchecker_3
       - PORT=5000
-      - FREQUENCY=5
+      - FREQUENCY=1
     depends_on:
       - query_handler
 
@@ -235,7 +235,7 @@ services:
       - IDX=11
       - IPS=healthchecker_1,healthchecker_2,healthchecker_3
       - PORT=5000
-      - FREQUENCY=5
+      - FREQUENCY=1
     depends_on:
       - query_handler
 
@@ -258,7 +258,7 @@ services:
       - IDX=6
       - IPS=healthchecker_1,healthchecker_2,healthchecker_3
       - PORT=5000
-      - FREQUENCY=5
+      - FREQUENCY=1
     depends_on: &id007
       - filter_by_three_stopovers_1
       - filter_by_three_stopovers_2
@@ -282,7 +282,7 @@ services:
       - IDX=7
       - IPS=healthchecker_1,healthchecker_2,healthchecker_3
       - PORT=5000
-      - FREQUENCY=5
+      - FREQUENCY=1
     depends_on: *id007
 
   group_by_id_3:
@@ -303,7 +303,7 @@ services:
       - IDX=8
       - IPS=healthchecker_1,healthchecker_2,healthchecker_3
       - PORT=5000
-      - FREQUENCY=5
+      - FREQUENCY=1
     depends_on: *id007
 
   # group_by_route:
@@ -767,6 +767,8 @@ services:
       - TOTAL_AMOUNT=3
       - LOGGING_LEVEL=INFO
       - NODES_IDXS=3,4,5,6,7,8,9,10,11,12
+      - NODES_TIMEOUT=6
+      - FREQUENCY=1
     depends_on:
       - server
 
@@ -783,6 +785,8 @@ services:
       - TOTAL_AMOUNT=3
       - LOGGING_LEVEL=INFO
       - NODES_IDXS=3,4,5,6,7,8,9,10,11,12
+      - NODES_TIMEOUT=6
+      - FREQUENCY=1
     depends_on:
       - server
       - healthchecker_1
@@ -800,6 +804,8 @@ services:
       - TOTAL_AMOUNT=3
       - LOGGING_LEVEL=INFO
       - NODES_IDXS=3,4,5,6,7,8,9,10,11,12
+      - NODES_TIMEOUT=6
+      - FREQUENCY=1
     depends_on:
       - server
       - healthchecker_1

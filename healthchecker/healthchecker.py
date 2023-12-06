@@ -7,18 +7,20 @@ from process_utils import leader_validation
 from server_utils import read_exact
 from heartbeat_listener import HeartbeatListener
 from util.heartbeat_sender import HeartbeatSender
-from util.nodes_utils import get_node_from_idx
 
 INVALID_LEADER_ID = -1
 PORT_HB = 5000
 
 
 class HealthChecker:
-    def __init__(self, id, total_amount, name, nodes_idxs):
+    def __init__(self, id, total_amount, name, nodes_idxs,
+                 nodes_timeout, frequency):
         self.__id = id
         self.__total_amount = total_amount
         self.__name = name
         self.__nodes_idxs = nodes_idxs
+        self._nodes_timeout = nodes_timeout
+        self._frequency = frequency
         self.__minors = {i: (f"{name[:-1]}{i}",
                              PORT) for i in range(1, id)}
         self.__majors = {i: (f"{name[:-1]}{i}",
@@ -56,10 +58,14 @@ class HealthChecker:
     def await_leader_heartbeats(self, socket):
         if self.__leader_id != INVALID_LEADER_ID:
             print(f"El lider es {self.__leader_id}")
-        hosts = [f"{self.__name[:-1]}{i}" for i in range(1,
-                                                            self.__total_amount + 1) if i != self.__id]
-        print(f"Sending hosts: {hosts}")
-        heartbeat_sender = HeartbeatSender(self.__id-1, hosts, PORT_HB, 0)
+        hosts = [
+            f"{self.__name[:-1]}{i}"
+            for i in range(1, self.__total_amount + 1)
+            if i != self.__id
+            ]
+        heartbeat_sender = HeartbeatSender(self.__id-1,
+                                           hosts, PORT_HB,
+                                           self._frequency)
         sender_process = Process(target=heartbeat_sender.start, args=())
         sender_process.start()
         while True:
@@ -98,7 +104,8 @@ class HealthChecker:
         nodes_list.remove(int(self.__name[-1]) - 1)
         processes = []
         for i in nodes_list:
-            heartbeat_listener = HeartbeatListener(PORT_HB+i, i, 8.5)
+            heartbeat_listener = \
+                HeartbeatListener(PORT_HB+i, i, self._nodes_timeout)
             print(f"Launching process{i}, port: {PORT_HB+i}, node_id: {i}")
             process = Process(target=heartbeat_listener.start, args=())
             process.start()
@@ -106,7 +113,8 @@ class HealthChecker:
 
         for idx in self.__nodes_idxs:
             idx = int(idx)
-            heartbeat_listener = HeartbeatListener(PORT_HB+idx, idx, 8.5)
+            heartbeat_listener = \
+                HeartbeatListener(PORT_HB+idx, idx, self._nodes_timeout)
             process = Process(target=heartbeat_listener.start, args=())
             process.start()
             processes.append(process)

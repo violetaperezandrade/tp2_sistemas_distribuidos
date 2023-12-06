@@ -4,7 +4,7 @@ import pika
 import signal
 
 from query_handler import QueryHandler
-from util.heartbeat_sender import HeartbeatSender
+from util.launch_heartbeat_sender import launch_heartbeat_sender
 QUERIES = 5
 processes = []
 
@@ -12,11 +12,6 @@ processes = []
 def handle_sigterm(signum, sigframe):
     for process in processes:
         os.kill(process.pid, signal.SIGTERM)
-
-
-def launch_healthchecker(node_id, ips, port, frequency):
-    heartbeat_sender = HeartbeatSender(node_id, ips, port, frequency)
-    heartbeat_sender.start()
 
 
 def run(query_number):
@@ -36,7 +31,7 @@ def run_heartbeat():
     ips = os.environ['IPS'].split(",")
     port = int(os.environ['PORT'])
     frequency = int(os.environ['FREQUENCY'])
-    process_hb = multiprocessing.Process(target=launch_healthchecker,
+    process_hb = multiprocessing.Process(target=launch_heartbeat_sender,
                                          args=(node_id,
                                                ips,
                                                port,

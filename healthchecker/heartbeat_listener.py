@@ -29,9 +29,7 @@ class HeartbeatListener():
             try:
                 node_socket.settimeout(self._timeout)
                 read_exact(node_socket, 1)
-            except Exception as e:
-                # print(repr(e))
-                print(f"Got exception: {type(e).__name__}, when connecting with {get_node_from_idx(self._node_id)}:")
+            except Exception:
                 self.restart_node(self._node_id)
                 node_socket = self.__accept_new_connection()
                 while not node_socket:
