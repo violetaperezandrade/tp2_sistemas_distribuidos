@@ -347,14 +347,14 @@ class ReducerGroupBy:
                     max_tFare = float(values[2])
                     count = int(values[3])
                     if count > 0:
-                        avg = sum / count
+                        avg = "{:.10f}".format(float(sum / count))[:-7]
                     break
 
         message = dict()
-        message["avg"] = avg
         message["max"] = max_tFare
-        message["client_id"] = client_id
         message["route"] = route.split(".")[0]
+        message["avg"] = avg
+        message["client_id"] = client_id
         message["query_number"] = self.query_number
         message["result_id"] = f"{self.name}_{client_id}_{route}"
         self.queue_middleware.send_message(self.output_queue,
@@ -363,10 +363,12 @@ class ReducerGroupBy:
 
     def handle_route_avg(self, client_id, route):
         message = dict()
-        message["avg"] = self.query_4_results[client_id][route]["sum"] / self.query_4_results[client_id][route]["count"]
+        sum = self.query_4_results[client_id][route]["sum"]
+        count = self.query_4_results[client_id][route]["count"]
         message["max"] = self.query_4_results[client_id][route]["max"]
-        message["client_id"] = client_id
         message["route"] = route.split(".")[0]
+        message["avg"] = "{:.10f}".format(float(sum / count))[:-7]
+        message["client_id"] = client_id
         message["query_number"] = self.query_number
         message["result_id"] = f"{self.name}_{client_id}_{route}"
         self.queue_middleware.send_message(self.output_queue,
