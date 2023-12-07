@@ -1,9 +1,21 @@
 import os
 import pika
+import signal
 from multiprocessing import Process
 
 from reducer_group_by import ReducerGroupBy
 from util.launch_heartbeat_sender import launch_heartbeat_sender
+
+processes = []
+
+
+def handle_sigterm(signum, sigframe):
+    for process in processes:
+        os.kill(process.pid, signal.SIGTERM)
+        process.join()
+
+
+signal.signal(signal.SIGTERM, handle_sigterm)
 
 
 def main():
@@ -27,6 +39,7 @@ def main():
                             port,
                             frequency))
     process.start()
+    processes.append(process)
     try:
         reducer_group_by.run()
     except pika.exceptions.ChannelWrongStateError:

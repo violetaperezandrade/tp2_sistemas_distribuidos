@@ -1,5 +1,6 @@
 import time
 import struct
+import signal
 from .client_socket import ClientSocket
 
 
@@ -10,17 +11,18 @@ class HeartbeatSender():
         self.__port = port + node_id
         self.frequency = frequency
         self.__idx = 0
+        self.terminate = False
 
     def __send_heartbeats(self):
         host = self.__hosts[self.__idx]
-        while True:
+        while True and not self.terminate:
             try:
                 listener_socket = ClientSocket((host, self.__port))
                 listener_socket._start_connection()
                 print("Connected, sending heartbeats, host:"
                       f" {self.__hosts[self.__idx]}, port:{self.__port}")
 
-                while True:
+                while True and not self.terminate:
                     heartbeat = struct.pack('>B', self.__id)
                     listener_socket._send_exact(heartbeat)
                     time.sleep(self.frequency)
@@ -29,6 +31,7 @@ class HeartbeatSender():
                 self.__update_idx()
                 host = self.__hosts[self.__idx]
                 time.sleep(2)
+        listener_socket._close()
 
     def __set_up_port(self):
         host = self.__hosts[self.__idx]
@@ -50,5 +53,9 @@ class HeartbeatSender():
         self.__idx = (self.__idx + 1) % len(self.__hosts)
 
     def start(self):
+        signal.signal(signal.SIGTERM, self.handle_sigterm)
         # self.__set_up_port()
         self.__send_heartbeats()
+
+    def handle_sigterm(self):
+        self.terminate = True

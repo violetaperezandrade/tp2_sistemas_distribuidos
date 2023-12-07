@@ -1,5 +1,6 @@
 import multiprocessing
 import pika
+import signal
 import os
 
 from multiprocessing import Process
@@ -7,6 +8,17 @@ from multiprocessing import Process
 from final_avg_calculator import FinalAvgCalculator
 from filter_by_average import FilterByAverage
 from util.launch_heartbeat_sender import launch_heartbeat_sender
+
+processes = []
+
+
+def handle_sigterm(signum, sigframe):
+    for process in processes:
+        os.kill(process.pid, signal.SIGTERM)
+        process.join()
+
+
+signal.signal(signal.SIGTERM, handle_sigterm)
 
 
 def main():
@@ -28,6 +40,7 @@ def main():
                                port,
                                frequency))
     process_hb.start()
+    processes.append(process_hb)
 
     conn1, conn2 = multiprocessing.Pipe()
     final_avg_calculator = FinalAvgCalculator(avg_exchange, exchange_queue,
@@ -38,6 +51,7 @@ def main():
     filter_by_average = FilterByAverage(output_queue, input_queue, node_id,
                                         name, total_reducers, conn1, process)
     process.start()
+    processes.append(process)
 
     try:
         filter_by_average.run()

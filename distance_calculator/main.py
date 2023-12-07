@@ -1,10 +1,22 @@
 import multiprocessing
 import os
 import pika
+import signal
 
 from distance_calculator import DistanceCalculator
 from dictionary_creator import DictionaryCreator
 from util.launch_heartbeat_sender import launch_heartbeat_sender
+
+processes = []
+
+
+def handle_sigterm(signum, sigframe):
+    for process in processes:
+        os.kill(process.pid, signal.SIGTERM)
+        process.join()
+
+
+signal.signal(signal.SIGTERM, handle_sigterm)
 
 
 def main():
@@ -23,6 +35,7 @@ def main():
                                               port,
                                               frequency))
     process_h.start()
+    processes.append(process_h)
 
     conn1, conn2 = multiprocessing.Pipe()
     dictionary_creator = DictionaryCreator(input_exchange,
@@ -34,6 +47,7 @@ def main():
                                              output_queue,
                                              conn2, process)
     process.start()
+    processes.append(process)
 
     try:
         distance_calculator.run()

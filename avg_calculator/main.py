@@ -1,8 +1,20 @@
 import os
 import pika
+import signal
 from multiprocessing import Process
 from avg_calculator import AvgCalculator
 from util.launch_heartbeat_sender import launch_heartbeat_sender
+
+processes = []
+
+
+def handle_sigterm(signum, sigframe):
+    for process in processes:
+        os.kill(process.pid, signal.SIGTERM)
+        process.join()
+
+
+signal.signal(signal.SIGTERM, handle_sigterm)
 
 
 def main():
@@ -26,6 +38,7 @@ def main():
                             port,
                             frequency))
     process.start()
+    processes.append(process)
 
     try:
         avg_calculator.run()

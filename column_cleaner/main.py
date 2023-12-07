@@ -1,9 +1,21 @@
 import pika
 import os
+import signal
 from multiprocessing import Process
 
 from column_cleaner import ColumnCleaner
 from util.launch_heartbeat_sender import launch_heartbeat_sender
+
+processes = []
+
+
+def handle_sigterm(signum, sigframe):
+    for process in processes:
+        os.kill(process.pid, signal.SIGTERM)
+        process.join()
+
+
+signal.signal(signal.SIGTERM, handle_sigterm)
 
 
 def main():
@@ -30,6 +42,7 @@ def main():
                             port,
                             frequency))
     process.start()
+    processes.append(process)
     try:
         cleaner.run(input_exchange)
     except (pika.exceptions.ChannelWrongStateError,

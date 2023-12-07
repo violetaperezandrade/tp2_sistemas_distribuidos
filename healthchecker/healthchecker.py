@@ -1,5 +1,6 @@
 from multiprocessing import Process
 import socket
+import signal
 
 from util.client_socket import ClientSocket
 from constants import PORT, LEADER, HEARTBEAT, ELECTION, COORDINATOR
@@ -34,8 +35,10 @@ class HealthChecker:
         if self.__id == self.__total_amount:
             self.current_operation = LEADER
             self.__is_leader = True
+        self.terminate = False
 
     def start(self):
+        signal.signal(signal.SIGTERM, self.handle_sigterm)
         self.execute_next_state()
 
     def execute_next_state(self):
@@ -86,7 +89,7 @@ class HealthChecker:
             except TimeoutError:
                 continue
             msg = list(read_exact(socket2, 2))
-            if msg[1] > self.__leader_id:
+            if msg[1] > self.__leader_id or self.terminate:
                 self.__is_leader = False
                 self.__leader_id = msg[1]
                 sender_process.terminate()
@@ -129,7 +132,7 @@ class HealthChecker:
             except TimeoutError:
                 continue
             msg = list(read_exact(socket, 2))
-            if msg[0] == COORDINATOR:
+            if msg[0] == COORDINATOR or self.terminate:
                 self.__is_leader = False
                 self.current_operation = HEARTBEAT
                 self.__leader_id = msg[1]
@@ -182,3 +185,6 @@ class HealthChecker:
         c, addr = self._minor_socket.accept()
 
         return c
+
+    def handle_sigterm(self, signum, sigframe):
+        self.terminate = True
