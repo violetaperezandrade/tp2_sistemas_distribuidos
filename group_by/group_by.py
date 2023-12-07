@@ -77,8 +77,6 @@ class GroupBy():
                 self.handle_query_5_eof(flight)
             
             elif self.requires_several_eof and not self.requires_query_5_eof:
-                accepted = flight["messages_sent"]
-                print(f"llego EOF de {client_id} con {accepted}")
                 self.handle_several_eofs(flight)
 
             else:
