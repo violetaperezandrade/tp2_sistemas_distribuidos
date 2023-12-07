@@ -9,7 +9,7 @@ def main():
     total_amount = int(os.environ['TOTAL_AMOUNT'])
     logging_level = os.environ["LOGGING_LEVEL"]
     nodes_idxs = os.environ["NODES_IDXS"].split(",")
-    nodes_timeout = int(os.environ['NODES_TIMEOUT'])
+    nodes_timeout = float(os.environ['NODES_TIMEOUT'])
     frequency = int(os.environ['FREQUENCY'])
     initialize_log(logging_level)
     health_checker = HealthChecker(id, total_amount, name,

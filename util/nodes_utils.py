@@ -4,7 +4,9 @@
 # NODES_U = ["group_by_route", "query_handler"]
 
 NODES_R = ["healthchecker", "initial_column_cleaner",
-           "group_by_id", "filter_by_three_stopovers"]
+           "group_by_id", "filter_by_three_stopovers",
+           "query_2_column_filter",
+           "distance_calculator"]
 NODES_U = ["query_handler"]
 
 REPLICATED_NODES = 3

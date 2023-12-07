@@ -120,9 +120,9 @@ services:
       - group_by_id_1
       - group_by_id_2
       - group_by_id_3
-      # - query_2_column_filter_1
-      # - query_2_column_filter_2
-      # - query_2_column_filter_3
+      - query_2_column_filter_1
+      - query_2_column_filter_2
+      - query_2_column_filter_3
       # - query_5_column_filter_1
       # - query_5_column_filter_2
       # - query_5_column_filter_3
@@ -157,7 +157,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - TOTAL_REDUCERS=2
-      - IDX=12
+      - IDX=18
       - IPS=healthchecker_1,healthchecker_2,healthchecker_3
       - PORT=5000
       - FREQUENCY=1
@@ -374,71 +374,121 @@ services:
   #   depends_on:
   #     - query_handler
 
-  # query_2_column_filter_1:
-  #   container_name: query_2_column_filter_1
-  #   image: column_cleaner:latest
-  #   entrypoint: python3 /main.py
-  #   environment: &id015
-  #     - PYTHONUNBUFFERED=1
-  #     - INPUT_EXCHANGE=cleaned_flight_registers
-  #     - INPUT_QUEUE=query_2_filter_queue
-  #     - OUTPUT_QUEUE=distance_calculation
-  #     - OUTPUT_EXCHANGE=airport_registers
-  #     - REQUIRED_COLUMNS_FLIGHTS=op_code,message_id,client_id,legId,startingAirport,destinationAirport,totalTravelDistance,segmentsArrivalAirportCode
-  #     - REQUIRED_COLUMNS_AIRPORTS=op_code,message_id,client_id,Airport Code,Latitude,Longitude
-  #     - ROUTING_KEY=all
-  #     - CONNECTED_NODES=3
-  #   depends_on: &id016
-  #     - distance_calculator_1
-  #     - distance_calculator_2
-  #     - distance_calculator_3
+  query_2_column_filter_1:
+    container_name: query_2_column_filter_1
+    image: column_cleaner:latest
+    entrypoint: python3 /main.py
+    environment: &id015
+      - PYTHONUNBUFFERED=1
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - INPUT_QUEUE=query_2_filter_queue
+      - OUTPUT_QUEUE=distance_calculation
+      - OUTPUT_EXCHANGE=airport_registers
+      - REQUIRED_COLUMNS_FLIGHTS=op_code,message_id,client_id,legId,startingAirport,destinationAirport,totalTravelDistance,segmentsArrivalAirportCode
+      - REQUIRED_COLUMNS_AIRPORTS=op_code,message_id,client_id,Airport Code,Latitude,Longitude
+      - ROUTING_KEY=all
+      - CONNECTED_NODES=3
+      - IDX=12
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: &id016
+      - distance_calculator_1
+      - distance_calculator_2
+      - distance_calculator_3
 
-  # query_2_column_filter_2:
-  #   container_name: query_2_column_filter_2
-  #   image: column_cleaner:latest
-  #   entrypoint: python3 /main.py
-  #   environment: *id015
-  #   depends_on: *id016
+  query_2_column_filter_2:
+    container_name: query_2_column_filter_2
+    image: column_cleaner:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - INPUT_QUEUE=query_2_filter_queue
+      - OUTPUT_QUEUE=distance_calculation
+      - OUTPUT_EXCHANGE=airport_registers
+      - REQUIRED_COLUMNS_FLIGHTS=op_code,message_id,client_id,legId,startingAirport,destinationAirport,totalTravelDistance,segmentsArrivalAirportCode
+      - REQUIRED_COLUMNS_AIRPORTS=op_code,message_id,client_id,Airport Code,Latitude,Longitude
+      - ROUTING_KEY=all
+      - CONNECTED_NODES=3
+      - IDX=13
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: *id016
 
-  # query_2_column_filter_3:
-  #   container_name: query_2_column_filter_3
-  #   image: column_cleaner:latest
-  #   entrypoint: python3 /main.py
-  #   environment: *id015
-  #   depends_on: *id016
+  query_2_column_filter_3:
+    container_name: query_2_column_filter_3
+    image: column_cleaner:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - INPUT_QUEUE=query_2_filter_queue
+      - OUTPUT_QUEUE=distance_calculation
+      - OUTPUT_EXCHANGE=airport_registers
+      - REQUIRED_COLUMNS_FLIGHTS=op_code,message_id,client_id,legId,startingAirport,destinationAirport,totalTravelDistance,segmentsArrivalAirportCode
+      - REQUIRED_COLUMNS_AIRPORTS=op_code,message_id,client_id,Airport Code,Latitude,Longitude
+      - ROUTING_KEY=all
+      - CONNECTED_NODES=3
+      - IDX=14
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: *id016
 
-  # distance_calculator_1:
-  #   container_name: distance_calculator_1
-  #   image: distance_calculator:latest
-  #   entrypoint: python3 /main.py
-  #   hostname: distance_calculator_1
-  #   volumes: &id019
-  #     - ./distance_calculator:/distance_calculator:rw
-  #   environment: &id017
-  #     - PYTHONUNBUFFERED=1
-  #     - INPUT_QUEUE=distance_calculation
-  #     - INPUT_EXCHANGE=airport_registers
-  #     - OUTPUT_QUEUE=output_2
-  #   depends_on: &id018
-  #     - query_handler
+  distance_calculator_1:
+    container_name: distance_calculator_1
+    image: distance_calculator:latest
+    entrypoint: python3 /main.py
+    hostname: distance_calculator_1
+    volumes: &id019
+      - ./distance_calculator:/distance_calculator:rw
+    environment: &id017
+      - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=distance_calculation
+      - INPUT_EXCHANGE=airport_registers
+      - OUTPUT_QUEUE=output_2
+      - IDX=15
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: &id018
+      - query_handler
 
-  # distance_calculator_2:
-  #   container_name: distance_calculator_2
-  #   image: distance_calculator:latest
-  #   hostname: distance_calculator_2
-  #   entrypoint: python3 /main.py
-  #   volumes: *id019
-  #   environment: *id017
-  #   depends_on: *id018
+  distance_calculator_2:
+    container_name: distance_calculator_2
+    image: distance_calculator:latest
+    hostname: distance_calculator_2
+    entrypoint: python3 /main.py
+    volumes: *id019
+    environment:
+      - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=distance_calculation
+      - INPUT_EXCHANGE=airport_registers
+      - OUTPUT_QUEUE=output_2
+      - IDX=16
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: *id018
 
-  # distance_calculator_3:
-  #   container_name: distance_calculator_3
-  #   image: distance_calculator:latest
-  #   hostname: distance_calculator_3
-  #   entrypoint: python3 /main.py
-  #   volumes: *id019
-  #   environment: *id017
-  #   depends_on: *id018
+  distance_calculator_3:
+    container_name: distance_calculator_3
+    image: distance_calculator:latest
+    hostname: distance_calculator_3
+    entrypoint: python3 /main.py
+    volumes: *id019
+    environment:
+      - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=distance_calculation
+      - INPUT_EXCHANGE=airport_registers
+      - OUTPUT_QUEUE=output_2
+      - IDX=17
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: *id018
 
   # query_5_column_filter_1:
   #   container_name: query_5_column_filter_1
@@ -766,8 +816,8 @@ services:
       - ID=1
       - TOTAL_AMOUNT=3
       - LOGGING_LEVEL=INFO
-      - NODES_IDXS=3,4,5,6,7,8,9,10,11,12
-      - NODES_TIMEOUT=6
+      - NODES_IDXS=3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18
+      - NODES_TIMEOUT=7.1
       - FREQUENCY=1
     depends_on:
       - server
@@ -784,8 +834,8 @@ services:
       - ID=2
       - TOTAL_AMOUNT=3
       - LOGGING_LEVEL=INFO
-      - NODES_IDXS=3,4,5,6,7,8,9,10,11,12
-      - NODES_TIMEOUT=6
+      - NODES_IDXS=3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18
+      - NODES_TIMEOUT=7.1
       - FREQUENCY=1
     depends_on:
       - server
@@ -803,8 +853,8 @@ services:
       - ID=3
       - TOTAL_AMOUNT=3
       - LOGGING_LEVEL=INFO
-      - NODES_IDXS=3,4,5,6,7,8,9,10,11,12
-      - NODES_TIMEOUT=6
+      - NODES_IDXS=3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18
+      - NODES_TIMEOUT=7.1
       - FREQUENCY=1
     depends_on:
       - server

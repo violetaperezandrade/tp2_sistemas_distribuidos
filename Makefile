@@ -27,6 +27,7 @@ docker-image:
 	docker build -f ./query_handler/Dockerfile -t "query_handler:latest" .
 	docker build -f ./result_handler/Dockerfile -t "result_handler:latest" .
 	docker build -f ./group_by/Dockerfile -t "group_by:latest" .
+	docker build -f ./distance_calculator/Dockerfile -t "distance_calculator:latest" .
 .PHONY: docker-image
 
 docker-compose-hc-up: docker-image
