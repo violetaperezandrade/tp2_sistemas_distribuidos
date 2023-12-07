@@ -4,7 +4,7 @@ import sys
 from random import randint
 from time import sleep
 
-TIME_BETWEEN_DROPS = 10
+TIME_BETWEEN_DROPS = 30
 REPLICATED_NODES = 3
 
 
@@ -14,13 +14,16 @@ def generate_node_list(with_healthcheckers=False):
                                             "reducer_group_by_route", "query_2_column_filter",
                                             "reducer_group_by_airport", "query_5_column_filter",
                                             "distance_calculator", "filter_by_average", "avg_calculator",
-                                            "group_by_id_avg", "reducer_group_by_route_q4"]
+                                            "group_by_id_avg", "query_handler"]
 
-    potentially_failing_single_nodes = ["group_by_route", "group_by_airport", "group_by_route_query_4"]
+    query_4 = ["initial_column_cleaner",
+               "group_by_id_avg", "filter_by_average", "avg_calculator", "reducer_group_by_route_q4"]
+
+    potentially_failing_single_nodes = ["group_by_route_query_4"]
 
     possible_failures = []
     for i in range(1, REPLICATED_NODES + 1):
-        for node in potentially_failing_replicated_nodes:
+        for node in query_4:
             possible_failures.append(f"{node}_{str(i)}")
         if with_healthcheckers:
             possible_failures.append(f"healthchecker_{str(i)}")

@@ -52,6 +52,7 @@ class ReducerGroupBy:
         initialize_queues([self.output_queue, self.input_queue],
                           self.queue_middleware)
         self.recover_state()
+        os.makedirs(f"reducer_group_by/", exist_ok=True)
         self.queue_middleware.listen_on(self.input_queue, self.__callback)
 
     def __callback(self, body, method):
@@ -428,16 +429,17 @@ class ReducerGroupBy:
                     self.flights_received[client_id].add(values[0])
 
     def delete_client_files(self, client_id):
-        dirname = f"reducer_group_by/{self.name}/client_{client_id}"
-        if os.path.isdir(dirname):
-            client_files = os.listdir(dirname)
-            for filename in client_files:
-                if os.path.exists(f"{dirname}/{filename}"):
-                    os.remove(f"{dirname}/{filename}")
-            os.rmdir(dirname)
-            clients_dirs = os.listdir(f"reducer_group_by/{self.name}")
-            if len(clients_dirs) == 0:
-                os.rmdir(f"reducer_group_by/{self.name}")
+        pass
+        # dirname = f"reducer_group_by/{self.name}/client_{client_id}"
+        # if os.path.isdir(dirname):
+        #     client_files = os.listdir(dirname)
+        #     for filename in client_files:
+        #         if os.path.exists(f"{dirname}/{filename}"):
+        #             os.remove(f"{dirname}/{filename}")
+        #     os.rmdir(dirname)
+        #     clients_dirs = os.listdir(f"reducer_group_by/{self.name}")
+        #     if len(clients_dirs) == 0:
+        #         os.rmdir(f"reducer_group_by/{self.name}")
 
     def clean_client_info(self, client_id):
         if client_id in self.flights_received.keys():

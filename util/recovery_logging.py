@@ -84,14 +84,15 @@ def get_state_log_file(path):
 
 
 def delete_client_data(folder_path=None, file_path=None):
-    if folder_path is not None:
-        shutil.rmtree(folder_path, ignore_errors=True)
-        return
-    if file_path is not None:
-        try:
-            os.remove(file_path)
-        except FileNotFoundError:
-            pass
+    pass
+    # if folder_path is not None:
+    #     shutil.rmtree(folder_path, ignore_errors=True)
+    #     return
+    # if file_path is not None:
+    #     try:
+    #         os.remove(file_path)
+    #     except FileNotFoundError:
+    #         pass
 
 
 def delete_node_data(main_path, client_id):

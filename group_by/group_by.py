@@ -156,7 +156,10 @@ class GroupBy():
                 self.send_eof_to_reducers(client_id, flight)
 
     def send_eof_to_reducers(self, client_id, flight):
+        print(flight)
+        print(f" lineas necesarias son {self.necessary_lines}")
         if client_id in self.necessary_lines.keys():
+            print( f"len es {len(self.messages_sent_per_client[client_id])}")
             if len(self.messages_sent_per_client[client_id]) == self.necessary_lines[client_id]:
                 flight["op_code"] = EOF_FLIGHTS_FILE
                 for i, reducer in enumerate(self.reducers):

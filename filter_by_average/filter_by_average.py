@@ -1,9 +1,8 @@
-
 import json
 import os
 import signal
 
-from util.constants import EOF_FLIGHTS_FILE, NUMBER_CLIENTS, BATCH_SIZE, EOF_SENT, BEGIN_EOF
+from util.constants import EOF_FLIGHTS_FILE, NUMBER_CLIENTS, BATCH_SIZE, EOF_SENT, BEGIN_EOF, READ_SIZE
 from util.initialization import initialize_queues
 from util.queue_middleware import (QueueMiddleware)
 from util.file_manager import log_to_file
@@ -27,7 +26,10 @@ class FilterByAverage:
         self.__eof_received = {i: False for i in range(1, NUMBER_CLIENTS + 1)}
         self.__accepted_flights = {i: 0 for i in range(1, NUMBER_CLIENTS + 1)}
         self.main_path = f"filter_by_average/{self.__name}"
-        self.processed_clients=[]
+        self.processed_clients = set()
+        self.__active_clients = set()
+        self.__received_lines = {i: 0 for i in range(1, NUMBER_CLIENTS + 1)}
+        self.__total_amount = {}
         self.process = process
 
     def run(self):
@@ -46,25 +48,20 @@ class FilterByAverage:
                 or client_id in self.processed_clients):
             self.__middleware.manual_ack(method)
             return
+        self.__active_clients.add(client_id)
         if op_code == EOF_FLIGHTS_FILE:
             self.get_avg_for_client(client_id)
             self.__eof_received[client_id] = True
             log_to_file(get_state_log_file(self.main_path), f"{BEGIN_EOF},{message_id},{client_id}")
-            self.get_missing_flights_and_send(message_id, client_id)
+            self.construct_missing_flights(message_id, client_id)
+            self.read_file_and_send(client_id)
             self.send_and_log_eof(self.__accepted_flights[client_id], client_id, message_id)
             self.__middleware.manual_ack(method)
             return
         log_to_file(get_flights_log_file(self.main_path, client_id), json.dumps(flight))
+        self.__received_lines[client_id] += 1
         if self.__eof_received[client_id]:
-            if len(self.__missing_flights[client_id]) > 0:
-                if float(flight["totalFare"]) > self.__averages[client_id]:
-                    self.__accepted_flights[client_id] += 1
-                    self.__middleware.send_message(self.__output_queue,
-                                                   json.dumps(flight))
-                self.__missing_flights[client_id].remove(message_id)
-            self.__lines_processed[client_id] += 1
-            log_to_file(self.get_filtering_log_file(client_id), f"{self.__lines_processed[client_id]},"
-                                                                f"{self.__accepted_flights[client_id]}")
+            self.read_file_and_send(client_id)
             self.send_and_log_eof(self.__accepted_flights[client_id], client_id, message_id)
         self.__middleware.manual_ack(method)
 
@@ -80,13 +77,20 @@ class FilterByAverage:
                 continue
             break
 
-    def get_missing_flights_and_send(self, eof_message_id, client_id, only_reconstruct=False):
-        for i in range(self.__id, eof_message_id, self.__total_reducers):
+    def construct_missing_flights(self, message_id, client_id):
+        for i in range(self.__id, message_id, self.__total_reducers):
             self.__missing_flights[client_id].add(i)
+        self.__total_amount[client_id] = len(self.__missing_flights[client_id])
+
+    def read_file_and_send(self, client_id, only_reconstruct=False, unlimited=False):
+        if (self.__total_amount[client_id] <= self.__received_lines[client_id] or
+                (self.only_active_client(client_id) and self.__eof_received[client_id])):
+            unlimited = True
         file = get_flights_log_file(self.main_path, client_id)
-        correct_last_line(file)
         loop_number = 1
         lines_currently_processed = self.__lines_processed[client_id]
+        if only_reconstruct:
+            correct_last_line(file)
         with open(file, "r") as flights_file:
             for line in flights_file:
                 if line.endswith("#\n"):
@@ -101,6 +105,10 @@ class FilterByAverage:
                         else:
                             loop_number += 1
                             continue
+                else:
+                    if loop_number <= lines_currently_processed:
+                        loop_number += 1
+                        continue
                 self.__lines_processed[client_id] += 1
                 if message_id not in self.__missing_flights[client_id]:
                     continue
@@ -109,11 +117,13 @@ class FilterByAverage:
                     self.__middleware.send_message(self.__output_queue,
                                                    json.dumps(flight))
                     self.__accepted_flights[client_id] += 1
-                if self.__lines_processed[client_id] % BATCH_SIZE == 0:
+                if self.__lines_processed[client_id] % READ_SIZE == 0:
                     log_to_file(self.get_filtering_log_file(client_id),
                                 f"{self.__lines_processed[client_id]},"
                                 f"{self.__accepted_flights[client_id]}")
-        modulus = self.__lines_processed[client_id] % BATCH_SIZE
+                    if not unlimited:
+                        return
+        modulus = self.__lines_processed[client_id] % READ_SIZE
         if modulus != 0:
             log_to_file(self.get_filtering_log_file(client_id), f"{self.__lines_processed[client_id]},"
                                                                 f"{self.__accepted_flights[client_id]}")
@@ -122,12 +132,13 @@ class FilterByAverage:
         if len(self.__missing_flights[client_id]) == 0:
             eof = create_eof_flights_message_filters(accepted_flights, self.__id, client_id)
             eof["message_id"] = int(message_id)
+            print(f"lineas enviadas son {self.__accepted_flights[client_id]}")
             self.__middleware.send_message(self.__output_queue, json.dumps(eof))
             log_to_file(get_state_log_file(self.main_path), f"{EOF_SENT},{eof.get('client_id')}")
-            self.processed_clients.append(client_id)
-            delete_client_data(file_path=get_flights_log_file(self.main_path, client_id))
-            delete_client_data(file_path=self.get_avg_file(client_id))
-            delete_client_data(file_path=self.get_filtering_log_file(client_id))
+            self.end_client_processing(client_id)
+
+    def only_active_client(self, client_id):
+        return len(self.__active_clients) == 1 and client_id in self.__active_clients
 
     def recover_sent_state(self):
         for i in range(1, NUMBER_CLIENTS + 1):
@@ -139,7 +150,7 @@ class FilterByAverage:
                         if line.endswith("#\n"):
                             continue
                         try:
-                            processed_lines, accepted_lines, index = tuple(line.split(","))
+                            processed_lines, accepted_lines = tuple(line.split(","))
                         except ValueError as e:
                             continue
                         processed_lines = int(processed_lines)
@@ -148,6 +159,7 @@ class FilterByAverage:
                         self.__accepted_flights[i] = accepted_lines
         filepath = get_state_log_file(self.main_path)
         recovered_clients = []
+        self.get_lines_sent_for_all_clients()
         if os.path.exists(filepath):
             correct_last_line(filepath)
             with open(filepath, "r") as state_file:
@@ -166,16 +178,21 @@ class FilterByAverage:
                         continue
                     if opcode == BEGIN_EOF:
                         if f"{EOF_SENT},{client_id}\n" in lines:
-                            self.processed_clients.append(client_id)
-                            delete_client_data(file_path=get_flights_log_file(self.main_path, client_id))
-                            delete_client_data(file_path=self.get_avg_file(client_id))
-                            delete_client_data(file_path=self.get_filtering_log_file(client_id))
+                            self.end_client_processing(client_id)
                             continue
                         self.get_avg_for_client(client_id)
                         self.__eof_received[client_id] = True
-                        self.get_missing_flights_and_send(message_id, client_id, True)
+                        self.construct_missing_flights(message_id, client_id)
+                        self.read_file_and_send(client_id, True)
                         self.send_and_log_eof(self.__accepted_flights[client_id], client_id, message_id)
                         recovered_clients.append(client_id)
+
+    def end_client_processing(self, client_id):
+        self.processed_clients.add(client_id)
+        self.__active_clients.discard(client_id)
+        delete_client_data(file_path=get_flights_log_file(self.main_path, client_id))
+        delete_client_data(file_path=self.get_avg_file(client_id))
+        delete_client_data(file_path=self.get_filtering_log_file(client_id))
 
     def get_filtering_log_file(self, client_id):
         file = f"{self.main_path}/client_{client_id}_filtering_log.txt"
@@ -188,3 +205,11 @@ class FilterByAverage:
     def handle_sigterm(self, signum, frame):
         os.kill(self.process.pid, signal.SIGTERM)
         self.__middleware.handle_sigterm(signum, frame)
+
+    def get_lines_sent_for_all_clients(self):
+        for client_id in range(1, NUMBER_CLIENTS + 1):
+            try:
+                file = get_flights_log_file(self.main_path, client_id)
+                self.__received_lines[client_id] = sum(1 for i in open(file, 'rb'))
+            except FileNotFoundError:
+                continue
