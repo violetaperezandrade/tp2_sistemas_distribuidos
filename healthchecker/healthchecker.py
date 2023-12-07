@@ -42,7 +42,7 @@ class HealthChecker:
         self.execute_next_state()
 
     def execute_next_state(self):
-        while True:
+        while True and not self.terminate:
             if self.current_operation == HEARTBEAT:
                 try:
                     self._minor_socket.settimeout(10.0)

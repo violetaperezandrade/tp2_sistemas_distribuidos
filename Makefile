@@ -81,3 +81,12 @@ docker-compose-scaled-delete:
 	sudo rm -r ./filter_by_three_stopovers/filter_by_three_stopovers_2 || true
 	sudo rm -r ./filter_by_three_stopovers/filter_by_three_stopovers_3 || true
 .PHONY: docker-compose-scaled-delete
+
+docker-compose-scaled-sigterm:
+	docker stop healthchecker_3 -t 10
+	docker stop healthchecker_2 -t 10
+	docker stop healthchecker_1 -t 10
+	sleep 5
+	docker compose -f docker-compose-scaled.yaml stop -t 20
+	docker compose -f docker-compose-scaled.yaml down --remove-orphans
+.PHONY: docker-compose-sigterm
