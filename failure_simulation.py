@@ -12,7 +12,6 @@ def generate_node_list(with_healthcheckers=False):
     potentially_failing_replicated_nodes = ["group_by_id",
                                             "initial_column_cleaner",
                                             "filter_by_three_stopovers",
-                                            "healthchecker",
                                             "query_2_column_filter",
                                             "reducer_group_by_airport",
                                             "query_5_column_filter",
@@ -21,7 +20,8 @@ def generate_node_list(with_healthcheckers=False):
                                             "filter_by_average",
                                             "avg_calculator",
                                             "group_by_id_avg",
-                                            "reducer_group_by_route_q4"]
+                                            "reducer_group_by_route_q4",
+                                            "healthchecker"]
 
     potentially_failing_single_nodes = ["query_handler", "group_by_airport",
                                         "group_by_route",
@@ -42,7 +42,8 @@ def main():
         if sys.argv[1] == "-all":
             possible_failures = generate_node_list(True)
             print("Dropping all")
-            possible_failures.remove("healthchecker_1")
+            while "healthchecker_3" in possible_failures:
+                possible_failures.remove("healthchecker_3")
             for node in possible_failures:
                 os.system(f"docker stop {node} -t 0")
             return

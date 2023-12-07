@@ -3,7 +3,7 @@ import json
 import os
 import signal
 
-from util.constants import EOF_FLIGHTS_FILE, NUMBER_CLIENTS, BATCH_SIZE, EOF_SENT, BEGIN_EOF
+from util.constants import EOF_FLIGHTS_FILE, NUMBER_CLIENTS, EOF_SENT, BEGIN_EOF, READ_SIZE
 from util.initialization import initialize_queues
 from util.queue_middleware import (QueueMiddleware)
 from util.file_manager import log_to_file
@@ -27,7 +27,7 @@ class FilterByAverage:
         self.__eof_received = {i: False for i in range(1, NUMBER_CLIENTS + 1)}
         self.__accepted_flights = {i: 0 for i in range(1, NUMBER_CLIENTS + 1)}
         self.main_path = f"filter_by_average/{self.__name}"
-        self.processed_clients=[]
+        self.processed_clients=set()
         self.process = process
 
     def run(self):
@@ -109,11 +109,11 @@ class FilterByAverage:
                     self.__middleware.send_message(self.__output_queue,
                                                    json.dumps(flight))
                     self.__accepted_flights[client_id] += 1
-                if self.__lines_processed[client_id] % BATCH_SIZE == 0:
+                if self.__lines_processed[client_id] % READ_SIZE == 0:
                     log_to_file(self.get_filtering_log_file(client_id),
                                 f"{self.__lines_processed[client_id]},"
                                 f"{self.__accepted_flights[client_id]}")
-        modulus = self.__lines_processed[client_id] % BATCH_SIZE
+        modulus = self.__lines_processed[client_id] % READ_SIZE
         if modulus != 0:
             log_to_file(self.get_filtering_log_file(client_id), f"{self.__lines_processed[client_id]},"
                                                                 f"{self.__accepted_flights[client_id]}")
@@ -123,8 +123,9 @@ class FilterByAverage:
             eof = create_eof_flights_message_filters(accepted_flights, self.__id, client_id)
             eof["message_id"] = int(message_id)
             self.__middleware.send_message(self.__output_queue, json.dumps(eof))
+            print(f"envie {eof}")
             log_to_file(get_state_log_file(self.main_path), f"{EOF_SENT},{eof.get('client_id')}")
-            self.processed_clients.append(client_id)
+            self.processed_clients.add(client_id)
             delete_client_data(file_path=get_flights_log_file(self.main_path, client_id))
             delete_client_data(file_path=self.get_avg_file(client_id))
             delete_client_data(file_path=self.get_filtering_log_file(client_id))
@@ -166,7 +167,7 @@ class FilterByAverage:
                         continue
                     if opcode == BEGIN_EOF:
                         if f"{EOF_SENT},{client_id}\n" in lines:
-                            self.processed_clients.append(client_id)
+                            self.processed_clients.add(client_id)
                             delete_client_data(file_path=get_flights_log_file(self.main_path, client_id))
                             delete_client_data(file_path=self.get_avg_file(client_id))
                             delete_client_data(file_path=self.get_filtering_log_file(client_id))

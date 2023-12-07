@@ -12,7 +12,7 @@ def main():
     node_id = int(os.getenv("ID", None))
     name = os.getenv("HOSTNAME", None)
     total_reducers = int(os.getenv("TOTAL_REDUCERS", 3))
-    node_id = int(os.environ['IDX'])
+    node_idx = int(os.environ['IDX'])
     ips = os.environ['IPS'].split(",")
     port = int(os.environ['PORT'])
     frequency = int(os.environ['FREQUENCY'])
@@ -21,7 +21,7 @@ def main():
                                    node_id, name, total_reducers)
 
     process = Process(target=launch_heartbeat_sender,
-                      args=(node_id,
+                      args=(node_idx,
                             ips,
                             port,
                             frequency))

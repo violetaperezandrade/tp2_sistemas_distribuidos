@@ -69,7 +69,7 @@ services:
     volumes:
       - ./results:/results:rw
       - type: bind
-        source: ./client/itineraries_random_demo_500K.csv
+        source: ./client/itineraries_random_demo_750K.csv
         target: /itineraries.csv
       - type: bind
         source: ./client/airports-codepublic.csv
@@ -88,7 +88,7 @@ services:
     volumes:
       - ./results:/results:rw
       - type: bind
-        source: ./client/itineraries_random_demo_500K.csv
+        source: ./client/itineraries_random_2M.csv
         target: /itineraries.csv
       - type: bind
         source: ./client/airports-codepublic.csv
