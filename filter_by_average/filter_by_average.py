@@ -123,7 +123,6 @@ class FilterByAverage:
             eof = create_eof_flights_message_filters(accepted_flights, self.__id, client_id)
             eof["message_id"] = int(message_id)
             self.__middleware.send_message(self.__output_queue, json.dumps(eof))
-            print(f"envie {eof}")
             log_to_file(get_state_log_file(self.main_path), f"{EOF_SENT},{eof.get('client_id')}")
             self.processed_clients.add(client_id)
             delete_client_data(file_path=get_flights_log_file(self.main_path, client_id))
