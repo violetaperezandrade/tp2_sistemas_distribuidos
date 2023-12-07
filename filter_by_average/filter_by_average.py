@@ -61,7 +61,11 @@ class FilterByAverage:
         log_to_file(get_flights_log_file(self.main_path, client_id), json.dumps(flight))
         self.__received_lines[client_id] += 1
         if self.__eof_received[client_id]:
-            self.read_file_and_send(client_id)
+            if self.__received_lines[client_id] >= self.__total_amount[client_id]:
+                self.read_file_and_send(client_id, unlimited=True)
+            else:
+                if self.__received_lines[client_id] - self.__lines_processed[client_id] >= READ_SIZE:
+                    self.read_file_and_send(client_id)
             self.send_and_log_eof(self.__accepted_flights[client_id], client_id, message_id)
         self.__middleware.manual_ack(method)
 
@@ -83,9 +87,6 @@ class FilterByAverage:
         self.__total_amount[client_id] = len(self.__missing_flights[client_id])
 
     def read_file_and_send(self, client_id, only_reconstruct=False, unlimited=False):
-        if (self.__total_amount[client_id] <= self.__received_lines[client_id] or
-                (self.only_active_client(client_id) and self.__eof_received[client_id])):
-            unlimited = True
         file = get_flights_log_file(self.main_path, client_id)
         loop_number = 1
         lines_currently_processed = self.__lines_processed[client_id]

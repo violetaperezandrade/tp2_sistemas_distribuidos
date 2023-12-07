@@ -204,7 +204,8 @@ class ReducerGroupBy:
                 for line in f:
                     if line.endswith("#\n"):
                         continue
-                    self.flights_received[client_id].add(line.split(",")[0])
+                    message_id = int(line.split(",")[0])
+                    self.flights_received[client_id].add(message_id)
 
     def recover_process_state_file(self):
         client_finished = set()
@@ -218,15 +219,16 @@ class ReducerGroupBy:
                         continue
                     line = line.replace("\n", "")
                     data = line.split(",")
+                    client_id = int(data[0])
                     if len(data) == 1:
-                        client_finished.add(data[0])
+                        client_finished.add(client_id)
 
-                    elif len(data) == 2 and data[0] not in client_finished:
-                        if data[0] not in client_unfinished.keys():
-                            client_unfinished[data[0]] = set()
-                            client_unfinished[data[0]].add(data[1])
+                    elif len(data) == 2 and client_id not in client_finished:
+                        if client_id not in client_unfinished.keys():
+                            client_unfinished[client_id] = set()
+                            client_unfinished[client_id].add(data[1])
                         else:
-                            client_unfinished[data[0]].add(data[1])
+                            client_unfinished[client_id].add(data[1])
 
             self.processed_clients = list(client_finished)
         return client_unfinished
@@ -333,6 +335,7 @@ class ReducerGroupBy:
                 sent_first_log = True
                 self.queue_middleware.manual_ack(method)
         log_to_file(self.state_log_filename, f"{client_id}")
+        self.processed_clients.append(int(client_id))
 
     def handle_route_file(self, client_id, route):
         sum = 0
@@ -394,11 +397,11 @@ class ReducerGroupBy:
                     if route_code not in data[client_id]:
                         self.handle_route_file(client_id, route)
                 log_to_file(self.state_log_filename, f"{client_id}")
-                self.processed_clients.append(int(client_id))
+                self.processed_clients.append(client_id)
 
     def recover_processing_clients_data_q4(self, data):
         for client_id in range(1, self.n_clients + 1):
-            if client_id not in data.keys() and int(client_id) not in self.processed_clients and os.path.isdir(f"reducer_group_by/{self.name}/client_{client_id}"):
+            if client_id not in data.keys() and client_id not in self.processed_clients and os.path.isdir(f"reducer_group_by/{self.name}/client_{client_id}"):
                 log_files = os.listdir(f"reducer_group_by/{self.name}/client_{client_id}")
                 self.recover_processed_client_avg_q4(client_id,log_files)
 
@@ -425,21 +428,20 @@ class ReducerGroupBy:
                     
                     self.query_4_results[client_id][route]["sum"] = float(values[1])
                     self.query_4_results[client_id][route]["max"] = float(values[2])
-                    self.query_4_results[client_id][route]["count"] += 1
-                    self.flights_received[client_id].add(values[0])
+                    self.query_4_results[client_id][route]["count"] = int(values[3])
+                    self.flights_received[client_id].add(int(values[0]))
 
     def delete_client_files(self, client_id):
-        pass
-        # dirname = f"reducer_group_by/{self.name}/client_{client_id}"
-        # if os.path.isdir(dirname):
-        #     client_files = os.listdir(dirname)
-        #     for filename in client_files:
-        #         if os.path.exists(f"{dirname}/{filename}"):
-        #             os.remove(f"{dirname}/{filename}")
-        #     os.rmdir(dirname)
-        #     clients_dirs = os.listdir(f"reducer_group_by/{self.name}")
-        #     if len(clients_dirs) == 0:
-        #         os.rmdir(f"reducer_group_by/{self.name}")
+        dirname = f"reducer_group_by/{self.name}/client_{client_id}"
+        if os.path.isdir(dirname):
+            client_files = os.listdir(dirname)
+            for filename in client_files:
+                if os.path.exists(f"{dirname}/{filename}"):
+                    os.remove(f"{dirname}/{filename}")
+            os.rmdir(dirname)
+            clients_dirs = os.listdir(f"reducer_group_by/{self.name}")
+            if len(clients_dirs) == 0:
+                os.rmdir(f"reducer_group_by/{self.name}")
 
     def clean_client_info(self, client_id):
         if client_id in self.flights_received.keys():
