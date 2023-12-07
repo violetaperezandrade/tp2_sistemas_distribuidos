@@ -2,24 +2,7 @@ default: docker-compose-up
 
 all:
 
-# docker-image:
-# 	docker build -f ./filter_by_average/Dockerfile -t "filter_by_average:latest" .
-# .PHONY: docker-image
-
-# docker-image:
-# 	docker build -f ./server/Dockerfile -t "server:latest" .
-# 	docker build -f ./client/Dockerfile -t "client:latest" .
-# 	docker build -f ./column_cleaner/Dockerfile -t "column_cleaner:latest" .
-# 	docker build -f ./filter_by_three_stopovers/Dockerfile -t "filter_by_three_stopovers:latest" .
-# 	docker build -f ./query_handler/Dockerfile -t "query_handler:latest" .
-# 	docker build -f ./result_handler/Dockerfile -t "result_handler:latest" .
-# 	docker build -f ./group_by/Dockerfile -t "group_by:latest" .
-# 	docker build -f ./reducer_group_by/Dockerfile -t "reducer_group_by:latest" .
-# 	docker build -f ./distance_calculator/Dockerfile -t "distance_calculator:latest" .
-# .PHONY: docker-image
-
 docker-image:
-	docker build -f ./healthchecker/Dockerfile -t "healthchecker:latest" .
 	docker build -f ./server/Dockerfile -t "server:latest" .
 	docker build -f ./client/Dockerfile -t "client:latest" .
 	docker build -f ./column_cleaner/Dockerfile -t "column_cleaner:latest" .
@@ -27,7 +10,12 @@ docker-image:
 	docker build -f ./query_handler/Dockerfile -t "query_handler:latest" .
 	docker build -f ./result_handler/Dockerfile -t "result_handler:latest" .
 	docker build -f ./group_by/Dockerfile -t "group_by:latest" .
+	docker build -f ./reducer_group_by/Dockerfile -t "reducer_group_by:latest" .
 	docker build -f ./distance_calculator/Dockerfile -t "distance_calculator:latest" .
+	docker build -f ./avg_calculator/Dockerfile -t "avg_calculator:latest" .
+	docker build -f ./filter_by_average/Dockerfile -t "filter_by_average:latest" .
+	docker build -f ./filter_by_average/Dockerfile -t "filter_by_average:latest" .
+	docker build -f ./healthchecker/Dockerfile -t "healthchecker:latest" .
 .PHONY: docker-image
 
 docker-compose-hc-up: docker-image
@@ -42,11 +30,6 @@ docker-compose-hc-down:
 docker-compose-hc-logs:
 	docker compose -f docker-compose-hc.yaml logs -f
 .PHONY: docker-compose-hc-logs
-
-
-
-
-
 
 docker-compose-up: docker-image
 	docker compose -f docker-compose.yaml up -d --build

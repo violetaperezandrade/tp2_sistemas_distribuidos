@@ -1,13 +1,13 @@
-# NODES_R = ["group_by_id", "initial_column_cleaner",
-#            "filter_by_three_stopovers", "reducer_group_by_route",
-#            "group_by_id", "healthchecker"]
-# NODES_U = ["group_by_route", "query_handler"]
-
 NODES_R = ["healthchecker", "initial_column_cleaner",
            "group_by_id", "filter_by_three_stopovers",
            "query_2_column_filter",
-           "distance_calculator"]
-NODES_U = ["query_handler"]
+           "distance_calculator", "query_5_column_filter",
+           "reducer_group_by_airport",
+           "reducer_group_by_route", "avg_calculator",
+           "filter_by_average", "group_by_id_avg",
+           "reducer_group_by_route_q4"]
+NODES_U = ["query_handler", "group_by_airport", "group_by_route",
+           "group_by_route_query_4"]
 
 REPLICATED_NODES = 3
 

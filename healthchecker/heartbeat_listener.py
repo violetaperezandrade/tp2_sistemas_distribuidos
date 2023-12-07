@@ -1,6 +1,7 @@
 import socket
 import logging
 import subprocess
+import time
 
 from server_utils import read_exact
 from util.nodes_utils import get_node_from_idx
@@ -14,6 +15,8 @@ NODES_U = ["group_by_route", "query_handler"]
 class HeartbeatListener():
     def __init__(self, listen_port, node_id, timeout):
         # Initialize server socket
+        self._listener_socket = self.setup_listener_socket(listen_port,
+                                                           timeout)
         self._listener_socket = socket.socket(socket.AF_INET,
                                               socket.SOCK_STREAM)
         self._listener_socket.bind(('', listen_port))
@@ -21,6 +24,20 @@ class HeartbeatListener():
         self._listener_socket.settimeout(timeout)
         self._node_id = node_id
         self._timeout = timeout
+
+    def setup_listener_socket(self, listen_port, timeout):
+        while True:
+            try:
+                listener_socket = socket.socket(socket.AF_INET,
+                                                socket.SOCK_STREAM)
+                listener_socket.bind(('', listen_port))
+                listener_socket.listen(1)
+                listener_socket.settimeout(timeout)
+                return listener_socket
+            except Exception as e:
+                print(f"Error setting up listener socket: {e}")
+                print("Retrying in 2 seconds...")
+                time.sleep(2)
 
     def start(self):
         node_socket = self.__accept_new_connection()
