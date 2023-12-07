@@ -22,8 +22,9 @@ class ListenerClient(Client):
                   open(f"results/{hostname}/query4.txt", mode='w') as file4,
                   open(f"results/{hostname}/query5.txt", mode='w') as file5):
                 while not self._sigterm and not self._eof:
-                    self.__retrieve_result([file1, file2, file3, file4, file5],
-                                           client_id)
+                    self.__retrieve_result([file1, file2,
+                                            file3, file4,
+                                            file5], client_id)
         except OSError:
             if self._sigterm:
                 logging.info('action: sigterm received')
@@ -50,6 +51,10 @@ class ListenerClient(Client):
             result = protocol.decode_query_result(payload)
             query_number = result.pop('query_number')
             # print(f"QUERY {query_number}: {result}")
+            # only for the diff
+            if query_number == 1:
+                result['totalFare'] = '{:.2f}'.format(
+                    float(result['totalFare']))
             files[int(query_number) - 1].write(str(result) + '\n')
             files[int(query_number) - 1].flush()
         except OSError as e:

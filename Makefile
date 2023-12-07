@@ -14,7 +14,22 @@ docker-image:
 	docker build -f ./distance_calculator/Dockerfile -t "distance_calculator:latest" .
 	docker build -f ./avg_calculator/Dockerfile -t "avg_calculator:latest" .
 	docker build -f ./filter_by_average/Dockerfile -t "filter_by_average:latest" .
+	docker build -f ./filter_by_average/Dockerfile -t "filter_by_average:latest" .
+	docker build -f ./healthchecker/Dockerfile -t "healthchecker:latest" .
 .PHONY: docker-image
+
+docker-compose-hc-up: docker-image
+	docker compose -f docker-compose-hc.yaml up -d --build
+.PHONY: docker-compose-hc-up
+
+docker-compose-hc-down:
+	docker compose -f docker-compose-hc.yaml stop -t 1
+	docker compose -f docker-compose-hc.yaml down --remove-orphans
+.PHONY: docker-compose-hc-down
+
+docker-compose-hc-logs:
+	docker compose -f docker-compose-hc.yaml logs -f
+.PHONY: docker-compose-hc-logs
 
 docker-compose-up: docker-image
 	docker compose -f docker-compose.yaml up -d --build

@@ -15,7 +15,7 @@ from util.constants import (AIRPORT_REGISTER,
 
 
 class SenderClient(Client):
-    def __init__(self, address, flights_file, airports_file,client_id):
+    def __init__(self, address, flights_file, airports_file, client_id):
         super().__init__(address)  # Call the constructor of the abstract class
         self._flights_file = flights_file
         self._airports_file = airports_file
