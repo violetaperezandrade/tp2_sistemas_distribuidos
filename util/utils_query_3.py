@@ -1,38 +1,48 @@
+import os
 import re
 
 RESULT_FIELDS = ["legId", "route", "stopovers"]
 DURATION_FIELD = "travelDuration"
 
 
-def get_fastests(flight, duration, fastests):
+def get_fastests(flight, duration, fastests, dic_changed):
     if not fastests[0] or duration < fastests[0].get('duration', 0):
         fastests[1] = fastests[0]
         fastests[0] = get_result(flight, duration)
+        dic_changed = True
     elif not fastests[1] or duration < fastests[1].get('duration', 0):
         fastests[1] = get_result(flight, duration)
-    return fastests
+        dic_changed = True
+    return fastests, dic_changed
 
 
-def handle_query_3_register(register, dic, result_file):
+def handle_query_3_register(register, dic, result_file, name,
+                            old_file_filename, tmp_file_filename):
+    dic_changed = False
     duration = convert_duration(register[DURATION_FIELD])
     route = register.get("route")
-    client_id = register.get("client_id")
     route_flights = dic.get(route, [])
     if len(route_flights) < 2:
         route_flights.append(get_result(register, duration))
+        dic_changed = True
         if len(route_flights) == 2:
             route_flights.sort(key=lambda x: x.get('duration', float('inf')))
+            dic_changed = True
     else:
-        route_flights = get_fastests(register, duration, route_flights)
+        route_flights, dic_changed = get_fastests(register, duration,
+                                                  route_flights, dic_changed)
     dic[route] = route_flights
-    # Hacer que esto solo pase si hay una update efectiva
-    # Hacer que tolere fallas durante escritura (tener copia de seguridad en 3,
-    # 4 y 5ta linea)
-    with open(result_file, "r+") as file:
-        lines = file.readlines()
-        lines[int(client_id)-1] = str(dic) + '\n'
-        file.seek(0)
-        file.writelines(lines)
+
+    if dic_changed:
+        if not os.path.exists(result_file):
+            with open(result_file, 'w+') as file:
+                file.write(f"{dic}#")
+        with open(tmp_file_filename, 'w+') as tmp_file:
+            tmp_file.write(f"{dic}#")
+
+        os.rename(result_file, old_file_filename)
+        os.rename(tmp_file_filename, result_file)
+        os.remove(old_file_filename)
     return dic
 
 

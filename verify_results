@@ -1,0 +1,19 @@
+#!/bin/bash
+for VARIABLE in 1 2 3 4 5
+do
+	DIFF1=$(diff <(sort correct_results/query${VARIABLE}_500K.txt) <(sort results/client_1/query${VARIABLE}.txt))
+	DIFF2=$(diff <(sort correct_results/query${VARIABLE}_750K.txt) <(sort results/client_2/query${VARIABLE}.txt))
+	DIFF3=$(diff <(sort correct_results/query${VARIABLE}_2M.txt) <(sort results/client_3/query${VARIABLE}.txt))
+	if [ "$DIFF1" != "" ]
+  then
+    echo "Archivo de resultados de 500K invalido en query ${VARIABLE}"
+  fi
+  	if [ "$DIFF2" != "" ]
+  then
+    echo "Archivo de resultados de 750K invalido para query ${VARIABLE}"
+  fi
+  	if [ "$DIFF3" != "" ]
+  then
+    echo "Archivo de resultados de 2M invalido para query ${VARIABLE}"
+  fi
+done

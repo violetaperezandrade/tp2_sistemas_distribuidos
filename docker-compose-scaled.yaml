@@ -15,6 +15,7 @@ services:
       timeout: 3s
       retries: 10
       start_period: 50s
+
   result_handler:
     container_name: result_handler
     image: result_handler:latest
@@ -23,7 +24,8 @@ services:
       - ./result_handler:/result_handler:rw
     environment:
       - PYTHONUNBUFFERED=1
-      - LISTEN_BACKLOG=1
+      - LISTEN_BACKLOG=5
+      - TOTAL_CLIENTS=3
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -39,19 +41,64 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
-  client:
-    container_name: client
+
+  client_1:
+    container_name: client_1
     image: client:latest
     entrypoint: python3 /main.py
+    hostname: client_1
     volumes:
       - ./results:/results:rw
       - type: bind
-        source: ./client/itineraries_random_demo.csv
+        source: ./client/itineraries_random_demo_200K.csv
         target: /itineraries.csv
+      - type: bind
+        source: ./client/airports-codepublic.csv
+        target: /airports-codepublic.csv
     environment:
       - PYTHONUNBUFFERED=1
+      - ID=1
     depends_on:
       - server
+
+  client_2:
+    container_name: client_2
+    image: client:latest
+    entrypoint: python3 /main.py
+    hostname: client_2
+    volumes:
+      - ./results:/results:rw
+      - type: bind
+        source: ./client/itineraries_random_demo_200K.csv
+        target: /itineraries.csv
+      - type: bind
+        source: ./client/airports-codepublic.csv
+        target: /airports-codepublic.csv
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ID=2
+    depends_on:
+      - server
+
+  client_3:
+    container_name: client_3
+    image: client:latest
+    entrypoint: python3 /main.py
+    hostname: client_3
+    volumes:
+      - ./results:/results:rw
+      - type: bind
+        source: ./client/itineraries_random_demo_200K.csv
+        target: /itineraries.csv
+      - type: bind
+        source: ./client/airports-codepublic.csv
+        target: /airports-codepublic.csv
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ID=3
+    depends_on:
+      - server
+
   initial_column_cleaner_1:
     container_name: initial_column_cleaner_1
     image: column_cleaner:latest
@@ -65,10 +112,24 @@ services:
       - OUTPUT_EXCHANGE=cleaned_flight_registers
       - REQUIRED_COLUMNS_FLIGHTS=op_code,client_id,legId,startingAirport,destinationAirport,travelDuration,baseFare,totalFare,totalTravelDistance,segmentsArrivalAirportCode,message_id
       - CONNECTED_NODES=3
+      - IDX=3
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
     depends_on: &id002
       - group_by_id_1
       - group_by_id_2
       - group_by_id_3
+      - query_2_column_filter_1
+      - query_2_column_filter_2
+      - query_2_column_filter_3
+      - query_5_column_filter_1
+      - query_5_column_filter_2
+      - query_5_column_filter_3
+      - group_by_id_avg_1
+      - group_by_id_avg_2
+      - group_by_id_avg_3
+
   filter_by_three_stopovers_1:
     container_name: filter_by_three_stopovers_1
     image: filter_by_three_stopovers:latest
@@ -82,8 +143,13 @@ services:
       - OUTPUT_QUEUE=output_1
       - OUTPUT_EXCHANGE=three_or_more_stopovers
       - COLUMNS_TO_FILTER=legId,client_id,startingAirport,destinationAirport,stopovers,totalFare,message_id
+      - IDX=9
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
     depends_on:
       - query_handler
+
   query_handler:
     container_name: query_handler
     image: query_handler:latest
@@ -91,43 +157,88 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - TOTAL_REDUCERS=2
+      - IDX=39
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
     depends_on:
       rabbitmq:
         condition: service_healthy
+
   initial_column_cleaner_2:
     container_name: initial_column_cleaner_2
     image: column_cleaner:latest
     hostname: initial_column_cleaner_2
     entrypoint: python3 /main.py
     volumes: *id004
-    environment: *id001
+    environment:
+      - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=full_flight_registers
+      - OUTPUT_EXCHANGE=cleaned_flight_registers
+      - REQUIRED_COLUMNS_FLIGHTS=op_code,client_id,legId,startingAirport,destinationAirport,travelDuration,baseFare,totalFare,totalTravelDistance,segmentsArrivalAirportCode,message_id
+      - CONNECTED_NODES=3
+      - IDX=4
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
     depends_on: *id002
+
   initial_column_cleaner_3:
     container_name: initial_column_cleaner_3
     image: column_cleaner:latest
     hostname: initial_column_cleaner_3
     entrypoint: python3 /main.py
     volumes: *id004
-    environment: *id001
+    environment:
+      - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=full_flight_registers
+      - OUTPUT_EXCHANGE=cleaned_flight_registers
+      - REQUIRED_COLUMNS_FLIGHTS=op_code,client_id,legId,startingAirport,destinationAirport,travelDuration,baseFare,totalFare,totalTravelDistance,segmentsArrivalAirportCode,message_id
+      - CONNECTED_NODES=3
+      - IDX=5
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
     depends_on: *id002
+
   filter_by_three_stopovers_2:
     container_name: filter_by_three_stopovers_2
     image: filter_by_three_stopovers:latest
     hostname: filter_by_three_stopovers_2
     entrypoint: python3 /main.py
     volumes: *id005
-    environment: *id003
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
+      - OUTPUT_QUEUE=output_1
+      - OUTPUT_EXCHANGE=three_or_more_stopovers
+      - COLUMNS_TO_FILTER=legId,client_id,startingAirport,destinationAirport,stopovers,totalFare,message_id
+      - IDX=10
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
     depends_on:
       - query_handler
+
   filter_by_three_stopovers_3:
     container_name: filter_by_three_stopovers_3
     image: filter_by_three_stopovers:latest
     hostname: filter_by_three_stopovers_3
     entrypoint: python3 /main.py
     volumes: *id005
-    environment: *id003
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
+      - OUTPUT_QUEUE=output_1
+      - OUTPUT_EXCHANGE=three_or_more_stopovers
+      - COLUMNS_TO_FILTER=legId,client_id,startingAirport,destinationAirport,stopovers,totalFare,message_id
+      - IDX=11
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
     depends_on:
       - query_handler
+
   group_by_id_1:
     container_name: group_by_id_1
     image: group_by:latest
@@ -139,31 +250,62 @@ services:
       - PYTHONUNBUFFERED=1
       - REDUCERS_AMOUNT=3
       - FIELD_GROUP_BY=
-      - GROUP_BY_ID=True
       - INPUT_EXCHANGE=cleaned_flight_registers
       - LISTENING_QUEUE=filter_by_three_stopovers_groupby
       - QUEUE_GROUP_BY=filter_by_three_stopovers
       - INPUT_QUEUE=
+      - HANDLE_FLIGHTS_LOG=false
+      - IDX=6
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
     depends_on: &id007
       - filter_by_three_stopovers_1
       - filter_by_three_stopovers_2
       - filter_by_three_stopovers_3
+
   group_by_id_2:
     container_name: group_by_id_2
     image: group_by:latest
     hostname: group_by_id_2
     entrypoint: python3 /main.py
     volumes: *id008
-    environment: *id006
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
+      - FIELD_GROUP_BY=
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - LISTENING_QUEUE=filter_by_three_stopovers_groupby
+      - QUEUE_GROUP_BY=filter_by_three_stopovers
+      - INPUT_QUEUE=
+      - HANDLE_FLIGHTS_LOG=false
+      - IDX=7
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
     depends_on: *id007
+
   group_by_id_3:
     container_name: group_by_id_3
     image: group_by:latest
     hostname: group_by_id_3
     entrypoint: python3 /main.py
     volumes: *id008
-    environment: *id006
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
+      - FIELD_GROUP_BY=
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - LISTENING_QUEUE=filter_by_three_stopovers_groupby
+      - QUEUE_GROUP_BY=filter_by_three_stopovers
+      - INPUT_QUEUE=
+      - HANDLE_FLIGHTS_LOG=false
+      - IDX=8
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
     depends_on: *id007
+
   group_by_route:
     container_name: group_by_route
     image: group_by:latest
@@ -179,17 +321,23 @@ services:
       - LISTENING_QUEUE=group_by_route
       - INPUT_QUEUE=
       - SEVERAL_EOF=true
+      - HANDLE_FLIGHTS_LOG=true
+      - IDX=41
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
     depends_on:
       - reducer_group_by_route_1
       - reducer_group_by_route_2
       - reducer_group_by_route_3
+
   reducer_group_by_route_1:
     container_name: reducer_group_by_route_1
     image: reducer_group_by:latest
     hostname: reducer_group_by_route_1
     entrypoint: python3 /main.py
     volumes: &id009
-      - ./reducer_group_by:/reducer_group_by:rw
+      - ./reducer_group_by/3:/reducer_group_by:rw
     environment:
       - PYTHONUNBUFFERED=1
       - FIELD_GROUP_BY=route
@@ -197,8 +345,13 @@ services:
       - OUTPUT_QUEUE=output_3
       - QUERY_NUMBER=3
       - QUERY_HANDLER_AMOUNT=1
+      - IDX=24
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
     depends_on:
       - query_handler
+
   reducer_group_by_route_2:
     container_name: reducer_group_by_route_2
     image: reducer_group_by:latest
@@ -211,8 +364,13 @@ services:
       - INPUT_QUEUE=group_by_route_queue_2
       - OUTPUT_QUEUE=output_3
       - QUERY_NUMBER=3
+      - IDX=25
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
     depends_on:
       - query_handler
+
   reducer_group_by_route_3:
     container_name: reducer_group_by_route_3
     image: reducer_group_by:latest
@@ -225,5 +383,608 @@ services:
       - INPUT_QUEUE=group_by_route_queue_3
       - OUTPUT_QUEUE=output_3
       - QUERY_NUMBER=3
+      - IDX=26
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
     depends_on:
       - query_handler
+
+  query_2_column_filter_1:
+    container_name: query_2_column_filter_1
+    image: column_cleaner:latest
+    entrypoint: python3 /main.py
+    environment: &id015
+      - PYTHONUNBUFFERED=1
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - INPUT_QUEUE=query_2_filter_queue
+      - OUTPUT_QUEUE=distance_calculation
+      - OUTPUT_EXCHANGE=airport_registers
+      - REQUIRED_COLUMNS_FLIGHTS=op_code,message_id,client_id,legId,startingAirport,destinationAirport,totalTravelDistance,segmentsArrivalAirportCode
+      - REQUIRED_COLUMNS_AIRPORTS=op_code,message_id,client_id,Airport Code,Latitude,Longitude
+      - ROUTING_KEY=all
+      - CONNECTED_NODES=3
+      - IDX=12
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: &id016
+      - distance_calculator_1
+      - distance_calculator_2
+      - distance_calculator_3
+
+  query_2_column_filter_2:
+    container_name: query_2_column_filter_2
+    image: column_cleaner:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - INPUT_QUEUE=query_2_filter_queue
+      - OUTPUT_QUEUE=distance_calculation
+      - OUTPUT_EXCHANGE=airport_registers
+      - REQUIRED_COLUMNS_FLIGHTS=op_code,message_id,client_id,legId,startingAirport,destinationAirport,totalTravelDistance,segmentsArrivalAirportCode
+      - REQUIRED_COLUMNS_AIRPORTS=op_code,message_id,client_id,Airport Code,Latitude,Longitude
+      - ROUTING_KEY=all
+      - CONNECTED_NODES=3
+      - IDX=13
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: *id016
+
+  query_2_column_filter_3:
+    container_name: query_2_column_filter_3
+    image: column_cleaner:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - INPUT_QUEUE=query_2_filter_queue
+      - OUTPUT_QUEUE=distance_calculation
+      - OUTPUT_EXCHANGE=airport_registers
+      - REQUIRED_COLUMNS_FLIGHTS=op_code,message_id,client_id,legId,startingAirport,destinationAirport,totalTravelDistance,segmentsArrivalAirportCode
+      - REQUIRED_COLUMNS_AIRPORTS=op_code,message_id,client_id,Airport Code,Latitude,Longitude
+      - ROUTING_KEY=all
+      - CONNECTED_NODES=3
+      - IDX=14
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: *id016
+
+  distance_calculator_1:
+    container_name: distance_calculator_1
+    image: distance_calculator:latest
+    entrypoint: python3 /main.py
+    hostname: distance_calculator_1
+    volumes: &id019
+      - ./distance_calculator:/distance_calculator:rw
+    environment: &id017
+      - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=distance_calculation
+      - INPUT_EXCHANGE=airport_registers
+      - OUTPUT_QUEUE=output_2
+      - IDX=15
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: &id018
+      - query_handler
+
+  distance_calculator_2:
+    container_name: distance_calculator_2
+    image: distance_calculator:latest
+    hostname: distance_calculator_2
+    entrypoint: python3 /main.py
+    volumes: *id019
+    environment:
+      - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=distance_calculation
+      - INPUT_EXCHANGE=airport_registers
+      - OUTPUT_QUEUE=output_2
+      - IDX=16
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: *id018
+
+  distance_calculator_3:
+    container_name: distance_calculator_3
+    image: distance_calculator:latest
+    hostname: distance_calculator_3
+    entrypoint: python3 /main.py
+    volumes: *id019
+    environment:
+      - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=distance_calculation
+      - INPUT_EXCHANGE=airport_registers
+      - OUTPUT_QUEUE=output_2
+      - IDX=17
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: *id018
+
+  query_5_column_filter_1:
+    container_name: query_5_column_filter_1
+    image: column_cleaner:latest
+    entrypoint: python3 /main.py
+    hostname: query_5_column_filter_1
+    volumes: *id004
+    environment: &id020
+      - PYTHONUNBUFFERED=1
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - INPUT_QUEUE=query_5_filter_queue
+      - OUTPUT_QUEUE=mode_calculation
+      - REQUIRED_COLUMNS_FLIGHTS=op_code,client_id,startingAirport,baseFare,message_id
+      - CONNECTED_NODES=3
+      - ROUTING_KEY=flights
+      - IDX=18
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on:
+      - group_by_airport
+
+  query_5_column_filter_2:
+    container_name: query_5_column_filter_2
+    image: column_cleaner:latest
+    entrypoint: python3 /main.py
+    hostname: query_5_column_filter_2
+    volumes: *id004
+    environment:
+      - PYTHONUNBUFFERED=1
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - INPUT_QUEUE=query_5_filter_queue
+      - OUTPUT_QUEUE=mode_calculation
+      - REQUIRED_COLUMNS_FLIGHTS=op_code,client_id,startingAirport,baseFare,message_id
+      - CONNECTED_NODES=3
+      - ROUTING_KEY=flights
+      - IDX=19
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on:
+      - group_by_airport
+
+  query_5_column_filter_3:
+    container_name: query_5_column_filter_3
+    image: column_cleaner:latest
+    entrypoint: python3 /main.py
+    hostname: query_5_column_filter_3
+    volumes: *id004
+    environment:
+      - PYTHONUNBUFFERED=1
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - INPUT_QUEUE=query_5_filter_queue
+      - OUTPUT_QUEUE=mode_calculation
+      - REQUIRED_COLUMNS_FLIGHTS=op_code,client_id,startingAirport,baseFare,message_id
+      - CONNECTED_NODES=3
+      - ROUTING_KEY=flights
+      - IDX=20
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on:
+      - group_by_airport
+
+  group_by_airport:
+    container_name: group_by_airport
+    image: group_by:latest
+    entrypoint: python3 /main.py
+    hostname: group_by_airport
+    volumes: *id008
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
+      - FIELD_GROUP_BY=startingAirport
+      - INPUT_EXCHANGE=
+      - LISTENING_QUEUE=
+      - QUEUE_GROUP_BY=group_by_airport_queue
+      - INPUT_QUEUE=mode_calculation
+      - SEVERAL_EOF=true
+      - QUERY_5_EOF=true
+      - HANDLE_FLIGHTS_LOG=true
+      - IDX=40
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on:
+      - reducer_group_by_airport_1
+      - reducer_group_by_airport_2
+      - reducer_group_by_airport_3
+
+  reducer_group_by_airport_1:
+    container_name: reducer_group_by_airport_1
+    image: reducer_group_by:latest
+    entrypoint: python3 /main.py
+    hostname: reducer_group_by_airport_1
+    volumes: &id010
+      - ./reducer_group_by/5:/reducer_group_by:rw
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=startingAirport
+      - INPUT_QUEUE=group_by_airport_queue_1
+      - OUTPUT_QUEUE=output_5
+      - QUERY_NUMBER=5
+      - IDX=21
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on:
+      - query_handler
+
+  reducer_group_by_airport_2:
+    container_name: reducer_group_by_airport_2
+    image: reducer_group_by:latest
+    entrypoint: python3 /main.py
+    hostname: reducer_group_by_airport_2
+    volumes: *id010
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=startingAirport
+      - INPUT_QUEUE=group_by_airport_queue_2
+      - OUTPUT_QUEUE=output_5
+      - QUERY_NUMBER=5
+      - IDX=22
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on:
+      - query_handler
+
+  reducer_group_by_airport_3:
+    container_name: reducer_group_by_airport_3
+    image: reducer_group_by:latest
+    entrypoint: python3 /main.py
+    hostname: reducer_group_by_airport_3
+    volumes: *id010
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=startingAirport
+      - INPUT_QUEUE=group_by_airport_queue_3
+      - OUTPUT_QUEUE=output_5
+      - QUERY_NUMBER=5
+      - IDX=23
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on:
+      - query_handler
+
+  avg_calculator_1:
+    container_name: avg_calculator_1
+    image: avg_calculator:latest
+    entrypoint: python3 /main.py
+    hostname: avg_calculator_1
+    volumes: &id020
+      - ./avg_calculator:/avg_calculator:rw
+    environment:
+      - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=avg_queue
+      - ID=1
+      - OUTPUT_EXCHANGE=partial_avg_results
+      - EXCHANGE_QUEUE=partial_results_queue
+      - REDUCERS_AMOUNT=3
+      - IDX=27
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: &id022
+      - filter_by_average_1
+      - filter_by_average_2
+      - filter_by_average_3
+
+  avg_calculator_2:
+    container_name: avg_calculator_2
+    image: avg_calculator:latest
+    entrypoint: python3 /main.py
+    hostname: avg_calculator_2
+    volumes: *id020
+    environment:
+      - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=avg_queue
+      - ID=2
+      - OUTPUT_EXCHANGE=partial_avg_results
+      - EXCHANGE_QUEUE=partial_results_queue
+      - REDUCERS_AMOUNT=3
+      - IDX=28
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: *id022
+
+  avg_calculator_3:
+    container_name: avg_calculator_3
+    image: avg_calculator:latest
+    entrypoint: python3 /main.py
+    hostname: avg_calculator_3
+    volumes: *id020
+    environment:
+      - PYTHONUNBUFFERED=1
+      - INPUT_QUEUE=avg_queue
+      - ID=3
+      - OUTPUT_EXCHANGE=partial_avg_results
+      - EXCHANGE_QUEUE=partial_results_queue
+      - REDUCERS_AMOUNT=3
+      - IDX=29
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: *id022
+
+  filter_by_average_1:
+    container_name: filter_by_average_1
+    image: filter_by_average:latest
+    entrypoint: python3 /main.py
+    hostname: filter_by_average_1
+    volumes: &id030
+      - ./filter_by_average:/filter_by_average:rw
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
+      - INPUT_QUEUE=filter_queue
+      - OUTPUT_QUEUE=filtered_by_average
+      - INPUT_EXCHANGE=partial_avg_results
+      - EXCHANGE_QUEUE=partial_avg_final_calculator
+      - ID=1
+      - IDX=30
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: &id031
+      - group_by_route_query_4
+
+  filter_by_average_2:
+    container_name: filter_by_average_2
+    image: filter_by_average:latest
+    entrypoint: python3 /main.py
+    hostname: filter_by_average_2
+    volumes: *id030
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
+      - INPUT_QUEUE=filter_queue
+      - OUTPUT_QUEUE=filtered_by_average
+      - INPUT_EXCHANGE=partial_avg_results
+      - EXCHANGE_QUEUE=partial_avg_final_calculator
+      - ID=2
+      - IDX=31
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: *id031
+
+  filter_by_average_3:
+    container_name: filter_by_average_3
+    image: filter_by_average:latest
+    entrypoint: python3 /main.py
+    hostname: filter_by_average_3
+    volumes: *id030
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
+      - INPUT_QUEUE=filter_queue
+      - OUTPUT_QUEUE=filtered_by_average
+      - INPUT_EXCHANGE=partial_avg_results
+      - EXCHANGE_QUEUE=partial_avg_final_calculator
+      - ID=3
+      - IDX=32
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: *id031
+
+  group_by_id_avg_1:
+    container_name: group_by_id_avg_1
+    image: group_by:latest
+    entrypoint: python3 /main.py
+    hostname: group_by_id_avg_1
+    volumes: *id008
+    environment: &id041
+      - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
+      - FIELD_GROUP_BY=
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - LISTENING_QUEUE=avg_calculator_groupby
+      - QUEUE_GROUP_BY=avg_queue
+      - QUEUE_GROUP_BY_SECONDARY=filter_queue
+      - INPUT_QUEUE=
+      - HANDLE_FLIGHTS_LOG=false
+      - IDX=33
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: &id040
+      - avg_calculator_1
+      - avg_calculator_2
+      - avg_calculator_3
+      - filter_by_average_1
+      - filter_by_average_2
+      - filter_by_average_3
+
+  group_by_id_avg_2:
+    container_name: group_by_id_avg_2
+    image: group_by:latest
+    entrypoint: python3 /main.py
+    hostname: group_by_id_avg_2
+    volumes: *id008
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
+      - FIELD_GROUP_BY=
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - LISTENING_QUEUE=avg_calculator_groupby
+      - QUEUE_GROUP_BY=avg_queue
+      - QUEUE_GROUP_BY_SECONDARY=filter_queue
+      - INPUT_QUEUE=
+      - HANDLE_FLIGHTS_LOG=false
+      - IDX=34
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: *id040
+
+  group_by_id_avg_3:
+    container_name: group_by_id_avg_3
+    image: group_by:latest
+    entrypoint: python3 /main.py
+    hostname: group_by_id_avg_3
+    volumes: *id008
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
+      - FIELD_GROUP_BY=
+      - INPUT_EXCHANGE=cleaned_flight_registers
+      - LISTENING_QUEUE=avg_calculator_groupby
+      - QUEUE_GROUP_BY=avg_queue
+      - QUEUE_GROUP_BY_SECONDARY=filter_queue
+      - INPUT_QUEUE=
+      - HANDLE_FLIGHTS_LOG=false
+      - IDX=35
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on: *id040
+
+  group_by_route_query_4:
+    container_name: group_by_route_query_4
+    image: group_by:latest
+    entrypoint: python3 /main.py
+    hostname: group_by_route_query_4
+    volumes: *id008
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDUCERS_AMOUNT=3
+      - EOF_REQUIRED=1
+      - FIELD_GROUP_BY=startingAirport,destinationAirport
+      - LISTENING_QUEUE=
+      - INPUT_EXCHANGE=
+      - QUEUE_GROUP_BY=group_by_route_queue_q4
+      - INPUT_QUEUE=filtered_by_average
+      - SEVERAL_EOF=true
+      - HANDLE_FLIGHTS_LOG=true
+      - IDX=42
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on:
+      - reducer_group_by_route_q4_1
+      - reducer_group_by_route_q4_2
+      - reducer_group_by_route_q4_3
+
+  reducer_group_by_route_q4_1:
+    container_name: reducer_group_by_route_q4_1
+    image: reducer_group_by:latest
+    entrypoint: python3 /main.py
+    hostname: reducer_group_by_route_q4_1
+    volumes: &id050
+      - ./reducer_group_by/4:/reducer_group_by:rw
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=route
+      - INPUT_QUEUE=group_by_route_queue_q4_1
+      - OUTPUT_QUEUE=output_4
+      - QUERY_NUMBER=4
+      - IDX=36
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on:
+      - query_handler
+
+  reducer_group_by_route_q4_2:
+    container_name: reducer_group_by_route_q4_2
+    image: reducer_group_by:latest
+    entrypoint: python3 /main.py
+    hostname: reducer_group_by_route_q4_2
+    volumes: *id050
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=route
+      - INPUT_QUEUE=group_by_route_queue_q4_2
+      - OUTPUT_QUEUE=output_4
+      - QUERY_NUMBER=4
+      - IDX=37
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on:
+      - query_handler
+
+  reducer_group_by_route_q4_3:
+    container_name: reducer_group_by_route_q4_3
+    image: reducer_group_by:latest
+    entrypoint: python3 /main.py
+    hostname: reducer_group_by_route_q4_3
+    volumes: *id050
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FIELD_GROUP_BY=route
+      - INPUT_QUEUE=group_by_route_queue_q4_3
+      - OUTPUT_QUEUE=output_4
+      - QUERY_NUMBER=4
+      - IDX=38
+      - IPS=healthchecker_1,healthchecker_2,healthchecker_3
+      - PORT=5000
+      - FREQUENCY=1
+    depends_on:
+      - query_handler
+
+  healthchecker_1:
+    container_name: healthchecker_1
+    image: healthchecker:latest
+    hostname: healthchecker_1
+    entrypoint: python3 /main.py
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ID=1
+      - TOTAL_AMOUNT=3
+      - LOGGING_LEVEL=INFO
+      - NODES_IDXS=3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42
+      - NODES_TIMEOUT=7.7
+      - FREQUENCY=1
+    depends_on:
+      - server
+
+  healthchecker_2:
+    container_name: healthchecker_2
+    image: healthchecker:latest
+    hostname: healthchecker_2
+    entrypoint: python3 /main.py
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ID=2
+      - TOTAL_AMOUNT=3
+      - LOGGING_LEVEL=INFO
+      - NODES_IDXS=3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42
+      - NODES_TIMEOUT=7.7
+      - FREQUENCY=1
+    depends_on:
+      - server
+      - healthchecker_1
+
+  healthchecker_3:
+    container_name: healthchecker_3
+    image: healthchecker:latest
+    hostname: healthchecker_3
+    entrypoint: python3 /main.py
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ID=3
+      - TOTAL_AMOUNT=3
+      - LOGGING_LEVEL=INFO
+      - NODES_IDXS=3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42
+      - NODES_TIMEOUT=7.7
+      - FREQUENCY=1
+    depends_on:
+      - server
+      - healthchecker_1
+      - healthchecker_2

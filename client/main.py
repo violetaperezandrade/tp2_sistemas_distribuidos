@@ -22,8 +22,9 @@ def initialize_config():
         config_params["logging_level"] = config["DEFAULT"]["LOGGING_LEVEL"]
         config_params["flights_name"] = config["DEFAULT"]["FLIGHTS_FILE"]
         config_params["airports_name"] = config["DEFAULT"]["AIRPORTS_FILE"]
-        config_params["address_listen"] = int(
-            config["DEFAULT"]["ADDRESS_LISTEN"])
+        config_params["address_listen"] = int(config["DEFAULT"]["ADDRESS_LISTEN"])
+        config_params["hostname"] = os.getenv("HOSTNAME")
+        config_params["client_id"] = int(os.getenv("ID"))
     except KeyError as e:
         raise KeyError(
             "Key was not found. Error: {} .Aborting client".format(e))
@@ -34,9 +35,9 @@ def initialize_config():
     return config_params
 
 
-def run_listener(address):
+def run_listener(address, hostname, client_id):
     listener_client = ListenerClient(address)
-    listener_client.run()
+    listener_client.run(hostname, client_id)
 
 
 def main():
@@ -48,13 +49,15 @@ def main():
     airports_name = config_params["airports_name"]
     address_listen = config_params["address_listen"]
     host_listen = config_params["host_listen"]
+    hostname = config_params["hostname"]
+    client_id = config_params["client_id"]
     listening_address = (host_listen, address_listen)
     listener_process = Process(target=run_listener,
-                               args=(listening_address,))
+                               args=(listening_address, hostname, client_id))
     listener_process.start()
     server_address = (host, port)
     initialize_log(logging_level)
-    sender_client = SenderClient(server_address, flights_name, airports_name)
+    sender_client = SenderClient(server_address, flights_name, airports_name, client_id)
     sender_client.run()
     signal.signal(signal.SIGTERM, signal.SIG_DFL)
     listener_process.join()
