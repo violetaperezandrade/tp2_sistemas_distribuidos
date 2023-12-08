@@ -3,7 +3,7 @@ import random
 import sys
 from time import sleep
 
-TIME_BETWEEN_DROPS = [2, 4, 8, 11, 12]
+TIME_BETWEEN_DROPS = 10
 REPLICATED_NODES = 3
 
 
@@ -59,9 +59,9 @@ def main():
     while True:
         random.shuffle(possible_failures)
         for node in possible_failures:
-            print(f"Stoping {node}")
+            print(f"Stopping {node}")
             os.system(f"docker stop {node} -t 0")
-            sleep(random.choice(TIME_BETWEEN_DROPS))
+            sleep(TIME_BETWEEN_DROPS)
 
 
 if __name__ == "__main__":

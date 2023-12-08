@@ -54,13 +54,11 @@ class HealthChecker:
             if self.current_operation == ELECTION:
                 self.launch_election()
             if self.current_operation == LEADER:
-                print("Soy el liderrr")
+                print("Soy el lider")
                 self.act_as_leader()
                 continue
 
     def await_leader_heartbeats(self, socket):
-        if self.__leader_id != INVALID_LEADER_ID:
-            print(f"El lider es {self.__leader_id}")
         hosts = [
             f"{self.__name[:-1]}{i}"
             for i in range(1, self.__total_amount + 1)
@@ -79,8 +77,6 @@ class HealthChecker:
                 print("Lanzando eleccion")
                 self.current_operation = ELECTION
                 break
-            # Es un busy wait el resto de esta funcion,
-            # no esta muy bueno la verdad.
             # Escucha por un ratito en un socket nuevo para ver
             # si tiene que cambiar de lider.
             self._minor_socket.settimeout(0.5)
@@ -171,6 +167,7 @@ class HealthChecker:
         if self.__is_leader:
             self.current_operation = LEADER
         else:
+            print(f"El lider es {self.__leader_id}")
             self.current_operation = HEARTBEAT
 
     def __accept_new_connection(self):
