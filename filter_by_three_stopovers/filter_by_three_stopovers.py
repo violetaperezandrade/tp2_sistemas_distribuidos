@@ -144,6 +144,8 @@ class FilterByThreeStopovers:
             self.__middleware.publish(self.__output_exchange,
                                       json.dumps(eof))
             self.__middleware.send_message(self.__output_queue, json.dumps(eof))
+
+
             log_to_file(get_state_log_file(self.main_path), f"{EOF_SENT},{eof.get('client_id')}")
             self.processed_clients.append(client_id)
             delete_client_data(file_path=get_flights_log_file(self.main_path,

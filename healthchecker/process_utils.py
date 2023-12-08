@@ -3,9 +3,6 @@ from time import sleep
 from util.client_socket import ClientSocket
 from constants import HEARTBEAT, COORDINATOR
 
-
-# Esto hace que los procesos se acumulen y
-# no se limpien nunca, despues limpiarlos
 def leader_validation(id, addr, leader_id):
     while True:
         try:

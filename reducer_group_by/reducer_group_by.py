@@ -6,7 +6,7 @@ import re
 import time
 from file_read_backwards import FileReadBackwards
 
-from util.recovery_logging import correct_last_line, check_files_single_line, go_to_sleep
+from util.recovery_logging import correct_last_line, check_files_single_line, go_to_sleep, delete_client_data
 from util.initialization import initialize_queues
 from util.queue_middleware import QueueMiddleware
 from util.utils_query_3 import handle_query_3_register
@@ -116,6 +116,7 @@ class ReducerGroupBy:
         self.queue_middleware.send_message(self.output_queue,
                                            json.dumps(eof_message))
         log_to_file(self.state_log_filename, f"{client_id}")
+        delete_client_data(file_path=self.get_result_log_filename_client(client_id))
         self.processed_clients.append(int(client_id))
         if method:
             self.queue_middleware.manual_ack(method)
@@ -143,11 +144,12 @@ class ReducerGroupBy:
                     if line.endswith("#\n"):
                         continue
                     self.processed_clients.append(int(line))
+                    delete_client_data(file_path=self.get_result_log_filename_client(int(line)))
         self.processed_clients = list(set(self.processed_clients))
         existing_clients = []
         for client_id in range(1, self.n_clients+1):
             dir = f"/reducer_group_by/{client_id}"
-            if not os.path.isdir(dir):
+            if not os.path.isdir(dir) and client_id not in self.processed_clients:
                 os.makedirs(dir)
             else:
                 existing_clients.append(client_id)
