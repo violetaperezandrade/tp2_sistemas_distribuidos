@@ -1,9 +1,9 @@
-
+import fnmatch
 import json
 import os
 import signal
 
-from util.constants import EOF_FLIGHTS_FILE, NUMBER_CLIENTS, EOF_SENT, BEGIN_EOF, READ_SIZE
+from util.constants import EOF_FLIGHTS_FILE, NUMBER_CLIENTS, EOF_SENT, BEGIN_EOF, READ_SIZE, VALID_LINE, EOF_MSG
 from util.initialization import initialize_queues
 from util.queue_middleware import (QueueMiddleware)
 from util.file_manager import log_to_file
@@ -27,7 +27,7 @@ class FilterByAverage:
         self.__eof_received = {i: False for i in range(1, NUMBER_CLIENTS + 1)}
         self.__accepted_flights = {i: 0 for i in range(1, NUMBER_CLIENTS + 1)}
         self.main_path = f"filter_by_average/{self.__name}"
-        self.processed_clients=set()
+        self.processed_clients = set()
         self.process = process
 
     def run(self):
@@ -122,8 +122,9 @@ class FilterByAverage:
         if len(self.__missing_flights[client_id]) == 0:
             eof = create_eof_flights_message_filters(accepted_flights, self.__id, client_id)
             eof["message_id"] = int(message_id)
+            log_to_file(get_state_log_file(self.main_path), f"{EOF_MSG},{client_id},{json.dumps(eof)}")
             self.__middleware.send_message(self.__output_queue, json.dumps(eof))
-            log_to_file(get_state_log_file(self.main_path), f"{EOF_SENT},{eof.get('client_id')}")
+            log_to_file(get_state_log_file(self.main_path), f"{VALID_LINE}")
             self.processed_clients.add(client_id)
             delete_client_data(file_path=get_flights_log_file(self.main_path, client_id))
             delete_client_data(file_path=self.get_avg_file(client_id))
@@ -150,8 +151,9 @@ class FilterByAverage:
         recovered_clients = []
         if os.path.exists(filepath):
             correct_last_line(filepath)
-            with open(filepath, "r") as state_file:
+            with open(filepath, "r+") as state_file:
                 lines = state_file.readlines()
+                self.verify_last_eof_sent(lines, state_file)
                 for line in lines:
                     if line.endswith("#\n"):
                         continue
@@ -165,7 +167,7 @@ class FilterByAverage:
                     if client_id in recovered_clients:
                         continue
                     if opcode == BEGIN_EOF:
-                        if f"{EOF_SENT},{client_id}\n" in lines:
+                        if self.eof_sent(client_id, lines):
                             self.processed_clients.add(client_id)
                             delete_client_data(file_path=get_flights_log_file(self.main_path, client_id))
                             delete_client_data(file_path=self.get_avg_file(client_id))
@@ -188,3 +190,36 @@ class FilterByAverage:
     def handle_sigterm(self, signum, frame):
         os.kill(self.process.pid, signal.SIGTERM)
         self.__middleware.handle_sigterm(signum, frame)
+
+    def verify_last_eof_sent(self, lines, file):
+        try:
+            last_line = lines[len(lines)-1]
+            index = len(lines)-1
+            while "#\n" in last_line:
+                index -= 1
+                last_line = lines[index]
+        except IndexError:
+            print("Index error")
+            return
+        print(last_line)
+        try:
+            opcode, client_id, eof = tuple(last_line.split(",", 2))
+        except ValueError:
+            print("value error")
+            return
+        opcode = int(opcode)
+        if opcode != EOF_MSG:
+            return
+        print("got here")
+        self.__middleware.send_message(self.__output_queue, json.dumps(eof))
+        file.write(f"{VALID_LINE}" + '\n')
+        file.flush()
+
+    def eof_sent(self, client_id, lines):
+        pattern = f"{EOF_MSG},{client_id},*"
+        for line in lines:
+            if line.endswith("#\n"):
+                continue
+            if fnmatch.fnmatch(line, pattern):
+                return True
+        return False
