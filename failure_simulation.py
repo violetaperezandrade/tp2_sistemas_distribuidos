@@ -3,15 +3,29 @@ import random
 import sys
 from time import sleep
 
-TIME_BETWEEN_DROPS = 5
+TIME_BETWEEN_DROPS = 10
 REPLICATED_NODES = 3
 
 
 def generate_node_list(with_healthcheckers=False):
 
-    potentially_failing_replicated_nodes = ["filter_by_average"]
+    potentially_failing_replicated_nodes = ["group_by_id",
+                                            "initial_column_cleaner",
+                                            "filter_by_three_stopovers",
+                                            "query_2_column_filter",
+                                            "reducer_group_by_airport",
+                                            "query_5_column_filter",
+                                            "distance_calculator",
+                                            "reducer_group_by_route",
+                                            "filter_by_average",
+                                            "avg_calculator",
+                                            "group_by_id_avg",
+                                            "reducer_group_by_route_q4",
+                                            "healthchecker"]
 
-    potentially_failing_single_nodes = ["group_by_route_query_4"]
+    potentially_failing_single_nodes = ["query_handler", "group_by_airport",
+                                        "group_by_route",
+                                        "group_by_route_query_4"]
 
     possible_failures = []
     for i in range(1, REPLICATED_NODES + 1):
@@ -46,7 +60,7 @@ def main():
         random.shuffle(possible_failures)
         for node in possible_failures:
             print(f"Stopping {node}")
-            os.system(f"docker stop {node} -t 0")
+            os.system(f"docker kill {node}")
             sleep(TIME_BETWEEN_DROPS)
 
 

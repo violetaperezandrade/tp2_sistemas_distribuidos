@@ -199,18 +199,14 @@ class FilterByAverage:
                 index -= 1
                 last_line = lines[index]
         except IndexError:
-            print("Index error")
             return
-        print(last_line)
         try:
             opcode, client_id, eof = tuple(last_line.split(",", 2))
         except ValueError:
-            print("value error")
             return
         opcode = int(opcode)
         if opcode != EOF_MSG:
             return
-        print("got here")
         self.__middleware.send_message(self.__output_queue, json.dumps(eof))
         file.write(f"{VALID_LINE}" + '\n')
         file.flush()
