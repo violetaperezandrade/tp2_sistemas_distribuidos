@@ -21,7 +21,7 @@ def generate_node_list(with_healthcheckers=False):
                                             "avg_calculator",
                                             "group_by_id_avg",
                                             "reducer_group_by_route_q4",
-                                            "healthchecker"]
+                                            ]
 
     potentially_failing_single_nodes = ["query_handler", "group_by_airport",
                                         "group_by_route",
@@ -42,10 +42,10 @@ def main():
         if sys.argv[1] == "-all":
             possible_failures = generate_node_list(True)
             print("Dropping all")
-            while "healthchecker_3" in possible_failures:
-                possible_failures.remove("healthchecker_3")
+            while "healthchecker_1" in possible_failures:
+                possible_failures.remove("healthchecker_1")
             for node in possible_failures:
-                os.system(f"docker stop {node} -t 0")
+                os.system(f"docker kill {node}")
             return
         elif sys.argv[1] == "-server":
             print("Dropping server for file deletion verification")
